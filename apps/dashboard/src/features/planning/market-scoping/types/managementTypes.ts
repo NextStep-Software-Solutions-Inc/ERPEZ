@@ -27,6 +27,7 @@ export interface ActivityTypeDefinition {
 export interface ParameterDefinition {
   id: string
   type: string
+  name?: string
   displayName: string
   guidedQuestion: string
   description?: string

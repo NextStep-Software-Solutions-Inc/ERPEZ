@@ -172,7 +172,7 @@ export function ProcurementPolicyConfigTable({
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 w-full">
       {/* Bulk action bar */}
       {someSelected && (
         <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-2.5">
@@ -200,8 +200,8 @@ export function ProcurementPolicyConfigTable({
       )}
 
       {/* Table */}
-      <div className="rounded-lg border border-border overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="rounded-lg border border-border overflow-hidden min-w-0 w-full">
+        <div className="overflow-x-auto w-full">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/60 hover:bg-muted/60">
@@ -228,7 +228,7 @@ export function ProcurementPolicyConfigTable({
                 </TableHead>
                 <TableHead className={thHead}>Threshold Range</TableHead>
                 <TableHead
-                  className={cn(thSortable, 'min-w-[200px]')}
+                  className={cn(thSortable, 'min-w-[180px]')}
                   onClick={() => handleSort('minAmount')}
                 >
                   <div className="flex items-center">
@@ -253,7 +253,7 @@ export function ProcurementPolicyConfigTable({
                     />
                   </div>
                 </TableHead>
-                <TableHead className={cn(thHead, 'text-right')}>
+                <TableHead className={cn(thHead, 'text-right min-w-[100px]')}>
                   Actions
                 </TableHead>
               </TableRow>

@@ -1,4 +1,4 @@
-﻿import { BacResolutionsPage } from './BacResolutionsPage'
+import { BacResolutionsPage } from './BacResolutionsPage'
 import type { BacResolutionRole } from '../types'
 
 interface PublicBacResolutionsPageProps {
@@ -8,13 +8,13 @@ interface PublicBacResolutionsPageProps {
 
 export function PublicBacResolutionsPage({
   selectedResolutionId,
-  role = 'procurement-staff',
+  role = 'all',
 }: PublicBacResolutionsPageProps) {
   return (
     <BacResolutionsPage
-      selectedResolutionId={selectedResolutionId}
-      title="BAC Resolutions (Public Bidding)"
-      description="Focused workspace for Public Bidding BAC Resolution review, schedule readiness, and downstream execution tracking."
+      selectedId={selectedResolutionId}
+      title="BAC Resolutions (Competitive Bidding)"
+      description="Focused workspace for Competitive Bidding BAC Resolution review, schedule readiness, and downstream execution tracking."
       role={role}
       workspaceScope="public-bidding"
       bacListRoutePath="/v2/bac-resolutions-public-bidding"

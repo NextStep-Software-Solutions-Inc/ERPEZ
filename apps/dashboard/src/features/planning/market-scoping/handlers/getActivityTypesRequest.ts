@@ -9,7 +9,14 @@ import type {
   CreateActivityTypePayload,
   UpdateActivityTypePayload,
 } from '../types/managementTypes'
-import type { QueryBlueprintFromTemplate, MutationBlueprintFromTemplate, PaginationResponse, APIResponse, QueryKey, QueryParams } from 'erpez-shared-lib'
+import type {
+  QueryBlueprintFromTemplate,
+  MutationBlueprintFromTemplate,
+  PaginationResponse,
+  APIResponse,
+  QueryKey,
+  QueryParams,
+} from 'erpez-shared-lib'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import api from '@/services/api'
 
@@ -24,8 +31,10 @@ export interface ActivitySettingResponse {
 
 const getActivityTypesEndpoint = '/market-scoping-activity-settings' as const
 const createActivityTypeEndpoint = '/market-scoping-activity-settings' as const
-const updateActivityTypeEndpoint = '/market-scoping-activity-settings/:id' as const
-const deleteActivityTypeEndpoint = '/market-scoping-activity-settings/:id' as const
+const updateActivityTypeEndpoint =
+  '/market-scoping-activity-settings/:id' as const
+const deleteActivityTypeEndpoint =
+  '/market-scoping-activity-settings/:id' as const
 
 // Keep api imported for commented-out real API code below
 void api
@@ -46,7 +55,8 @@ export const getActivityTypesRequest: QueryBlueprintFromTemplate<
   endpoint: getActivityTypesEndpoint,
   key: ({ url }) => [url] as const,
   fetcher: async ({ finalUrl }) => {
-    const response = await api.get<PaginationResponse<ActivitySettingResponse>>(finalUrl)
+    const response =
+      await api.get<PaginationResponse<ActivitySettingResponse>>(finalUrl)
     return response.data
   },
 }
@@ -66,7 +76,9 @@ export const createActivityTypeRequest: MutationBlueprintFromTemplate<
 > = {
   endpoint: createActivityTypeEndpoint,
   fetcher: async ({ payload = {} as CreateActivityTypePayload }) => {
-    const response = await api.post<APIResponse<{ data: ActivityTypeDefinition }>>(createActivityTypeEndpoint, payload)
+    const response = await api.post<
+      APIResponse<{ data: ActivityTypeDefinition }>
+    >(createActivityTypeEndpoint, payload)
     return response.data
   },
 }
@@ -78,7 +90,9 @@ export const createActivityTypeRequest: MutationBlueprintFromTemplate<
  *   const response = await api.put<APIResponse<{ data: ActivityTypeDefinition }>>(`/market-scoping-activity-settings/${id}`, payload);
  *   return response.data;
  */
-export const updateActivityTypeRequest = (id: string): MutationBlueprintFromTemplate<
+export const updateActivityTypeRequest = (
+  id: string,
+): MutationBlueprintFromTemplate<
   typeof updateActivityTypeEndpoint,
   APIResponse<{ data: ActivityTypeDefinition }>,
   undefined,
@@ -86,10 +100,9 @@ export const updateActivityTypeRequest = (id: string): MutationBlueprintFromTemp
 > => ({
   endpoint: updateActivityTypeEndpoint,
   fetcher: async ({ payload = {} as UpdateActivityTypePayload }) => {
-    const response = await api.put<APIResponse<{ data: ActivityTypeDefinition }>>(
-      `/market-scoping-activity-settings/${id}`,
-      payload
-    )
+    const response = await api.put<
+      APIResponse<{ data: ActivityTypeDefinition }>
+    >(`/market-scoping-activity-settings/${id}`, payload)
     return response.data
   },
 })
@@ -100,8 +113,10 @@ export const updateActivityTypeRequest = (id: string): MutationBlueprintFromTemp
  * TO SWITCH TO REAL API: Replace the return statement with:
  *   const response = await api.delete<APIResponse<null>>(`/market-scoping-activity-settings/${id}`);
  *   return response.data;
- */// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const deleteActivityTypeRequest = (id: string): MutationBlueprintFromTemplate<
+ */ // eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const deleteActivityTypeRequest = (
+  id: string,
+): MutationBlueprintFromTemplate<
   typeof deleteActivityTypeEndpoint,
   APIResponse<null>,
   undefined,
@@ -109,7 +124,9 @@ export const deleteActivityTypeRequest = (id: string): MutationBlueprintFromTemp
 > => ({
   endpoint: deleteActivityTypeEndpoint,
   fetcher: async () => {
-    const response = await api.delete<APIResponse<null>>(`/market-scoping-activity-settings/${id}`)
+    const response = await api.delete<APIResponse<null>>(
+      `/market-scoping-activity-settings/${id}`,
+    )
     return response.data
   },
 })

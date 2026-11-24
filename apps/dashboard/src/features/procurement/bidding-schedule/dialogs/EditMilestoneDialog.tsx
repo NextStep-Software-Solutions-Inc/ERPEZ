@@ -45,7 +45,13 @@ export function EditMilestoneDialog({
   }
 
   const handleSubmit = async (payload: UpdateMilestonePayload) => {
-    await updateMilestone(payload)
+    await updateMilestone({
+      pathParams: {
+        scheduleId: schedule.id,
+        milestoneId: milestone.id,
+      },
+      payload,
+    })
     setIsDirty(false)
     onOpenChange(false)
     onSuccess?.()

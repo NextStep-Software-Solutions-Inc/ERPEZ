@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import FieldInfo from '@/components/FieldInfo'
-import { MODIFICATION_REASONS } from '../constants/realignmentConstants'
+import { MODIFICATION_REASONS, formatModificationReason } from '../constants/realignmentConstants'
 import { Button } from '@/components/ui/button'
 
 const createLIBAmendmentSchema = z.object({
@@ -91,7 +91,7 @@ export function CreateLIBAmendmentForm({
               <SelectContent>
                 {MODIFICATION_REASONS.map((r) => (
                   <SelectItem key={r} value={r}>
-                    {r}
+                    {formatModificationReason(r)}
                   </SelectItem>
                 ))}
               </SelectContent>

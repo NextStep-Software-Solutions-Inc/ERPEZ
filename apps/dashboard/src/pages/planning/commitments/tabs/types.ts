@@ -67,3 +67,18 @@ export interface KPITarget {
     parentAttributeName?: string
   }[]
 }
+
+export interface SubKPI {
+  id: string
+  name: string
+  annualTarget?: number
+}
+
+export interface KPICombination {
+  kpi: string
+  dimension: string
+  annualTarget?: number
+  subKpis?: SubKPI[]
+  status?: string
+}
+

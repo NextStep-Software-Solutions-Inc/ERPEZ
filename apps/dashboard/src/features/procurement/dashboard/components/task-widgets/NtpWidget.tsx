@@ -1,7 +1,7 @@
-import { Progress } from '@/components/ui/progress'
-import { Clock, CalendarCheck } from 'lucide-react'
+import { CalendarCheck, Clock } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import type { IssueNTPMetadata } from '../../types'
+import { Progress } from '@/components/ui/progress'
 import { formatCurrencyAbbr } from '@/utils/formatters'
 
 interface Props {

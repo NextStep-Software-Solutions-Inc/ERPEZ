@@ -11,10 +11,9 @@ export const MissionSection = () => {
                                 Our Mission
                             </h2>
                             <p className="pl-10 text-lg text-[20px] max-w-[801px] mx-auto  font-normal md:mx-0 text-center md:text-left leading-[70px] break-words ">
-                                To build a unified ERP system that streamlines planning,
-                                procurement, supply and asset management, and account
-                                management into one secure platform—driving efficiency,
-                                transparency, and smarter decision-making.
+                                To build a unified ERP system that streamlines planning and budget,
+                                procurement, and account management into one secure platform—driving
+                                efficiency, transparency, and smarter decision-making.
                             </p>
                         </div>
                         <div className="flex justify-center">

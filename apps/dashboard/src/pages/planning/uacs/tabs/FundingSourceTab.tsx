@@ -17,6 +17,9 @@ import { getFundingSourcesRequest } from '@/features/uacs/code-segments/handlers
 const useFundingSources = createQueryHookFromTemplate(getFundingSourcesRequest)
 
 export function FundingSourceTab() {
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [search, setSearch] = useState('')
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<FundingSource | undefined>()
   const [deletingItem, setDeletingItem] = useState<FundingSource | undefined>()
@@ -24,18 +27,33 @@ export function FundingSourceTab() {
 
   const actions: MetaActions = ['write', 'delete']
 
-  // Fetch funding sources from API
+  // Build Sieve filter string for server-side search
+  const sieveFilters = useMemo(() => {
+    if (!search.trim()) return undefined
+    // Sieve: Name@=*term means case-insensitive contains on Name OR Code
+    return `Name@=*${search.trim()}|Code@=*${search.trim()}`
+  }, [search])
+
+  // Fetch funding sources from API with server-side search
   const { data: apiResponse, isLoading, error } = useFundingSources({
     pathParams: {},
-    queryParams: {},
+    queryParams: {
+      pageNumber: page,
+      pageSize: pageSize,
+      ...(sieveFilters ? { filters: sieveFilters } : {}),
+    },
   })
+
+  // Reset to page 1 when search changes (debounce fires in toolbar)
+  const handleSearch = (value: string) => {
+    setSearch(value)
+    setPage(1)
+  }
 
   // Filter data based on fiscal year and inactive codes setting
   const filteredData = useMemo(() => {
     const sources = apiResponse?.data || []
     return sources.filter((item) => {
-      // For now, show all items (API doesn't have fiscalYear in response based on the example)
-      // If backend adds fiscalYear filtering, can be applied here
       if (!showInactive && !item.isActive) {
         return false
       }
@@ -91,7 +109,17 @@ export function FundingSourceTab() {
             data={filteredData}
             actions={actions}
             readonly={false}
-            fixedPageSize={10}
+            manualPagination={true}
+            pageCount={apiResponse?.totalPages || 1}
+            pageIndex={page - 1}
+            pageSize={pageSize}
+            totalCount={apiResponse?.totalCount || 0}
+            onPaginationChange={({ pageIndex, pageSize: newPageSize }) => {
+              setPage(pageIndex + 1)
+              if (newPageSize !== pageSize) {
+                setPageSize(newPageSize)
+              }
+            }}
             toolbar={(table) => (
               <CodeSegmentToolbar
                 table={table}
@@ -99,6 +127,8 @@ export function FundingSourceTab() {
                 searchColumn="code"
                 onAdd={() => setAddDialogOpen(true)}
                 addLabel="Add Funding Source"
+                onSearch={handleSearch}
+                searchValue={search}
               />
             )}
           />

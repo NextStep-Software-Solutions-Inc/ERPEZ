@@ -1,36 +1,89 @@
-import { CalendarFold, Clock, Crown, Download, FolderKey, Shield, Zap } from "lucide-react"
+import { CalendarFold, Clock, Crown, Download, FolderKey, LayoutDashboard, Shield, Zap } from "lucide-react"
 import OverviewRecentActivity from "~/components/OverviewRecentActivity"
 import { PageContainer } from "~/components/PageContainer"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { buildCards, type CardItem } from "~/data/overview/cards"
 import { buildQuickActions } from "~/data/overview/quickActions"
+import { useNavigate } from "react-router"
+import { useTenant } from "~/providers/TenantProvider"
+import { useBillingData } from "~/features/billing/hooks/useBillingData"
+import { createQueryHookFromTemplate } from "erpez-shared-lib"
+import { getTenantLicenseRequest } from "~/features/license/handlers/getTenantLicenseRequest"
+
+import { planLabel } from "~/lib/tenant"
+import { getDashboardUrl } from "~/config/env"
+
+const useTenantLicense = createQueryHookFromTemplate(getTenantLicenseRequest);
 
 export default function OverviewPage() {
-    const licenseDays = 14
-    const planName = "Trial"
-    const status = { label: "Active", color: "green" }
-    const lastUpdated = "2 months ago"
+    const navigate = useNavigate();
+    const { tenant } = useTenant();
+    const { data: billingData } = useBillingData();
+    const tenantId = tenant?.id;
+
+    const { data: licenseResponse } = useTenantLicense({
+        pathParams: { id: tenantId || "" },
+        queryParams: { domain: typeof window !== "undefined" ? window.location.hostname : "" },
+    });
+
+    const license = licenseResponse?.data;
+    const subscription = billingData?.subscription;
+
+    const rawPlan = subscription?.planName || tenant?.tenantSubscription?.plan;
+    const planName = planLabel(rawPlan);
+    const hasLicense = Boolean(license && license.remainingDays != null);
+    const licenseDays = hasLicense ? license!.remainingDays : null;
+    const status = {
+        label: tenant?.isDisabled ? "Inactive" : "Active",
+        color: tenant?.isDisabled ? "red" : "green",
+    };
+    const isOnPrem = Boolean(tenant?.tenantSetting?.onPremise);
+    const activeModulesCount = tenant?.modules?.length || 1;
+    const deploymentMode = isOnPrem ? "On-Premise" : "Cloud SaaS";
+    const deploymentHint = `${activeModulesCount} active module${activeModulesCount === 1 ? "" : "s"} enabled`;
+    const licenseHint = hasLicense
+        ? `Valid until ${new Date(license!.expiresAt).toLocaleDateString()}`
+        : "Standard cloud subscription active";
 
     const cards = buildCards({
         licenseDays,
+        licenseDisplay: hasLicense ? `${licenseDays} days` : "Cloud SaaS",
         planName,
         statusLabel: status.label,
         statusColor: status.color,
-        lastUpdated,
-    })
+        lastUpdated: deploymentMode,
+        updatedTitle: "Deployment Mode",
+        updatedHint: deploymentHint,
+        licenseHint,
+    });
 
-    const quickActions = buildQuickActions()
+    const activePlan = (rawPlan || "Starter").toLowerCase();
+    const isStarter = activePlan.includes("starter");
+
+    const quickActions = buildQuickActions().filter(
+        (action) => !(action.id === "downloads" && isStarter)
+    );
     const handleAction = (id: string) => { 
         switch (id) {
             case "upgrade":
-                console.log("Navigate to plans")
+                navigate("/plan")
                 break
+            case "erp": {
+                const targetTenantId = tenant?.id;
+                const rawBase = tenant?.tenantSetting?.baseURL?.trim();
+                const isApiUrl = rawBase && (rawBase.includes(':5245') || rawBase.includes(':5246') || rawBase.includes('.api.'));
+                const dedicatedBase = (rawBase && !isApiUrl) ? rawBase : getDashboardUrl();
+                const tenantSlug = (tenant as any)?.slug || tenant?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                const slugParam = tenantSlug ? `&slug=${encodeURIComponent(tenantSlug)}` : '';
+                window.open(`${dedicatedBase}/v2/dashboard?tenantId=${targetTenantId}${slugParam}`, "_blank");
+                break;
+            }
             case "license":
-                console.log("Navigate to licenses")
+                navigate("/license-management")
                 break
             case "downloads":
-                console.log("Navigate to downloads")
+                navigate("/package-download")
                 break
         }
     }
@@ -58,8 +111,8 @@ export default function OverviewPage() {
 
                                     <div className="flex items-center justify-start">
                                         <div className="flex items-center gap-2">
-                                            <div className={`h-3 w-3 rounded-full bg-green-700`} />
-                                            <p className="text-2xl font-bold m-0 text-green-700">{c.value.label}</p>
+                                            <div className={`h-3 w-3 rounded-full ${c.value.color === "red" ? "bg-red-600" : "bg-green-700"}`} />
+                                            <p className={`text-2xl font-bold m-0 ${c.value.color === "red" ? "text-red-600" : "text-green-700"}`}>{c.value.label}</p>
                                         </div>
                                     </div>
                             )}
@@ -86,12 +139,13 @@ export default function OverviewPage() {
             </div>
             <div className="pt-8">
                 <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {quickActions.map((a) => (
                         <Card key={a.id} className="hover:shadow-md transition" role="region" aria-labelledby={`qa-${a.id}`}>
                             <CardContent className="flex flex-col items-center justify-center gap-4">
                                 <div className="flex items-center justify-center h-10 w-10 rounded-sm bg-gradient-to-br from-[var(--button-blue)]/30 to-[var(--button-green)]/30">
                                     {a.iconKey === "crown" && <Crown className="h-5 w-5 text-[var(--button-blue)]" />}
+                                    {a.iconKey === "layout-dashboard" && <LayoutDashboard className="h-5 w-5 text-[var(--button-blue)]" />}
                                     {a.iconKey === "folder-key" && <FolderKey className="h-5 w-5 text-[var(--button-blue)]" />}
                                     {a.iconKey === "downloads" && <Download className="h-5 w-5 text-[var(--button-blue)]" />}
                                 </div>
@@ -103,8 +157,8 @@ export default function OverviewPage() {
                                     variant={a.button.variant as any}
                                     onClick={() => handleAction(a.id)}
                                     aria-label={a.button.label}
-                                    className={`cursor-pointer ${a.id === "upgrade"
-                                        ? "bg-gradient-to-l from-[var(--button-green,#10B981)]/70 to-[var(--button-blue,#3B82F6)]/70"
+                                    className={`cursor-pointer ${a.id === "upgrade" || a.id === "erp"
+                                        ? "bg-gradient-to-l from-[var(--button-green,#10B981)]/70 to-[var(--button-blue,#3B82F6)]/70 text-white"
                                         : ""
                                         }`}
                                 >

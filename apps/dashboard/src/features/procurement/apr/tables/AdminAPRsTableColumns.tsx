@@ -1,11 +1,10 @@
 /**
  * Admin APRs Table Column Definitions
- * Columns: APR Number, Office, Status, Request Date, Total Amount, Submitted By, Actions
+ * Columns: APR Number, Office, Status, Request Date, Total Amount, Items, Actions
  */
 
 import { createColumnHelper } from '@tanstack/react-table'
 import { format } from 'date-fns'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -14,25 +13,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreVertical, Eye, Check, RotateCcw } from 'lucide-react'
-import type { APRMaster, APRStatus } from '../types'
+import { MoreVertical, Eye, Check, RotateCcw, Download } from 'lucide-react'
+import { toast } from 'sonner'
+import { generateAndDownloadAprDocument } from '../handlers/generateAprDocumentRequest'
+import { APRStatusBadge } from '../components/APRStatusBadge'
+import { normalizeAPRStatus } from '../utils'
 
-const columnHelper = createColumnHelper<APRMaster>()
-
-// Status badge variants
-const statusVariants: Record<APRStatus, string> = {
-  DRAFT: 'bg-gray-100 text-gray-800',
-  FOR_APPROVAL: 'bg-blue-100 text-blue-800',
-  RETURNED: 'bg-red-100 text-red-800',
-  APPROVED: 'bg-green-100 text-green-800',
-  PARTIALLY_AVAILABLE: 'bg-yellow-100 text-yellow-800',
-  OUT_OF_STOCK: 'bg-orange-100 text-orange-800',
-}
+const columnHelper = createColumnHelper<any>()
 
 interface AdminAPRsTableColumnsProps {
-  onView: (apr: APRMaster) => void
-  onApprove: (apr: APRMaster) => void
-  onReturn: (apr: APRMaster) => void
+  onView: (apr: any) => void
+  onApprove: (apr: any) => void
+  onReturn: (apr: any) => void
 }
 
 export function getAdminAPRsTableColumns({
@@ -46,30 +38,20 @@ export function getAdminAPRsTableColumns({
       header: 'APR Number',
       enableSorting: true,
       cell: (info) => (
-        <span className="font-medium text-blue-600">{info.getValue()}</span>
+        <span
+          className="font-medium text-blue-600 cursor-pointer hover:underline"
+          onClick={() => onView(info.row.original)}
+        >
+          {info.getValue() || '—'}
+        </span>
       ),
     }),
 
-    columnHelper.accessor('requestingEntity', {
+    columnHelper.accessor((row) => row.officeName || row.requestingEntity || '', {
       id: 'office',
       header: 'Office / Entity',
       enableSorting: true,
-      cell: (info) => <span className="text-sm">{info.getValue()}</span>,
-    }),
-
-    columnHelper.accessor('requestedBy', {
-      id: 'requestedBy',
-      header: 'Submitted By',
-      enableSorting: true,
-      cell: (info) => (
-        <span className="text-sm">
-          {info.getValue()}
-          <br />
-          <span className="text-xs text-gray-500">
-            {info.row.original.requestedByPosition}
-          </span>
-        </span>
-      ),
+      cell: (info) => <span className="text-sm">{info.getValue() || '—'}</span>,
     }),
 
     columnHelper.accessor('totalAmount', {
@@ -78,7 +60,7 @@ export function getAdminAPRsTableColumns({
       enableSorting: true,
       cell: (info) => (
         <span className="font-medium">
-          ₱{new Intl.NumberFormat('en-PH').format(info.getValue())}
+          ₱{new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(info.getValue() || 0)}
         </span>
       ),
     }),
@@ -87,22 +69,27 @@ export function getAdminAPRsTableColumns({
       id: 'requestDate',
       header: 'Request Date',
       enableSorting: true,
-      cell: (info) =>
-        format(new Date(info.getValue()), 'MMM dd, yyyy'),
+      cell: (info) => {
+        const val = info.getValue()
+        if (!val) return '—'
+        try {
+          return format(new Date(val), 'MMM dd, yyyy')
+        } catch {
+          return val
+        }
+      },
     }),
 
     columnHelper.accessor('status', {
       id: 'status',
       header: 'Status',
       enableSorting: true,
-      cell: (info) => (
-        <Badge className={statusVariants[info.getValue()]}>
-          {info.getValue().replace(/_/g, ' ')}
-        </Badge>
-      ),
+      cell: (info) => {
+        return <APRStatusBadge status={info.getValue() || 'Draft'} context="procurement_officer" />
+      },
     }),
 
-    columnHelper.accessor('totalItemsCount', {
+    columnHelper.accessor((row) => row.itemCount ?? row.totalItemsCount ?? row.items?.length ?? 0, {
       id: 'items',
       header: 'Items',
       enableSorting: true,
@@ -111,14 +98,15 @@ export function getAdminAPRsTableColumns({
       ),
     }),
 
-    columnHelper.accessor('status', {
+    columnHelper.accessor('id', {
       id: 'actions',
       header: 'Actions',
       enableSorting: false,
       cell: (info) => {
         const apr = info.row.original
-        const canApprove = apr.status === 'FOR_APPROVAL'
-        const canReturn = apr.status === 'FOR_APPROVAL' || apr.status === 'DRAFT'
+        const status = normalizeAPRStatus(apr.status)
+        const canApprove = status === 'FOR_APPROVAL'
+        const canReturn = status === 'FOR_APPROVAL' || status === 'DRAFT'
 
         return (
           <DropdownMenu>
@@ -136,6 +124,26 @@ export function getAdminAPRsTableColumns({
               <DropdownMenuItem onClick={() => onView(apr)}>
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={async () => {
+                  try {
+                    toast.loading('Generating APR Form No. 002 PDF...', { id: `export-apr-${apr.id}` })
+                    await generateAndDownloadAprDocument({
+                      aprId: apr.id,
+                      format: 'Pdf',
+                      filename: `APR_${apr.aprNumber || apr.id}.pdf`
+                    })
+                    toast.success('APR Form No. 002 PDF downloaded', { id: `export-apr-${apr.id}` })
+                  } catch (err: unknown) {
+                    const msg = err instanceof Error ? err.message : 'Failed to export APR PDF'
+                    toast.error(msg, { id: `export-apr-${apr.id}` })
+                  }
+                }}
+              >
+                <Download className="mr-2 h-4 w-4 text-blue-600" />
+                Export Form 002 (PDF)
               </DropdownMenuItem>
 
               {canApprove && (

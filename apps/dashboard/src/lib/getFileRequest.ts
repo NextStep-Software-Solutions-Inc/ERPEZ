@@ -1,4 +1,4 @@
-﻿import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
+import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
 import api from '@/services/api'
 
 const endpoint = '/files/download/:fileId' as const

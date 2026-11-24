@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, Edit2, Trash2 } from 'lucide-react'
+import { ChevronDown, Edit2, Play, Trash2 } from 'lucide-react'
 import type { BudgetCall } from '@/lib/fiscal-year-and-policies/types'
 import { pascalCaseToWords } from '@/utils/formatters'
 import { CountdownCell } from './CountdownCell'
@@ -8,15 +8,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface BudgetCallCardProps {
   budgetCall: BudgetCall
+  canManage: boolean
   onEdit: (budgetCall: BudgetCall) => void
   onDelete: (budgetCall: BudgetCall) => void
+  onActivate?: (budgetCall: BudgetCall) => void
   showFiscalYear?: boolean
 }
 
 export function BudgetCallCard({
   budgetCall,
+  canManage,
   onEdit,
   onDelete,
+  onActivate,
   showFiscalYear = false,
 }: BudgetCallCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -25,7 +29,8 @@ export function BudgetCallCard({
   const now = new Date()
   const deadline = new Date(budgetCall.submissionDeadline)
   const isExpired = deadline < now
-  const status = isExpired ? 'Expired' : 'Active'
+  const isClosed = budgetCall.status === 'Closed' || (isExpired && budgetCall.status !== 'Draft')
+  const status = isClosed ? 'Closed' : (budgetCall.status || (isExpired ? 'Expired' : 'Active'))
 
   // Format date for display
   const formatDateForDisplay = (date: string | Date): string => {
@@ -65,9 +70,11 @@ export function BudgetCallCard({
               </CardTitle>
               <span
                 className={`inline-block rounded-full px-2 py-1 text-xs font-medium whitespace-nowrap ${
-                  isExpired
-                    ? 'bg-destructive/10 text-destructive'
-                    : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200'
+                  status === 'Active'
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200'
+                    : status === 'Draft'
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200'
+                      : 'bg-destructive/10 text-destructive'
                 }`}
               >
                 {status}
@@ -146,30 +153,49 @@ export function BudgetCallCard({
         </CardContent>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex gap-2 justify-end px-6 py-3 border-t">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            onEdit(budgetCall)
-          }}
-        >
-          <Edit2 className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete(budgetCall)
-          }}
-          className="text-destructive hover:text-destructive"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
+      {/* Action Buttons: Rendered only for authorized users */}
+      {canManage && (
+        <div className="flex gap-2 items-center justify-end px-6 py-3 border-t">
+          {status === 'Draft' && onActivate && (
+            <Button
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                onActivate(budgetCall)
+              }}
+              className="mr-auto gap-1.5"
+            >
+              <Play className="h-3.5 w-3.5" />
+              Activate
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit(budgetCall)
+            }}
+            className="gap-1.5"
+            title="Edit budget call"
+          >
+            <Edit2 className="h-4 w-4" />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(budgetCall)
+            }}
+            className="text-destructive hover:text-destructive"
+            title="Delete budget call"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </Card>
   )
 }

@@ -1,9 +1,12 @@
 /**
  * Approve Contract Modal
- * Dialog for approving a contract with signed PDF upload
+ *
+ * Dialog for approving a contract (internal approving authority).
+ * RA 12009 workflow: internal approval is a document-review and authorization
+ * step. File upload and bilateral signing are governed in Phase 4 (Execution).
  */
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import * as z from 'zod'
@@ -16,20 +19,18 @@ import {
 } from '@/components/ui/dialog'
 import {
   Form,
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { CheckCircle, Upload } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
 
 const approveContractSchema = z.object({
-  pdfFile: z.instanceof(File, { message: 'PDF file is required' }).refine(
-    (file) => file.type === 'application/pdf',
-    'File must be a PDF',
-  ),
+  remarks: z.string().optional(),
 })
 
 type ApproveContractFormData = z.infer<typeof approveContractSchema>
@@ -37,49 +38,30 @@ type ApproveContractFormData = z.infer<typeof approveContractSchema>
 interface ApproveContractModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onApprove: (signedPdfUrl: string) => void
+  onApprove: (remarks?: string) => void
+  isLoading?: boolean
 }
 
-export function ApproveContractModal({ open, onOpenChange, onApprove }: ApproveContractModalProps) {
+export function ApproveContractModal({ open, onOpenChange, onApprove, isLoading }: ApproveContractModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [fileSelected, setFileSelected] = useState<File | null>(null)
-  const [objectUrl, setObjectUrl] = useState<string | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl)
-    }
-  }, [objectUrl])
 
   const form = useForm<ApproveContractFormData>({
     resolver: zodResolver(approveContractSchema),
-    defaultValues: {
-      pdfFile: undefined,
-    },
+    defaultValues: { remarks: '' },
   })
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setFileSelected(file)
-      form.setValue('pdfFile', file)
-    }
-  }
 
   const onSubmit = async (data: ApproveContractFormData) => {
     setIsSubmitting(true)
     try {
-      const signedPdfUrl = URL.createObjectURL(data.pdfFile)
-      setObjectUrl(signedPdfUrl)
-
-      onApprove(signedPdfUrl)
-      setFileSelected(null)
+      onApprove(data.remarks?.trim() || undefined)
       form.reset()
       onOpenChange(false)
     } finally {
       setIsSubmitting(false)
     }
   }
+
+  const busy = isLoading || isSubmitting
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -90,7 +72,8 @@ export function ApproveContractModal({ open, onOpenChange, onApprove }: ApproveC
             Approve Contract
           </DialogTitle>
           <DialogDescription>
-            Upload the physically signed contract document to approve it.
+            Approve this contract for internal authorization. Document upload and bilateral signing
+            are completed in the Contract Execution step.
           </DialogDescription>
         </DialogHeader>
 
@@ -98,67 +81,37 @@ export function ApproveContractModal({ open, onOpenChange, onApprove }: ApproveC
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="pdfFile"
-              render={() => (
+              name="remarks"
+              render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Signed Contract Document</FormLabel>
-                  <div className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-muted/50 transition">
-                    <Input
-                      type="file"
-                      accept=".pdf"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="pdf-upload"
+                  <FormLabel>Approval Remarks <span className="text-muted-foreground text-xs">(optional)</span></FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Add any remarks for this approval..."
+                      className="resize-none"
+                      rows={4}
+                      {...field}
                     />
-                    <label
-                      htmlFor="pdf-upload"
-                      className="flex flex-col items-center gap-2 cursor-pointer"
-                    >
-                      <Upload className="h-8 w-8 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">
-                          {fileSelected ? fileSelected.name : 'Click to upload or drag and drop'}
-                        </p>
-                        {!fileSelected && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            PDF files only
-                          </p>
-                        )}
-                      </div>
-                    </label>
-                  </div>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-xs text-blue-800">
-                <span className="font-medium">Note:</span> Ensure the PDF contains the
-                physical signature of the approving authority and all required
-                approval marks as per procurement standards.
-              </p>
-            </div>
 
             <div className="flex justify-end gap-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  onOpenChange(false)
-                  setFileSelected(null)
                   form.reset()
+                  onOpenChange(false)
                 }}
-                disabled={isSubmitting}
+                disabled={busy}
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting || !fileSelected}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {isSubmitting ? 'Approving...' : 'APPROVE'}
+              <Button type="submit" disabled={busy} className="bg-green-600 hover:bg-green-700">
+                {busy ? 'Approving...' : 'Approve Contract'}
               </Button>
             </div>
           </form>

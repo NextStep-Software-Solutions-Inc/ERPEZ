@@ -17,7 +17,7 @@ export interface APRStatistics {
   totalDraft: number
   totalBudgetRequested: number
   totalBudgetApproved: number
-  statisticsByStatus: Record<APRStatus, number>
+  statisticsByStatus: Record<string, number>
   statisticsByFiscalYear: Record<number, number>
 }
 
@@ -36,7 +36,7 @@ export interface AdminAPRListResponse {
  * Filter Options for Admin APR List
  */
 export interface AdminAPRFilters {
-  status?: APRStatus | 'ALL'
+  status?: APRStatus | 'ALL' | string
   fiscalYear?: number
   office?: string
   procuringEntity?: string

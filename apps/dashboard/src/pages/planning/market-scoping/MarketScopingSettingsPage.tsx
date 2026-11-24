@@ -1,7 +1,7 @@
 /**
  * Market Scoping Settings Page
  * URL: /v2/market-scoping/settings
- * 
+ *
  * Unified settings page for managing Market Scoping configuration
  * Includes tabs for Activity Types and Parameters
  */
@@ -18,7 +18,9 @@ export default function MarketScopingSettingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Market Scoping Settings</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Market Scoping Settings
+          </h1>
           <p className="text-gray-600 mt-2">
             Manage activity types and evaluation parameters for market scoping
           </p>

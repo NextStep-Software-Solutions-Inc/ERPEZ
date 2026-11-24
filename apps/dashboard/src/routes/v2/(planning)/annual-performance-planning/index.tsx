@@ -9,9 +9,10 @@
 // both files defining the same route.
 
 // Make this a TS module without exporting any route/component.
-export {};
 import AppFormPage from '@/pages/planning/app/AppFormPage'
 import { createFileRoute } from '@tanstack/react-router'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 export const Route = createFileRoute(
   '/v2/(planning)/annual-performance-planning/',
@@ -20,5 +21,12 @@ export const Route = createFileRoute(
 })
 
 function RouteComponent() {
-  return <AppFormPage />
+  return (
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Planning.Target.Manage}
+      message="You do not have permission to view Annual Performance Planning."
+    >
+      <AppFormPage />
+    </RoutePermissionGuard>
+  )
 }

@@ -62,19 +62,27 @@ export function PPMPDetailsDialog({ open, onOpenChange, selectedItem, appItemId 
         ) : itemToDisplay ? (
           <div className="space-y-6 pt-4">
             {/* Item Name and Code Header */}
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Item Code / PAP Code</p>
-                <p className="text-sm font-bold text-slate-800 font-mono bg-white px-2.5 py-1.5 rounded border border-slate-200 inline-block">
+                <p className="text-sm font-bold text-slate-800 bg-white px-2.5 py-1.5 rounded border border-slate-200 inline-block">
                   {details?.papCode || selectedItem?.code || '—'}
                 </p>
               </div>
-              <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">APP ID</p>
-                <p className="text-xs text-slate-500 font-mono select-all truncate mt-2">
-                  {itemToDisplay.id}
-                </p>
-              </div>
+              {details && (
+                <div className="flex items-center gap-2">
+                  {details.isNew && (
+                    <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      NEW ITEM
+                    </span>
+                  )}
+                  {details.isRevised && (
+                    <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                      REVISED ITEM
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Description */}
@@ -100,7 +108,7 @@ export function PPMPDetailsDialog({ open, onOpenChange, selectedItem, appItemId 
                   {details?.officeName || details?.Office?.name || selectedItem?.office || '—'}
                 </p>
                 {details?.Office?.code && (
-                  <span className="text-[10px] font-mono text-slate-400 uppercase">Code: {details.Office.code}</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-medium">Code: {details.Office.code}</span>
                 )}
               </div>
 
@@ -110,7 +118,7 @@ export function PPMPDetailsDialog({ open, onOpenChange, selectedItem, appItemId 
                   {details?.fundSourceName || details?.FundSource?.name || selectedItem?.fundSource || '—'}
                 </p>
                 {details?.FundSource?.code && (
-                  <span className="text-[10px] font-mono text-slate-400 uppercase">Code: {details.FundSource.code}</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-medium">Code: {details.FundSource.code}</span>
                 )}
               </div>
 
@@ -133,6 +141,29 @@ export function PPMPDetailsDialog({ open, onOpenChange, selectedItem, appItemId 
                 </p>
                 {selectedItem?.itemCategory && (
                   <span className="text-[10px] text-slate-400 uppercase">{selectedItem.itemCategory}</span>
+                )}
+              </div>
+            </div>
+
+            {/* APP Procurement Timeline */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-emerald-50/70 border border-emerald-200/80 rounded-lg">
+              <div>
+                <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider mb-1">Start of Procurement</p>
+                <p className="text-sm font-bold text-emerald-950">
+                  {details?.effectiveStartOfProcurement ? new Date(details.effectiveStartOfProcurement).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : (details?.startOfProcurementOverride || 'Not set')}
+                </p>
+                {details?.isStartProcurementOverridden && (
+                  <span className="text-[10px] text-amber-700 font-medium block">APP Override</span>
+                )}
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider mb-1">End of Procurement</p>
+                <p className="text-sm font-bold text-emerald-950">
+                  {details?.effectiveEndOfProcurement ? new Date(details.effectiveEndOfProcurement).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : (details?.endOfProcurementOverride || 'Not set')}
+                </p>
+                {details?.isEndProcurementOverridden && (
+                  <span className="text-[10px] text-amber-700 font-medium block">APP Override</span>
                 )}
               </div>
             </div>
@@ -219,19 +250,26 @@ export function PPMPDetailsDialog({ open, onOpenChange, selectedItem, appItemId 
                 <div>
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Quantity</p>
                   <p className="text-base font-bold text-slate-800">
-                    {(details?.PPMPItem?.quantity || selectedItem?.quantity || 1).toLocaleString('en-PH')}
+                    {(() => {
+                      const q = details?.quantity || details?.PPMPItem?.quantity || selectedItem?.quantity
+                      if (q && q > 0) return q.toLocaleString('en-PH')
+                      const cost = details?.PPMPItem?.unitPrice ?? details?.unitCost ?? selectedItem?.unitCost ?? 0
+                      const total = details?.effectiveABC ?? details?.totalAmount ?? details?.PPMPItem?.totalAmount ?? selectedItem?.totalAmount ?? 0
+                      if (cost > 0 && total > 0) return Math.round(total / cost).toLocaleString('en-PH')
+                      return '1'
+                    })()}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Unit of Measure</p>
                   <p className="text-base font-semibold text-slate-600">
-                    {details?.PPMPItem?.unit || selectedItem?.unit || 'unit'}
+                    {details?.PPMPItem?.unit || details?.unit || selectedItem?.unit || 'unit'}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Unit Cost</p>
                   <p className="text-base font-bold text-slate-800">
-                    ₱{(details?.PPMPItem?.unitPrice ?? selectedItem?.unitCost ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₱{(details?.PPMPItem?.unitPrice ?? details?.unitCost ?? selectedItem?.unitCost ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
               </div>
@@ -240,11 +278,13 @@ export function PPMPDetailsDialog({ open, onOpenChange, selectedItem, appItemId 
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Total Estimated Budget</p>
                 <p className="text-2xl font-black text-emerald-600">
                   ₱{(
-                    (details?.PPMPItem?.totalAmount && details.PPMPItem.totalAmount > 0)
+                    (details?.effectiveABC && details.effectiveABC > 0)
+                      ? details.effectiveABC
+                      : (details?.PPMPItem?.totalAmount && details.PPMPItem.totalAmount > 0)
                       ? details.PPMPItem.totalAmount
                       : (selectedItem?.totalAmount && selectedItem.totalAmount > 0)
                       ? selectedItem.totalAmount
-                      : ((details?.PPMPItem?.quantity || selectedItem?.quantity || 1) * (details?.PPMPItem?.unitPrice || selectedItem?.unitCost || 0))
+                      : (((details?.quantity || details?.PPMPItem?.quantity || selectedItem?.quantity || 1)) * (details?.PPMPItem?.unitPrice || details?.unitCost || selectedItem?.unitCost || 0))
                   ).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>

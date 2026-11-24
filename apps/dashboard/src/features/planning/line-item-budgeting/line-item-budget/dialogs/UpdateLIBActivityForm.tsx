@@ -1,4 +1,4 @@
-﻿import { useEffect } from 'react'
+import { useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { useForm } from '@tanstack/react-form'
@@ -8,6 +8,7 @@ import type { LIBActivity } from '@/features/planning/line-item-budgeting/line-i
 
 const updateLIBActivitySchema = z.object({
   name: z.string().min(1, 'Activity name is required'),
+  papCode: z.string().optional(),
   lineItemBudgetId: z.string(),
   wfpObjectiveActivityId: z.string().optional(),
   opcrActivityId: z.string().optional(),
@@ -19,6 +20,7 @@ export type UpdateLIBActivityFormValues = z.infer<
 
 interface ActivityDefaults {
   name: string
+  papCode?: string
   lineItemBudgetId: string
   wfpObjectiveActivityId?: string
   opcrActivityId?: string
@@ -57,6 +59,7 @@ export default function UpdateLIBActivityForm({
 }: UpdateLIBActivityFormProps) {
   const activityDefaults: ActivityDefaults = {
     name: activity?.name || '',
+    papCode: activity?.papCode || '',
     lineItemBudgetId: activity?.lineItemBudgetId || '',
     wfpObjectiveActivityId: activity?.wfpObjectiveActivityId,
     opcrActivityId: activity?.opcrActivityId,
@@ -94,6 +97,31 @@ export default function UpdateLIBActivityForm({
               value={field.state.value}
               onBlur={field.handleBlur}
               onChange={(e) => field.handleChange(e.target.value)}
+            />
+            <FieldInfo field={field} />
+          </div>
+        )}
+      />
+      {/* PAP Code / API Number Field */}
+      <form.Field
+        name="papCode"
+        children={(field) => (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor={field.name} className="text-xs font-semibold text-gray-700">
+                PAP Code / API Number
+              </Label>
+              <span className="text-[11px] text-muted-foreground font-normal">
+                Budget control identifier
+              </span>
+            </div>
+            <Input
+              id={field.name}
+              placeholder="e.g. 2026-17-00001"
+              value={field.state.value ?? ''}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+              className="font-mono text-xs placeholder:font-sans placeholder:text-gray-400"
             />
             <FieldInfo field={field} />
           </div>

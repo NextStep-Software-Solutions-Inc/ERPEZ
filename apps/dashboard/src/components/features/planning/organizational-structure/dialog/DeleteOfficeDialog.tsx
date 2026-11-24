@@ -10,7 +10,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Loader2, AlertTriangle } from 'lucide-react'
-import { useValidateOrgUnitDeletion, useDeleteOrgUnit } from '@/pages/planning/organization/hooks/useOrgUnits'
+import { useValidateOrgUnitDeletion, useDeleteOrgUnit, useOrgUnit } from '@/pages/planning/organization/hooks/useOrgUnits'
 import { toast } from 'sonner'
 
 interface DeleteOfficeDialogProps {
@@ -28,6 +28,9 @@ function DeleteOfficeDialog({
   unitName,
   onSuccess,
 }: DeleteOfficeDialogProps) {
+  const { data: fetchedUnit } = useOrgUnit(unitName ? null : (unitId ?? null))
+  const displayName = unitName || fetchedUnit?.name || 'Office'
+
   const [canDelete, setCanDelete] = useState(true)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [isValidating, setIsValidating] = useState(false)
@@ -69,7 +72,7 @@ function DeleteOfficeDialog({
         success: () => {
           onOpenChange(false)
           onSuccess?.()
-          return `Office "${unitName}" has been deleted successfully`
+          return `Office "${displayName}" has been deleted successfully`
         },
         error: (error) => {
           return error instanceof Error ? error.message : 'Failed to delete office'
@@ -97,7 +100,7 @@ function DeleteOfficeDialog({
             ) : (
               <>
                 Are you sure you want to delete{' '}
-                <span className="font-semibold text-foreground">"{unitName}"</span>?
+                <span className="font-semibold text-foreground">"{displayName}"</span>?
                 <br />
                 <br />
                 This action cannot be undone. The office will be soft-deleted and no

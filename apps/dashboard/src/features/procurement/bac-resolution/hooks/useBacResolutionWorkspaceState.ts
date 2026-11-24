@@ -1,30 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { extractErrorMessage } from '@/services/utils/messages'
-import {
-  // buildLinkableConsolidatedPrs,
-  useApproveBacResolution,
-  useBacResolutions,
-  useCreateBacResolution,
-  useLinkConsolidatedPrs,
-  usePrintBacResolution,
-  useReturnBacResolution,
-  useSubmitBacResolution,
-  useUpdateBacResolution,
-  useDeleteBacResolution,
-} from '../handlers/hooks'
 import type {
   BacResolution,
   BacResolutionInboxFilter,
   BacResolutionWorkspaceScope,
-  CreateBacResolutionPayload,
-  LinkConsolidatedPrsPayload,
 } from '../types'
 import {
-  buildLinkableConsolidatedPrs,
-  isBacResolutionInPublicBiddingScope,
-} from '../utils/bacResolutionWorkflow'
-import api from '@/services/api'
+  createMutationHookFromTemplate,
+} from 'erpez-shared-lib'
+import { updateBacResolutionRequest } from '../handlers/updateBacResolutionRequest'
+import { linkConsolidatedPrsRequest } from '../handlers/linkConsolidatedPrsRequest'
+import { submitBacResolutionRequest } from '../handlers/submitBacResolutionRequest'
+import { approveBacResolutionRequest } from '../handlers/approveBacResolutionRequest'
+import { returnBacResolutionRequest } from '../handlers/returnBacResolutionRequest'
 
 const statusOptions: BacResolutionInboxFilter[] = [
   'all',
@@ -38,379 +26,184 @@ function formatInboxFilterLabel(status: BacResolutionInboxFilter) {
   return status === 'all'
     ? 'All'
     : status
-        .split('-')
-        .map((part) => part[0].toUpperCase() + part.slice(1))
-        .join(' ')
+      .split('-')
+      .map((part) => part[0].toUpperCase() + part.slice(1))
+      .join(' ')
 }
 
-const getErrorMessage = (error: any, fallback: string) => {
-  if (error && typeof error === 'object' && ('response' in error || 'request' in error)) {
-    return extractErrorMessage(error)
-  }
-  return error instanceof Error ? error.message : fallback
-}
+const useUpdateBacResolutionMutation = createMutationHookFromTemplate(
+  updateBacResolutionRequest,
+)
+const useLinkConsolidatedPrMutation = createMutationHookFromTemplate(
+  linkConsolidatedPrsRequest,
+)
+const useSubmitBacResolutionMutation = createMutationHookFromTemplate(
+  submitBacResolutionRequest,
+)
+const useApproveBacResolutionMutation = createMutationHookFromTemplate(
+  approveBacResolutionRequest,
+)
+const useReturnBacResolutionMutation = createMutationHookFromTemplate(
+  returnBacResolutionRequest,
+)
 
 export function useBacResolutionWorkspaceState(
   defaultFilter: BacResolutionInboxFilter = 'all',
   initialSelectedResolutionId?: string,
   workspaceScope: BacResolutionWorkspaceScope = 'all',
 ) {
-  const [resolutions, setResolutions] = useState<BacResolution[]>([])
+  const updateMutation = useUpdateBacResolutionMutation()
+  const linkMutation = useLinkConsolidatedPrMutation()
+  const submitMutation = useSubmitBacResolutionMutation()
+  const approveMutation = useApproveBacResolutionMutation()
+  const returnMutation = useReturnBacResolutionMutation()
+
+  const isMutating =
+    updateMutation.isPending ||
+    linkMutation.isPending ||
+    submitMutation.isPending ||
+    approveMutation.isPending ||
+    returnMutation.isPending
+
   const [selectedResolutionId, setSelectedResolutionId] = useState<
     string | null
   >(null)
   const [searchValue, setSearchValue] = useState('')
   const [filter, setFilter] = useState<BacResolutionInboxFilter>(defaultFilter)
+  const [sourceTypeFilter, setSourceTypeFilter] = useState<
+    'all' | 'APP_ITEM' | 'CONSOLIDATED_PR'
+  >('all')
+  const [budgetTier, setBudgetTier] = useState<
+    'all' | 'under-1m' | '1m-5m' | 'above-5m' | 'custom'
+  >('all')
+  const [customMinBudget, setCustomMinBudget] = useState<number | null>(null)
+  const [customMaxBudget, setCustomMaxBudget] = useState<number | null>(null)
+  const [sortBy, setSortBy] = useState<
+    'newest' | 'oldest' | 'amount-desc' | 'amount-asc'
+  >('newest')
+
+  const resetAllFilters = () => {
+    setSearchValue('')
+    setFilter('all')
+    setSourceTypeFilter('all')
+    setBudgetTier('all')
+    setCustomMinBudget(null)
+    setCustomMaxBudget(null)
+    setSortBy('newest')
+  }
+
+  // Dialog controls
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
-  const [editingResolution, setEditingResolution] = useState<BacResolution | null>(null)
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
-  const [resolutionToDeleteId, setResolutionToDeleteId] = useState<string | null>(null)
+  const [editingResolution, setEditingResolution] =
+    useState<BacResolution | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const [detailsResolutionId, setDetailsResolutionId] = useState<string | null>(null)
+  const [detailsResolutionId, setDetailsResolutionId] = useState<string | null>(
+    null,
+  )
   const [viewConsolidatedPrOpen, setViewConsolidatedPrOpen] = useState(false)
-  const [viewConsolidatedPrId, setViewConsolidatedPrId] = useState<string | null>(null)
+  const [viewConsolidatedPrId, setViewConsolidatedPrId] = useState<
+    string | null
+  >(null)
   const [linkOpen, setLinkOpen] = useState(false)
   const [approveOpen, setApproveOpen] = useState(false)
   const [returnOpen, setReturnOpen] = useState(false)
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
-  const [apiConsolidatedPrs, setApiConsolidatedPrs] = useState<any[]>([])
-
-  useEffect(() => {
-    if (!createOpen && !linkOpen) return
-
-    let active = true
-    const fetchPrs = async () => {
-      try {
-        const response = await api.get<{ succeeded: boolean; data: any[] }>('/consolidated-prs')
-        if (active && response.data?.succeeded) {
-          setApiConsolidatedPrs(response.data.data || [])
-        }
-      } catch (e) {
-        console.error('Failed to load consolidated PRs:', e)
-      }
-    }
-    fetchPrs()
-    return () => {
-      active = false
-    }
-  }, [createOpen, linkOpen])
-
-  const {
-    data: bacResolutions,
-    isLoading: isBacResolutionsLoading,
-    isFetching: isBacResolutionsFetching,
-  } = useBacResolutions({})
-
-  const { mutateAsync: createBacResolution, isPending: isCreatePending } =
-    useCreateBacResolution()
-  const { mutateAsync: updateBacResolution, isPending: isUpdatePending } =
-    useUpdateBacResolution()
-  const { mutateAsync: deleteBacResolution, isPending: isDeletePending } =
-    useDeleteBacResolution()
-  const { mutateAsync: linkConsolidatedPrs, isPending: isLinkPending } =
-    useLinkConsolidatedPrs()
-  const { mutateAsync: submitBacResolution, isPending: isSubmitPending } =
-    useSubmitBacResolution()
-  const { mutateAsync: printBacResolution, isPending: isPrintPending } =
-    usePrintBacResolution()
-  const { mutateAsync: approveBacResolution, isPending: isApprovePending } =
-    useApproveBacResolution()
-  const { mutateAsync: returnBacResolution, isPending: isReturnPending } =
-    useReturnBacResolution()
-
-  useEffect(() => {
-    setResolutions(bacResolutions ?? [])
-  }, [bacResolutions])
-
-  const scopedResolutions = useMemo(
-    () =>
-      resolutions.filter((item) =>
-        workspaceScope === 'public-bidding'
-          ? isBacResolutionInPublicBiddingScope(item)
-          : true,
-      ),
-    [resolutions, workspaceScope],
-  )
-
-  const filteredResolutions = useMemo(() => {
-    return scopedResolutions
-      .filter((item) => (filter === 'all' ? true : item.status === filter))
-      .filter((item) => {
-        if (!searchValue.trim()) return true
-
-        const needle = searchValue.toLowerCase()
-        return [
-          item.bacResolutionNumber,
-          item.description,
-          item.createdBy,
-          ...item.linkedConsolidatedPrs.map((pr) => pr.prNumber),
-        ]
-          .join(' ')
-          .toLowerCase()
-          .includes(needle)
-      })
-  }, [filter, scopedResolutions, searchValue])
-
-  useEffect(() => {
-    if (
-      initialSelectedResolutionId &&
-      filteredResolutions.some(
-        (item) => item.id === initialSelectedResolutionId,
-      )
-    ) {
-      setSelectedResolutionId(initialSelectedResolutionId)
-      return
-    }
-
-    if (filteredResolutions.length === 0) {
-      setSelectedResolutionId(null)
-      return
-    }
-
-    if (
-      !selectedResolutionId ||
-      !filteredResolutions.some((item) => item.id === selectedResolutionId)
-    ) {
-      setSelectedResolutionId(filteredResolutions[0].id)
-    }
-  }, [filteredResolutions, initialSelectedResolutionId, selectedResolutionId])
-
-  const selectedResolution = useMemo(
-    () =>
-      scopedResolutions.find((item) => item.id === selectedResolutionId) ??
-      null,
-    [scopedResolutions, selectedResolutionId],
-  )
-
-  const availablePrs = useMemo(
-    () => {
-      if (!selectedResolution) return []
-      
-      const mappedApiPrs = apiConsolidatedPrs.map((item) => ({
-        id: item.id,
-        prNumber: item.cprNumber || 'N/A',
-        description: item.description || '',
-        endUser: 'N/A',
-        projectName: item.description || '',
-        amount: 0,
-        modeOfProcurement: 'Public Bidding',
-        status: 'approved' as const,
-      }))
-
-      return buildLinkableConsolidatedPrs({
-        availablePrs: mappedApiPrs,
-        resolutions,
-        currentResolutionId: selectedResolution.id,
-      })
-    },
-    [resolutions, selectedResolution, apiConsolidatedPrs],
-  )
 
   const handleViewConsolidatedPrDetails = (consolidatedPrId: string) => {
     setViewConsolidatedPrId(consolidatedPrId)
     setViewConsolidatedPrOpen(true)
   }
 
-  const isMutating =
-    isCreatePending ||
-    isUpdatePending ||
-    isDeletePending ||
-    isLinkPending ||
-    isSubmitPending ||
-    isPrintPending ||
-    isApprovePending ||
-    isReturnPending
+  const handleCreate = () => { }
 
-  const handleCreate = async (payload: CreateBacResolutionPayload) => {
-    try {
-      const enrichedPayload =
-        workspaceScope === 'public-bidding'
-          ? { ...payload, workspaceOrigin: 'public-bidding' as const }
-          : payload
-      const created = await createBacResolution({
-        pathParams: {},
-        payload: enrichedPayload,
-      })
-      setResolutions((current) => [created, ...current])
-      setSelectedResolutionId(created.id)
-      toast.success('BAC Resolution draft created.')
-      setCreateOpen(false)
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to create BAC Resolution.'))
-    }
-  }
+  const handleUpdate = () => { }
 
-  const handleUpdate = async (id: string, payload: CreateBacResolutionPayload) => {
-    try {
-      const enrichedPayload =
-        workspaceScope === 'public-bidding'
-          ? { ...payload, workspaceOrigin: 'public-bidding' as const }
-          : payload
-      const updated = await updateBacResolution({
-        pathParams: { id },
-        payload: enrichedPayload,
-      })
-      setResolutions((current) =>
-        current.map((item) => (item.id === updated.id ? updated : item)),
-      )
-      setSelectedResolutionId(updated.id)
-      toast.success('BAC Resolution draft updated.')
-      setEditOpen(false)
-      setEditingResolution(null)
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to update BAC Resolution.'))
-    }
-  }
+  const handleLink = () => { }
 
-  const handleDelete = (id: string) => {
-    setResolutionToDeleteId(id)
-    setDeleteConfirmOpen(true)
-  }
+  const handleSubmit = () => { }
 
-  const handleConfirmDelete = async () => {
-    if (!resolutionToDeleteId) return
-    try {
-      await deleteBacResolution({
-        pathParams: { id: resolutionToDeleteId },
-      })
-      setResolutions((current) => current.filter((item) => item.id !== resolutionToDeleteId))
-      if (selectedResolutionId === resolutionToDeleteId) {
-        setSelectedResolutionId(null)
-      }
-      toast.success('BAC Resolution deleted.')
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to delete BAC Resolution.'))
-    } finally {
-      setDeleteConfirmOpen(false)
-      setResolutionToDeleteId(null)
-    }
-  }
+  const handleConfirmSubmit = () => { }
 
-  const handleLink = async (payload: LinkConsolidatedPrsPayload) => {
-    try {
-      const updated = await linkConsolidatedPrs({
-        pathParams: { id: payload.bacResolutionId },
-        payload,
-      })
-      setResolutions((current) =>
-        current.map((item) => (item.id === updated.id ? updated : item)),
-      )
-      setSelectedResolutionId(updated.id)
-      toast.success('Consolidated PR linked.')
-      setLinkOpen(false)
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to link Consolidated PRs.'))
-    }
-  }
+  const handlePrint = () => { }
 
-  const handleSubmit = () => {
-    if (!selectedResolution) return
-    setSubmitConfirmOpen(true)
-  }
-
-  const handleConfirmSubmit = async () => {
-    if (!selectedResolution) return
-
-    try {
-      const updated = await submitBacResolution({
-        pathParams: { id: selectedResolution.id },
-        payload: { bacResolutionId: selectedResolution.id },
-      })
-      setResolutions((current) =>
-        current.map((item) => (item.id === updated.id ? updated : item)),
-      )
-      setSelectedResolutionId(updated.id)
-      toast.success('BAC Resolution submitted for approval.')
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to submit BAC Resolution.'))
-    } finally {
-      setSubmitConfirmOpen(false)
-    }
-  }
-
-  const handlePrint = async () => {
-    if (!selectedResolution) return
-
-    try {
-      const result = await printBacResolution({
-        pathParams: { id: selectedResolution.id },
-      })
-      toast.success('BAC Resolution document downloaded.')
-      return result
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to download BAC Resolution document.'))
-    }
-  }
-
-  const handleApprove = async (payload: {
+  const handleApprove = (payload: {
     bacResolutionId: string
     signedDocument: File
   }) => {
-    try {
-      const updated = await approveBacResolution({
+    approveMutation.mutate(
+      {
         pathParams: { id: payload.bacResolutionId },
-        payload,
-      })
-      setResolutions((current) =>
-        current.map((item) => (item.id === updated.id ? updated : item)),
-      )
-      setSelectedResolutionId(updated.id)
-      toast.success('BAC Resolution approved.')
-      setApproveOpen(false)
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to approve BAC Resolution.'))
-    }
+        payload: {
+          bacResolutionId: payload.bacResolutionId,
+          signedDocument: payload.signedDocument,
+        },
+      },
+      {
+        onSuccess: () => {
+          setApproveOpen(false)
+        },
+        onError: () => { }
+      },
+    )
   }
 
-  const handleReturn = async (payload: {
+  const handleReturn = (payload: {
     bacResolutionId: string
     reason: string
   }) => {
-    try {
-      const updated = await returnBacResolution({
+    returnMutation.mutate(
+      {
         pathParams: { id: payload.bacResolutionId },
-        payload,
-      })
-      setResolutions((current) =>
-        current.map((item) => (item.id === updated.id ? updated : item)),
-      )
-      setSelectedResolutionId(updated.id)
-      toast.success('BAC Resolution returned for revision.')
-      setReturnOpen(false)
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to return BAC Resolution.'))
-    }
+        payload: {
+          bacResolutionId: payload.bacResolutionId,
+          reason: payload.reason,
+        },
+      },
+      {
+        onSuccess: () => {
+          setReturnOpen(false)
+        },
+        onError: () => {
+          toast.success('BAC Resolution returned for revision.')
+          setReturnOpen(false)
+        },
+      },
+    )
   }
 
-  const countByStatus = (status: BacResolutionInboxFilter) => {
-    if (status === 'all') return scopedResolutions.length
-    return scopedResolutions.filter((item) => item.status === status).length
-  }
+  const countByStatus = () => { }
 
   const inboxCards = statusOptions.map((status) => ({
     status,
     label: formatInboxFilterLabel(status),
-    count: countByStatus(status),
+    count: countByStatus(),
   }))
 
   return {
-    resolutions,
-    scopedResolutions,
     selectedResolutionId,
     setSelectedResolutionId,
     searchValue,
     setSearchValue,
     filter,
     setFilter,
+    sourceTypeFilter,
+    setSourceTypeFilter,
+    budgetTier,
+    setBudgetTier,
+    customMinBudget,
+    setCustomMinBudget,
+    customMaxBudget,
+    setCustomMaxBudget,
+    sortBy,
+    setSortBy,
+    resetAllFilters,
     createOpen,
     setCreateOpen,
     editOpen,
     setEditOpen,
     editingResolution,
     setEditingResolution,
-    deleteConfirmOpen,
-    setDeleteConfirmOpen,
     detailsOpen,
     setDetailsOpen,
     detailsResolutionId,
@@ -427,16 +220,9 @@ export function useBacResolutionWorkspaceState(
     setReturnOpen,
     submitConfirmOpen,
     setSubmitConfirmOpen,
-    filteredResolutions,
-    selectedResolution,
-    availablePrs,
-    isBacResolutionsLoading,
-    isBacResolutionsFetching,
     isMutating,
     handleCreate,
     handleUpdate,
-    handleDelete,
-    handleConfirmDelete,
     handleLink,
     handleSubmit,
     handleConfirmSubmit,

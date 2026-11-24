@@ -1,4 +1,6 @@
 export { getCategoryColumns as CategoryColumn } from './CategoryColumn'
+export { getSupplierCategoryColumns as SupplierCategoryColumn } from './SupplierCategoryColumn'
 export { getUNSPSCodeColumns as UNSPSCodeColumn } from './UNSPSCodeColumn'
 export { CategoryToolbar } from './CategoryToolbar'
-export { UNSPSCodeToolbar } from './UNSPSCodeToolbar'
+export { SupplierCategoryToolbar } from './SupplierCategoryToolbar'
+export { UNSPSCodeToolbar } from './UNSPSCodeToolbar'

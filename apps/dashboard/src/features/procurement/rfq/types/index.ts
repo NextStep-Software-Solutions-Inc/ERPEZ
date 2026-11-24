@@ -60,6 +60,10 @@ export type RFQ = {
   deadline?: string
   deliveryPeriod?: string
   modeOfProcurement?: string
+  modeOfProcurementId?: string
+  modeOfProcurementName?: string
+  consolidatedPRId?: string
+  consolidatedPRNumber?: string
   suppliers: Array<Supplier>
   items: Array<RFQItem>
   status: 'draft' | 'submitted' | 'returned' | 'approved'
@@ -75,6 +79,17 @@ export type RFQ = {
   quotationApprovalStatus?: 'Approved' | 'Returned' | 'Pending' | string
   quotationApprovalAt?: string
   quotationApprovalRemarks?: string
+  // Signatory & commercial verification terms
+  quotationSubmissionType?: 'Electronic' | 'Manual' | string
+  submissionType?: 'Electronic' | 'Manual' | string
+  signatoryName?: string
+  supplierSignatoryName?: string
+  signatureUrl?: string
+  quotationDocumentUrl?: string
+  quotationDocumentName?: string
+  paymentTerms?: string
+  warrantyTerms?: string
+  dateSigned?: string
 }
 
 export type RFQSummary = {
@@ -149,6 +164,11 @@ export type ConsolidatedPRItem = {
   unitPrice?: number
   unitCost?: number
   totalAmount?: number
+  procurementModeId?: string
   procurementModeName?: string
+  hasBACResolution?: boolean
+  bacResolutionStatus?: string
+  bacResolutionNumber?: string
+  bacResolutionId?: string
   [key: string]: any
 }

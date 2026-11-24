@@ -1,9 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import BiddingDocumentLibraryPage from '@/pages/planning/settings/bidding-document-library/BiddingDocumentLibraryPage'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 const searchSchema = z.object({
-  tab: z.enum(['SystemAdmin', 'BACSecretariat']).catch('SystemAdmin'),
+  tab: z
+    .enum(['SystemAdmin', 'BACSecretariat'])
+    .catch('SystemAdmin'),
 })
 
 export const Route = createFileRoute('/v2/bidding-document-library')({
@@ -12,5 +16,12 @@ export const Route = createFileRoute('/v2/bidding-document-library')({
 })
 
 function RouteComponent() {
-  return <BiddingDocumentLibraryPage />
+  return (
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Procurement.BiddingDocuments.View}
+      message="You do not have permission to access the Bidding Document Library."
+    >
+      <BiddingDocumentLibraryPage />
+    </RoutePermissionGuard>
+  )
 }

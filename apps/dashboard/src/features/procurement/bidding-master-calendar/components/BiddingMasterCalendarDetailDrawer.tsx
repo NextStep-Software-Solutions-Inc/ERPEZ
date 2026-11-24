@@ -1,6 +1,5 @@
-﻿import { format, parseISO } from 'date-fns'
 import { MASTER_CALENDAR_PROJECT_OVERRIDES } from '../data/mockBiddingMasterCalendarData'
-import { PROCUREMENT_CATEGORY_LABELS } from '../../bidding-schedule/data/mockBiddingScheduleData'
+import { PROCUREMENT_CATEGORY_LABELS } from '../../bidding-schedule/types'
 import { getStatusLabel, getStatusTone } from '../utils/statusUtils'
 import {
   DrawerAllProjectsTab,
@@ -10,6 +9,7 @@ import {
   DrawerMilestonesTab,
   DrawerNotificationsTab,
   DrawerProjectDetailTab,
+  safeFormatDate,
 } from './BiddingMasterCalendarDetailDrawerPanels'
 import type { BacResolution } from '../../bac-resolution/types'
 import type { BiddingSchedule } from '../../bidding-schedule/types'
@@ -85,13 +85,6 @@ export function BiddingMasterCalendarDetailDrawer({
     ? MASTER_CALENDAR_PROJECT_OVERRIDES[selectedResolution.id]
     : undefined
   const auditEntries = [
-    ...(selectedResolution?.activityLog.map((entry) => ({
-      id: entry.id,
-      label: entry.action,
-      actor: entry.actor,
-      timestamp: entry.timestamp,
-      note: entry.note ?? null,
-    })) ?? []),
     ...(selectedSchedule?.milestones
       .flatMap((milestone) =>
         milestone.editHistory.map((entry, index) => ({
@@ -129,7 +122,7 @@ export function BiddingMasterCalendarDetailDrawer({
               </SheetTitle>
               <SheetDescription>
                 {selectedResolution
-                  ? `${selectedResolution.bacResolutionNumber} • ${format(parseISO(selectedResolution.resolutionDate), 'MMM d, yyyy')}`
+                  ? `${selectedResolution.resolutionNumber ?? selectedResolution.id} • ${safeFormatDate(selectedResolution.dateResolved)}`
                   : 'Select a project from the calendar to inspect its schedule context.'}
               </SheetDescription>
             </div>
@@ -153,7 +146,7 @@ export function BiddingMasterCalendarDetailDrawer({
         </SheetHeader>
 
         <div className="px-6 py-5">
-          {!selectedResolution || !selectedSchedule || !selectedEvent ? (
+          {!selectedEvent ? (
             <Card className="border border-dashed border-default-300 shadow-sm">
               <CardContent className="py-12 text-center text-sm text-muted-foreground">
                 Select a calendar item to open project detail, milestones,

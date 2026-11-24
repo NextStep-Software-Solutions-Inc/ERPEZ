@@ -1,114 +1,390 @@
-import { Printer, Download, CheckCircle, FileText } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns'
+import { CheckCircle, Download, FileText, Printer } from 'lucide-react'
+import { toast } from 'sonner'
+import type { BiddingAwardRecommendationResponse } from '../types/bidEvaluationApi.types'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { BacResolutionDraft } from '../types';
+} from '@/components/ui/dialog'
 
 interface BacResolutionModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  draft?: BacResolutionDraft;
+  isOpen: boolean
+  onClose: () => void
+  projectName?: string
+  abc?: number
+  awardRecommendation?: BiddingAwardRecommendationResponse | null
+  draft?: {
+    resolutionNumber: string
+    projectName: string
+    abc: number
+    winningSupplier: string
+    lcrbAmount: number
+    draftedAt: string
+  }
 }
 
-export function BacResolutionModal({ isOpen, onClose, draft }: BacResolutionModalProps) {
-  const { toast } = useToast();
+export function BacResolutionModal({
+  isOpen,
+  onClose,
+  projectName = 'Procurement Project',
+  abc = 0,
+  awardRecommendation,
+  draft,
+}: BacResolutionModalProps) {
+  const resolutionNumber =
+    awardRecommendation?.resolutionNumber ||
+    draft?.resolutionNumber ||
+    'BAC-RES-2026-002'
 
-  if (!draft) return null;
+  const winningSupplier =
+    awardRecommendation?.winningSupplierName ||
+    draft?.winningSupplier ||
+    'Techstart Inc.'
+
+  const awardedAmount = awardRecommendation?.awardedAmount ?? draft?.lcrbAmount ?? 0
+  const effectiveProjectName = projectName || draft?.projectName || 'Procurement Project'
+  const effectiveAbc = abc || draft?.abc || 0
+  const dateResolved = awardRecommendation?.recommendedAt || draft?.draftedAt || new Date().toISOString()
+  const awardCriterion =
+    awardRecommendation?.awardCriterion === 'MEARB'
+      ? 'Most Economically Advantageous Responsive Bid (MEARB)'
+      : 'Lowest Calculated Responsive Bid (LCRB)'
 
   const formatDate = (isoString: string) => {
     try {
-      return format(parseISO(isoString), 'MMMM dd, yyyy');
+      return format(parseISO(isoString), 'MMMM dd, yyyy')
     } catch {
-      return isoString;
+      return isoString
     }
-  };
+  }
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP',
+    }).format(val)
+  }
 
   const handlePrint = () => {
-    const printContent = document.getElementById('bac-resolution-document');
-    if (!printContent) return;
+    const winPrint = window.open('', '', 'left=0,top=0,width=850,height=950,toolbar=0,scrollbars=0,status=0')
+    if (!winPrint) return
 
-    const winPrint = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
-    if (!winPrint) return;
+    const formattedAbc = formatCurrency(effectiveAbc)
+    const formattedAmount = formatCurrency(awardedAmount)
+    const formattedDate = formatDate(dateResolved)
 
     winPrint.document.write(`
+      <!DOCTYPE html>
       <html>
         <head>
-          <title>Print BAC Resolution</title>
+          <title>BAC Resolution No. ${resolutionNumber}</title>
           <style>
-            body { font-family: 'Times New Roman', serif; padding: 40px; line-height: 1.5; color: #000; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .title { font-weight: bold; font-size: 16px; text-transform: uppercase; margin-bottom: 20px; text-align: center; }
-            .content { text-align: justify; margin-bottom: 20px; font-size: 14px; }
-            .table-container { margin: 20px 0; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th, td { border: 1px solid black; padding: 8px; text-align: left; font-size: 13px; }
-            th { background-color: #f2f2f2; }
-            .signatures { margin-top: 50px; display: flex; justify-content: space-between; }
-            .sig-block { text-align: center; width: 45%; }
-            .line { border-top: 1px solid black; margin-top: 40px; margin-bottom: 5px; }
+            @page {
+              size: letter portrait;
+              margin: 20mm 18mm 20mm 18mm;
+            }
+            * {
+              box-sizing: border-box;
+            }
+            body {
+              font-family: 'Times New Roman', Times, serif;
+              font-size: 11pt;
+              line-height: 1.55;
+              color: #000;
+              margin: 0;
+              padding: 10px;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 20px;
+              border-bottom: 2px solid #000;
+              padding-bottom: 10px;
+            }
+            .rep-title {
+              font-family: Arial, Helvetica, sans-serif;
+              font-size: 10pt;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              margin: 0 0 3px 0;
+              color: #333;
+            }
+            .bac-heading {
+              font-family: Arial, Helvetica, sans-serif;
+              font-size: 14pt;
+              font-weight: bold;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin: 0 0 3px 0;
+              color: #0f4c81;
+            }
+            .office-sub {
+              font-family: Arial, Helvetica, sans-serif;
+              font-size: 9pt;
+              color: #555;
+              margin: 0;
+            }
+            .res-num-box {
+              text-align: center;
+              margin: 18px 0 12px 0;
+              font-family: Arial, Helvetica, sans-serif;
+            }
+            .res-no {
+              font-size: 12pt;
+              font-weight: 800;
+              text-transform: uppercase;
+              margin: 0;
+            }
+            .series-no {
+              font-size: 9.5pt;
+              font-style: italic;
+              color: #555;
+              margin: 2px 0 0 0;
+            }
+            .subject-box {
+              text-align: center;
+              font-family: Arial, Helvetica, sans-serif;
+              font-weight: bold;
+              font-size: 10.5pt;
+              text-transform: uppercase;
+              margin: 16px auto 20px auto;
+              padding: 8px 14px;
+              border-top: 1px dashed #666;
+              border-bottom: 1px dashed #666;
+              max-width: 90%;
+              line-height: 1.4;
+            }
+            .clauses {
+              text-align: justify;
+              text-justify: inter-word;
+            }
+            .whereas-clause {
+              text-indent: 2.5em;
+              margin-bottom: 12px;
+              line-height: 1.6;
+            }
+            .resolved-section {
+              margin-top: 16px;
+              margin-bottom: 14px;
+            }
+            .resolved-lead {
+              text-indent: 2.5em;
+              margin-bottom: 8px;
+            }
+            .resolved-list {
+              margin: 6px 0 12px 0;
+              padding-left: 3em;
+            }
+            .resolved-list li {
+              margin-bottom: 8px;
+              line-height: 1.5;
+            }
+            .resolved-date {
+              text-align: right;
+              font-style: italic;
+              font-size: 10pt;
+              margin: 20px 0 30px 0;
+            }
+            .signatories-container {
+              page-break-inside: avoid;
+              break-inside: avoid;
+              margin-top: 25px;
+            }
+            .sig-label {
+              font-family: Arial, Helvetica, sans-serif;
+              font-size: 9.5pt;
+              font-weight: bold;
+              text-transform: uppercase;
+              color: #444;
+              margin-bottom: 15px;
+            }
+            .sig-table {
+              width: 100%;
+              border-collapse: separate;
+              border-spacing: 30px 25px;
+              margin: 0 auto;
+            }
+            .sig-cell {
+              width: 50%;
+              text-align: center;
+              vertical-align: top;
+            }
+            .sig-name {
+              font-family: Arial, Helvetica, sans-serif;
+              font-size: 10pt;
+              font-weight: bold;
+              text-transform: uppercase;
+              border-bottom: 1.5px solid #000;
+              padding-bottom: 4px;
+              margin: 0 auto;
+              display: inline-block;
+              min-width: 220px;
+            }
+            .sig-title {
+              font-family: Arial, Helvetica, sans-serif;
+              font-size: 8.5pt;
+              color: #555;
+              margin-top: 3px;
+            }
+            .hope-container {
+              page-break-inside: avoid;
+              break-inside: avoid;
+              margin-top: 25px;
+              padding-top: 15px;
+              border-top: 1px solid #ddd;
+            }
+            .hope-box {
+              margin-top: 25px;
+              text-align: left;
+              max-width: 260px;
+            }
           </style>
         </head>
         <body>
-          ${printContent.innerHTML}
+          <div class="header">
+            <div class="rep-title">Republic of the Philippines</div>
+            <div class="bac-heading">BIDS AND AWARDS COMMITTEE</div>
+            <div class="office-sub">Procurement & Secretariat Services Office</div>
+          </div>
+
+          <div class="res-num-box">
+            <div class="res-no">BAC RESOLUTION NO. ${resolutionNumber}</div>
+            <div class="series-no">Series of 2026</div>
+          </div>
+
+          <div class="subject-box">
+            RESOLUTION RECOMMENDING AWARD OF CONTRACT TO "${winningSupplier}" FOR "${effectiveProjectName}"
+          </div>
+
+          <div class="clauses">
+            <p class="whereas-clause">
+              <strong>WHEREAS</strong>, the Bids and Awards Committee (BAC) advertised the Invitation to Bid for the project
+              <em>"${effectiveProjectName}"</em> with an Approved Budget for the Contract (ABC) of
+              <strong>${formattedAbc}</strong>, and posted the same in PhilGEPS, the agency website, and conspicuous places within the agency premises;
+            </p>
+            <p class="whereas-clause">
+              <strong>WHEREAS</strong>, in response to the said advertisements, eligible suppliers submitted technical and financial bids which were subsequently opened and evaluated in accordance with the prescribed procurement guidelines;
+            </p>
+            <p class="whereas-clause">
+              <strong>WHEREAS</strong>, upon detailed arithmetic evaluation and ranking of bids,
+              <strong>${winningSupplier}</strong> was determined to have submitted the calculated responsive bid with an evaluated contract amount of
+              <strong>${formattedAmount}</strong>;
+            </p>
+            <p class="whereas-clause">
+              <strong>WHEREAS</strong>, the BAC Technical Working Group (TWG) conducted a comprehensive post-qualification review, thoroughly verifying all original statutory eligibility documents, technical specifications, and past project performance;
+            </p>
+            <p class="whereas-clause">
+              <strong>WHEREAS</strong>, <strong>${winningSupplier}</strong> passed all verification criteria and satisfied all requirements set forth in the Bidding Documents, thereby establishing its bid as the
+              <strong>${awardCriterion}</strong>;
+            </p>
+          </div>
+
+          <div class="resolved-section">
+            <p class="resolved-lead">
+              <strong>NOW, THEREFORE</strong>, We, the Members of the Bids and Awards Committee, hereby
+              <strong>RESOLVE</strong> as it is hereby <strong>RESOLVED</strong>:
+            </p>
+            <ol type="a" class="resolved-list">
+              <li>
+                To declare <strong>${winningSupplier}</strong> as the winning supplier for the contract
+                <em>"${effectiveProjectName}"</em>; and
+              </li>
+              <li>
+                To recommend to the Head of the Procuring Entity (HoPE) the approval of the award of contract to
+                <strong>${winningSupplier}</strong> at its calculated responsive contract price of
+                <strong>${formattedAmount}</strong>.
+              </li>
+            </ol>
+          </div>
+
+          <div class="resolved-date">
+            RESOLVED, at the BAC Secretariat Office, this ${formattedDate}.
+          </div>
+
+          <div class="signatories-container">
+            <div class="sig-label">THE BIDS AND AWARDS COMMITTEE:</div>
+            <table class="sig-table">
+              <tr>
+                <td class="sig-cell">
+                  <div class="sig-name">ATTY. CARLOS J. VILLAROMAN</div>
+                  <div class="sig-title">BAC Chairperson</div>
+                </td>
+                <td class="sig-cell">
+                  <div class="sig-name">ENGRI. MARIA ELENA L. CRUZ</div>
+                  <div class="sig-title">BAC Vice-Chairperson</div>
+                </td>
+              </tr>
+              <tr>
+                <td class="sig-cell">
+                  <div class="sig-name">MR. DOMINADOR A. SANTOS</div>
+                  <div class="sig-title">BAC Regular Member</div>
+                </td>
+                <td class="sig-cell">
+                  <div class="sig-name">MS. LOURDES M. REYES</div>
+                  <div class="sig-title">BAC Provisional Member</div>
+                </td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="hope-container">
+            <div class="sig-label">APPROVED BY:</div>
+            <div class="hope-box">
+              <div class="sig-name">HON. GREGORIO F. ALCANTARA</div>
+              <div class="sig-title">Head of the Procuring Entity (HoPE)</div>
+            </div>
+          </div>
+
           <script>
             window.onload = function() {
               window.print();
               window.close();
-            }
+            };
           </script>
         </body>
       </html>
-    `);
-    winPrint.document.close();
-    winPrint.focus();
+    `)
+    winPrint.document.close()
+    winPrint.focus()
 
-    toast({
-      title: 'Sent to print queue',
-      description: 'Opening browser print dialogue for BAC Resolution.',
-    });
-  };
+    toast.info('Opening browser print dialogue for BAC Resolution.')
+  }
 
   const handleDownload = () => {
-    // FE Mock download
     const documentText = `
 BIDS AND AWARDS COMMITTEE (BAC)
-RESOLUTION NO. ${draft.resolutionNumber}
+RESOLUTION NO. ${resolutionNumber}
 
 RESOLUTION RECOMMENDING AWARD OF CONTRACT FOR:
-"${draft.projectName}"
+"${effectiveProjectName}"
 
-WHEREAS, the Approved Budget for the Contract (ABC) is PHP ${draft.abc.toLocaleString('en-US', { minimumFractionDigits: 2 })};
-WHEREAS, after eligibility check, technical, and financial evaluation, the supplier ${draft.winningSupplier} was declared as the Lowest Calculated Responsive Bid (LCRB) with a bid amount of PHP ${draft.lcrbAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })};
-WHEREAS, the BAC Secretariat and TWG successfully completed the dual post-qualification verification timeline checking all original statutory documents;
+WHEREAS, the Approved Budget for the Contract (ABC) is PHP ${effectiveAbc.toLocaleString('en-US', { minimumFractionDigits: 2 })};
+WHEREAS, after eligibility check, technical, and financial evaluation, the supplier ${winningSupplier} was declared as the ${awardCriterion} with an evaluated bid amount of PHP ${awardedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })};
+WHEREAS, the BAC Secretariat and TWG successfully completed the post-qualification verification checking all original statutory documents;
 WHEREAS, the bidder has successfully passed all post-qualification metrics without disqualification;
 
 NOW, THEREFORE, We, the members of the Bids and Awards Committee, hereby RESOLVE, as it is hereby RESOLVED:
-a) To declare ${draft.winningSupplier} as the winning bidder for ${draft.projectName};
-b) To recommend to the Head of the Procuring Entity (HoPE) the award of the contract to ${draft.winningSupplier} at its calculated responsive bid price of PHP ${draft.lcrbAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}.
+a) To declare ${winningSupplier} as the winning bidder for ${effectiveProjectName};
+b) To recommend to the Head of the Procuring Entity (HoPE) the award of the contract to ${winningSupplier} at its calculated responsive bid price of PHP ${awardedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}.
 
-RESOLVED, at the BAC Secretariat Office on ${formatDate(draft.draftedAt)}.
-    `;
+RESOLVED, at the BAC Secretariat Office on ${formatDate(dateResolved)}.
+    `
 
-    const blob = new Blob([documentText], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `BAC_Resolution_${draft.resolutionNumber}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const blob = new Blob([documentText], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `BAC_Resolution_${resolutionNumber}.txt`
+    link.click()
+    URL.revokeObjectURL(url)
 
-    toast({
-      title: 'Draft Downloaded',
-      description: 'The BAC Resolution text draft was downloaded successfully.',
-    });
-  };
+    toast.success('The BAC Resolution text draft was downloaded successfully.')
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -116,7 +392,7 @@ RESOLVED, at the BAC Secretariat Office on ${formatDate(draft.draftedAt)}.
         <DialogHeader>
           <div className="flex items-center gap-2 text-primary">
             <CheckCircle className="h-6 w-6 text-success" />
-            <DialogTitle className="text-xl font-bold">Recommend for Award & Draft BAC Resolution</DialogTitle>
+            <DialogTitle className="text-xl font-bold">Official BAC Award Resolution Preview</DialogTitle>
           </div>
         </DialogHeader>
 
@@ -133,36 +409,36 @@ RESOLVED, at the BAC Secretariat Office on ${formatDate(draft.draftedAt)}.
 
             {/* Title / Resolution Number */}
             <div className="text-center font-sans pt-2">
-              <h4 className="font-extrabold text-base uppercase text-gray-900">BAC RESOLUTION NO. {draft.resolutionNumber}</h4>
+              <h4 className="font-extrabold text-base uppercase text-gray-900">BAC RESOLUTION NO. {resolutionNumber}</h4>
               <p className="text-xs text-gray-600 font-medium italic">Series of 2026</p>
             </div>
 
             {/* Title Header text */}
             <div className="text-center font-bold text-sm tracking-normal uppercase max-w-[550px] mx-auto px-4 py-2 border-y border-dashed border-gray-300">
-              RESOLUTION RECOMMENDING AWARD OF CONTRACT TO "{draft.winningSupplier}" FOR "${draft.projectName}"
+              RESOLUTION RECOMMENDING AWARD OF CONTRACT TO "{winningSupplier}" FOR "{effectiveProjectName}"
             </div>
 
             {/* Whereas clauses */}
             <div className="space-y-4 text-justify font-serif text-[13px] indent-8">
               <p>
                 <strong>WHEREAS</strong>, the Bids and Awards Committee (BAC) advertised the Invitation to Bid for the project 
-                <em> "{draft.projectName}"</em> with an Approved Budget for the Contract (ABC) of 
-                <strong> PHP {draft.abc.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>, and posted the same in PhilGEPS, the agency website, and conspicuous places;
+                <em> "{effectiveProjectName}"</em> with an Approved Budget for the Contract (ABC) of 
+                <strong> {formatCurrency(effectiveAbc)}</strong>, and posted the same in PhilGEPS, the agency website, and conspicuous places;
               </p>
               <p>
                 <strong>WHEREAS</strong>, in response to the said advertisements, eligible suppliers submitted bids which were subsequently opened and calculated;
               </p>
               <p>
                 <strong>WHEREAS</strong>, upon evaluation and sorting of eligibility, 
-                <strong> {draft.winningSupplier}</strong> was identified as having the Lowest Calculated Bid (LCB) with a bid amount of 
-                <strong> PHP {draft.lcrbAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>;
+                <strong> {winningSupplier}</strong> was identified as having the calculated responsive bid with an evaluated amount of 
+                <strong> {formatCurrency(awardedAmount)}</strong>;
               </p>
               <p>
                 <strong>WHEREAS</strong>, the BAC Technical Working Group (TWG) conducted a meticulous post-qualification review and validated all submitted licenses, tax clearance certificates, and performance records;
               </p>
               <p>
                 <strong>WHEREAS</strong>, the bidder passed all verification criteria, meeting all requirements and conditions prescribed in the bidding documents, thereby establishing the bid as the 
-                <strong> Lowest Calculated Responsive Bid (LCRB)</strong>;
+                <strong> {awardCriterion}</strong>;
               </p>
             </div>
 
@@ -175,20 +451,20 @@ RESOLVED, at the BAC Secretariat Office on ${formatDate(draft.draftedAt)}.
               </p>
               <ol className="list-[lower-alpha] pl-8 space-y-2 indent-0 font-medium">
                 <li>
-                  To declare <strong>{draft.winningSupplier}</strong> as the winning supplier for the contract 
-                  <em> "{draft.projectName}"</em>; and
+                  To declare <strong>{winningSupplier}</strong> as the winning supplier for the contract 
+                  <em> "{effectiveProjectName}"</em>; and
                 </li>
                 <li>
                   To recommend to the Head of the Procuring Entity (HoPE) the approval of award of the contract to 
-                  <strong> {draft.winningSupplier}</strong> at its calculated contract price of 
-                  <strong> PHP {draft.lcrbAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>.
+                  <strong> {winningSupplier}</strong> at its calculated contract price of 
+                  <strong> {formatCurrency(awardedAmount)}</strong>.
                 </li>
               </ol>
             </div>
 
             {/* Date and Location */}
             <p className="text-right text-[12px] font-sans italic pt-4">
-              RESOLVED, at the BAC Secretariat Office, {formatDate(draft.draftedAt)}.
+              RESOLVED, at the BAC Secretariat Office, {formatDate(dateResolved)}.
             </p>
 
             {/* Signature Block */}
@@ -234,10 +510,10 @@ RESOLVED, at the BAC Secretariat Office on ${formatDate(draft.draftedAt)}.
             <Printer className="h-4 w-4" /> Print Resolution
           </Button>
           <Button className="gap-2" onClick={onClose}>
-            <FileText className="h-4 w-4" /> Finalize Resolution
+            <FileText className="h-4 w-4" /> Close Preview
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

@@ -78,7 +78,10 @@ export function MarketScopingOverview({
   statusSummary,
   className,
 }: MarketScopingOverviewProps) {
-  const totalBudget = forms.reduce((sum, form) => sum + (form.estimatedBudget || 0), 0)
+  const totalBudget = forms.reduce(
+    (sum, form) => sum + (form.estimatedBudget || 0),
+    0,
+  )
   const approvedBudget = forms
     .filter((f) => f.status === 'Approved')
     .reduce((sum, form) => sum + (form.estimatedBudget || 0), 0)

@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ResponsiveDialog } from '@/components/ResponsiveDialog'
@@ -18,10 +18,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { CalendarIcon, Eye, FileText, Tag, Package } from 'lucide-react'
+import { CalendarIcon, Eye, FileText, Tag, Package, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
-import { usePurchaseOrderStore } from '../data/purchaseOrderStore'
-import type { ApprovedAob } from '../types'
+import { toast } from 'sonner'
+import { useGetAobsAvailableForPO, useCreatePurchaseOrder, uploadPoDocument } from '../handlers'
+import type { AvailableAob } from '../types'
 import {
   purchaseOrderFormSchema,
   type PurchaseOrderFormValues,
@@ -40,30 +41,30 @@ export function CreateSvpPurchaseOrderDialog({
   open,
   onOpenChange,
 }: CreateSvpPurchaseOrderDialogProps) {
-  const createDraft = usePurchaseOrderStore((state) => state.createDraft)
-  const linkAob = usePurchaseOrderStore((state) => state.linkAob)
-  const approvedAobs = usePurchaseOrderStore((state) => state.approvedAobs)
+  const { data: availableAobs = [], isLoading: isLoadingAobs } = useGetAobsAvailableForPO()
+  const createMutation = useCreatePurchaseOrder()
 
   const [selectedAobId, setSelectedAobId] = useState<string | null>(null)
-  const [viewingAob, setViewingAob] = useState<ApprovedAob | null>(null)
+  const [viewingAob, setViewingAob] = useState<AvailableAob | null>(null)
   const [aobSearch, setAobSearch] = useState('')
   const [isAobDropdownOpen, setIsAobDropdownOpen] = useState(false)
   const [isDateOpen, setIsDateOpen] = useState(false)
   const [isDeliveryDateOpen, setIsDeliveryDateOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const selectedAob = useMemo(
-    () => approvedAobs.find((aob) => aob.id === selectedAobId),
-    [approvedAobs, selectedAobId],
+    () => availableAobs.find((aob) => aob.id === selectedAobId),
+    [availableAobs, selectedAobId],
   )
 
   const filteredAobs = useMemo(() => {
-    return approvedAobs.filter((aob) =>
-      [aob.aobNumber, aob.description ?? '', aob.winningSupplier]
+    return availableAobs.filter((aob) =>
+      [aob.aobNumber, aob.description ?? '', aob.winningSupplierName]
         .join(' ')
         .toLowerCase()
         .includes(aobSearch.toLowerCase()),
     )
-  }, [approvedAobs, aobSearch])
+  }, [availableAobs, aobSearch])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(purchaseOrderFormSchema),
@@ -84,30 +85,53 @@ export function CreateSvpPurchaseOrderDialog({
   const watchDeliveryTerm = form.watch('deliveryTerm')
   const watchPaymentTerm = form.watch('paymentTerm')
 
-  const handleSubmit = (data: FormValues) => {
-    const deliveryTerm = data.deliveryTerm === 'Others' ? (data.deliveryTermCustom?.trim() ?? '') : data.deliveryTerm
-    const paymentTerm = data.paymentTerm === 'Others' ? (data.paymentTermCustom?.trim() ?? '') : data.paymentTerm
-
-    const purchaseOrder = createDraft({
-      source: 'svp',
-      poNumber: data.poNumber,
-      description: data.description ?? '',
-      date: data.date ? format(data.date, 'yyyy-MM-dd') : '',
-      placeOfDelivery: data.placeOfDelivery,
-      dateOfDelivery: data.dateOfDelivery ? format(data.dateOfDelivery, 'yyyy-MM-dd') : '',
-      deliveryTerm: deliveryTerm || data.deliveryTerm,
-      paymentTerm: paymentTerm || data.paymentTerm,
-      bidSupportingDocument: data.bidSupportingDocument,
-    })
-
-    if (selectedAob) {
-      linkAob({ purchaseOrderId: purchaseOrder.id, aobId: selectedAob.id })
+  const handleSubmit = async (data: FormValues) => {
+    if (!selectedAobId || !selectedAob) {
+      toast.error('Please select an approved Abstract of Bids (AOB).')
+      return
     }
 
-    form.reset()
-    setSelectedAobId(null)
-    setAobSearch('')
-    onOpenChange(false)
+    try {
+      setIsSubmitting(true)
+      let supportingDocumentUrl: string | undefined = undefined
+      if (data.bidSupportingDocument instanceof File) {
+        supportingDocumentUrl = await uploadPoDocument(data.bidSupportingDocument)
+      }
+
+      const deliveryTerm =
+        data.deliveryTerm === 'Others'
+          ? (data.deliveryTermCustom?.trim() ?? '')
+          : data.deliveryTerm
+      const paymentTerm =
+        data.paymentTerm === 'Others'
+          ? (data.paymentTermCustom?.trim() ?? '')
+          : data.paymentTerm
+
+      await createMutation.mutateAsync({
+        poNumber: data.poNumber,
+        procurementMode: 'SVP',
+        sourceDocumentType: 'AOB',
+        sourceDocumentId: selectedAobId,
+        supplierId: selectedAob.winningSupplierId,
+        description: data.description ?? '',
+        date: data.date ? format(data.date, 'yyyy-MM-dd') : '',
+        placeOfDelivery: data.placeOfDelivery,
+        dateOfDelivery: data.dateOfDelivery ? format(data.dateOfDelivery, 'yyyy-MM-dd') : '',
+        deliveryTerm: deliveryTerm || data.deliveryTerm,
+        paymentTerm: paymentTerm || data.paymentTerm,
+        supportingDocumentUrl,
+      })
+
+      toast.success('SVP Purchase Order created successfully!')
+      form.reset()
+      setSelectedAobId(null)
+      setAobSearch('')
+      onOpenChange(false)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to create SVP Purchase Order.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -327,7 +351,9 @@ export function CreateSvpPurchaseOrderDialog({
                 {/* AOB — inline dropdown with search + View per row */}
                 <div>
                   <FormLabel>Abstract of Bids (AOB)</FormLabel>
-                  <p className="text-xs text-muted-foreground mt-1 mb-2">Select the approved AOB to auto-fill the winning supplier and awarded items.</p>
+                  <p className="text-xs text-muted-foreground mt-1 mb-2">
+                    Select the approved AOB to auto-fill the winning supplier and awarded items.
+                  </p>
 
                   <div className="relative">
                     <button
@@ -337,34 +363,25 @@ export function CreateSvpPurchaseOrderDialog({
                       aria-controls="aob-dropdown-list"
                       aria-label="Select approved AOB"
                       onClick={() => setIsAobDropdownOpen((o) => !o)}
-                      onKeyDown={(e) => {
-                        // Open + focus search when pressing Enter / Space / ArrowDown
-                        if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          if (!isAobDropdownOpen) {
-                            setIsAobDropdownOpen(true)
-                            // focus the internal search input (if present) after open
-                            setTimeout(() => {
-                              const input = document.querySelector<HTMLInputElement>('#aob-dropdown-list input')
-                              input?.focus()
-                            }, 0)
-                          } else {
-                            // if already open, try to focus the first row
-                            setTimeout(() => {
-                              const first = document.querySelector<HTMLElement>('#aob-dropdown-list [data-aob-row]')
-                              first?.focus()
-                            }, 0)
-                          }
-                        } else if (e.key === 'Escape') {
-                          setIsAobDropdownOpen(false)
-                        }
-                      }}
                       className="flex h-10 w-full items-center justify-between rounded-md border border-gray-200 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                     >
-                      <span className={selectedAob ? 'text-foreground' : 'text-muted-foreground'}>
-                        {selectedAob ? `${selectedAob.aobNumber} · ${selectedAob.winningSupplier}` : 'Select AOB'}
+                      <span className={selectedAob ? 'text-foreground font-medium' : 'text-muted-foreground'}>
+                        {selectedAob
+                          ? `${selectedAob.aobNumber} · ${selectedAob.winningSupplierName}`
+                          : isLoadingAobs
+                            ? 'Loading available AOBs...'
+                            : 'Select AOB'}
                       </span>
-                      <svg className={`h-4 w-4 text-muted-foreground transition-transform ${isAobDropdownOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
+                      <svg
+                        className={`h-4 w-4 text-muted-foreground transition-transform ${isAobDropdownOpen ? 'rotate-180' : ''}`}
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
                     </button>
 
                     {isAobDropdownOpen && (
@@ -383,17 +400,20 @@ export function CreateSvpPurchaseOrderDialog({
                             filteredAobs.map((aob) => (
                               <div
                                 key={aob.id}
-                                onClick={() => { setSelectedAobId(aob.id); setIsAobDropdownOpen(false) }}
+                                onClick={() => {
+                                  setSelectedAobId(aob.id)
+                                  setIsAobDropdownOpen(false)
+                                }}
                                 className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/50 ${selectedAobId === aob.id ? 'bg-primary/10' : ''}`}
                               >
                                 <div className="flex-1 min-w-0">
                                   <div className="text-sm font-medium">{aob.aobNumber}</div>
                                   <div className="text-xs text-muted-foreground truncate">
-                                    {aob.winningSupplier}{aob.category ? ` · ${aob.category}` : ''}
+                                    {aob.winningSupplierName}
                                   </div>
                                 </div>
                                 <div className="text-sm font-medium shrink-0">
-                                  ₱{aob.totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                  ₱{aob.totalAwardedAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                                 </div>
                                 <Button
                                   type="button"
@@ -411,17 +431,32 @@ export function CreateSvpPurchaseOrderDialog({
                               </div>
                             ))
                           ) : (
-                            <p className="px-3 py-4 text-sm text-muted-foreground text-center">No approved AOBs found.</p>
+                            <p className="px-3 py-4 text-sm text-muted-foreground text-center">
+                              {isLoadingAobs ? 'Loading available AOBs...' : 'No approved AOBs available for PO.'}
+                            </p>
                           )}
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {selectedAobId && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Selected: <span className="font-medium text-foreground">{selectedAob?.aobNumber} · {selectedAob?.winningSupplier}</span>
-                    </p>
+                  {selectedAob && (
+                    <div className="mt-3 p-3 rounded-lg border bg-muted/30 space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">Winning Supplier:</span>
+                        <span className="font-semibold text-foreground">{selectedAob.winningSupplierName}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">Awarded Total:</span>
+                        <span className="font-semibold text-primary">
+                          ₱{selectedAob.totalAwardedAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">Items to auto-fill:</span>
+                        <span className="font-medium text-foreground">{selectedAob.awardedItems?.length ?? 0} item(s)</span>
+                      </div>
+                    </div>
                   )}
                 </div>
 
@@ -430,11 +465,18 @@ export function CreateSvpPurchaseOrderDialog({
 
             {/* Sticky footer */}
             <div className="flex justify-end gap-3 pt-4 border-t mt-4 bg-background shrink-0">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" form="create-svp-po-form">
-                Create Draft
+              <Button type="submit" form="create-svp-po-form" disabled={isSubmitting || !selectedAobId}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Draft'
+                )}
               </Button>
             </div>
           </div>
@@ -458,22 +500,6 @@ export function CreateSvpPurchaseOrderDialog({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Tag className="h-4 w-4" />
-                    Category
-                  </div>
-                  <div className="font-medium">{viewingAob.category || '—'}</div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Month
-                  </div>
-                  <div className="font-medium">{viewingAob.month || '—'}</div>
-                </div>
-
                 <div className="space-y-1 md:col-span-2">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <FileText className="h-4 w-4" />
@@ -487,7 +513,7 @@ export function CreateSvpPurchaseOrderDialog({
                     <Tag className="h-4 w-4" />
                     Winning Supplier
                   </div>
-                  <div className="font-medium">{viewingAob.winningSupplier || '—'}</div>
+                  <div className="font-medium">{viewingAob.winningSupplierName || '—'}</div>
                 </div>
 
                 <div className="space-y-1">
@@ -496,7 +522,7 @@ export function CreateSvpPurchaseOrderDialog({
                     Total Amount
                   </div>
                   <div className="font-semibold text-primary">
-                    ₱{viewingAob.totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                    ₱{viewingAob.totalAwardedAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
@@ -511,13 +537,13 @@ export function CreateSvpPurchaseOrderDialog({
                     {viewingAob.awardedItems.map((item) => (
                       <div key={item.id} className="flex items-start justify-between gap-4 rounded-md border p-3">
                         <div className="flex-1">
-                          <div className="text-sm font-medium">{item.description}</div>
+                          <div className="text-sm font-medium">{item.itemName}</div>
                           <div className="text-xs text-muted-foreground mt-0.5">
                             {item.quantity} {item.unit} × ₱{item.unitPrice.toLocaleString('en-PH')}
                           </div>
                         </div>
                         <div className="text-sm font-semibold shrink-0">
-                          ₱{item.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                          ₱{item.totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                         </div>
                       </div>
                     ))}
@@ -531,4 +557,3 @@ export function CreateSvpPurchaseOrderDialog({
     </>
   )
 }
-

@@ -4,8 +4,6 @@
  * Validates that source APP meets SPMS prerequisites for APR creation
  */
 
-import type { AppMaster } from '@/features/planning/app-consolidation/types'
-
 export type APPValidationErrorCode =
   | 'APP_NOT_FOUND'
   | 'APP_NOT_APPROVED'
@@ -23,7 +21,7 @@ export interface APPValidationError {
  * Validate APP status for APR creation
  * SPMS Compliance: APR can only be created from APPROVED APPs
  */
-export function validateAPPForAPRCreation(app: AppMaster | null): APPValidationError | null {
+export function validateAPPForAPRCreation(app: any | null): APPValidationError | null {
   if (!app) {
     return {
       code: 'APP_NOT_FOUND',
@@ -32,13 +30,11 @@ export function validateAPPForAPRCreation(app: AppMaster | null): APPValidationE
     }
   }
 
-  switch (app.status) {
-    case 'approved':
-      // ✅ APP is approved - allow APR creation
-      return null
+  const status = (app.status || '').toLowerCase()
 
+  switch (status) {
+    case 'approved':
     case 'published':
-      // ✅ Published APPs are also valid for APR creation
       return null
 
     case 'draft':
@@ -48,7 +44,10 @@ export function validateAPPForAPRCreation(app: AppMaster | null): APPValidationE
         isBlocker: true,
       }
 
+    case 'forapproval':
+    case 'pending_review':
     case 'pending-review':
+    case 'submitted':
       return {
         code: 'APP_PENDING_REVIEW',
         message: 'The selected APP is pending review. APP must be APPROVED before creating an APR.',
@@ -73,13 +72,13 @@ export function validateLineItemsSelection(
 ): APPValidationError | null {
   if (selectedCount === 0) {
     return {
-      code: 'APP_NOT_APPROVED', // Repurposed for this context
+      code: 'APP_NOT_APPROVED',
       message: 'Please select at least one line item from the APP.',
       isBlocker: true,
     }
   }
 
-  if (selectedCount > totalCount) {
+  if (totalCount > 0 && selectedCount > totalCount) {
     return {
       code: 'APP_NOT_APPROVED',
       message: 'Invalid line items selection. Please try again.',

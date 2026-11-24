@@ -18,19 +18,16 @@ import type { NoticeOfAward, NoticeOfAwardRole } from '../types'
 import { downloadNoticeOfAwardBlob } from '../utils/downloadNoticeOfAwardBlob'
 import { NoticeOfAwardDetailsShell } from '../components/NoticeOfAwardDetailsShell'
 import {
-  uploadedNoaFilesMap,
-  uploadedMilestoneFilesMap,
-} from '../data/mockNoticeOfAwardData'
-import { getNoaMilestoneDate } from '../utils/noaContractExecutionSla'
-import {
   ApproveNoticeOfAwardDialog,
+  LogConformeDialog,
   ReturnNoticeOfAwardDialog,
 } from '../dialogs'
 
-type NoticeOfAwardDetailsPageProps = {
-  noaId: string
-  role: NoticeOfAwardRole
-  backTo: string
+const isGuid = (id?: string | null): boolean => {
+  return (
+    typeof id === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  )
 }
 
 export function NoticeOfAwardDetailsPage({
@@ -44,8 +41,15 @@ export function NoticeOfAwardDetailsPage({
   const [isMutating, setIsMutating] = useState(false)
   const [returnOpen, setReturnOpen] = useState(false)
   const [approveOpen, setApproveOpen] = useState(false)
+  const [logConformeOpen, setLogConformeOpen] = useState(false)
 
   const loadNoticeOfAward = async () => {
+    if (!isGuid(noaId)) {
+      setIsLoading(false)
+      setLoadError(`'${noaId}' is not a valid Notice of Award ID.`)
+      return
+    }
+
     setIsLoading(true)
     setLoadError(null)
     try {
@@ -55,7 +59,6 @@ export function NoticeOfAwardDetailsPage({
       const message =
         error instanceof Error ? error.message : 'Failed to load the NOA.'
       setLoadError(message)
-      toast.error(message)
     } finally {
       setIsLoading(false)
     }
@@ -111,7 +114,7 @@ export function NoticeOfAwardDetailsPage({
     <PageContainerDashtail
       title={noticeOfAward.noaNumber}
       description={noticeOfAward.description}
-      headerVariant="branded"
+      headerVariant="default"
       headerSize="large"
       actions={
         <div className="flex flex-wrap items-center gap-2">
@@ -129,14 +132,6 @@ export function NoticeOfAwardDetailsPage({
         onViewSignedDocument={
           noticeOfAward.signedDocumentFileName
             ? async () => {
-                const storedFile = uploadedNoaFilesMap.get(noticeOfAward.id)
-                if (storedFile) {
-                  const url = URL.createObjectURL(storedFile)
-                  window.open(url, '_blank')
-                  return
-                }
-
-                // Fallback for seeded data
                 setIsMutating(true)
                 try {
                   const result = await printNoticeOfAwardRequest.fetcher({
@@ -157,15 +152,6 @@ export function NoticeOfAwardDetailsPage({
             : undefined
         }
         onViewMilestoneFile={async (milestone, fileName) => {
-          const key = `${noticeOfAward.id}-${milestone}`
-          const storedFile = uploadedMilestoneFilesMap.get(key)
-          if (storedFile) {
-            const url = URL.createObjectURL(storedFile)
-            window.open(url, '_blank')
-            return
-          }
-
-          // Fallback for seeded data
           setIsMutating(true)
           try {
             const { jsPDF } = await import('jspdf')
@@ -180,7 +166,6 @@ export function NoticeOfAwardDetailsPage({
             doc.text(`Project Name: ${noticeOfAward.projectName}`, 20, 55)
             doc.text(`Winning Supplier: ${noticeOfAward.supplierName}`, 20, 65)
             doc.text(`Milestone: ${milestone.replace(/_/g, ' ').toUpperCase()}`, 20, 75)
-            doc.text(`Date Logged: ${getNoaMilestoneDate(noticeOfAward, milestone) ?? 'N/A'}`, 20, 85)
             const blob = doc.output('blob')
             const url = URL.createObjectURL(blob)
             window.open(url, '_blank')
@@ -215,11 +200,11 @@ export function NoticeOfAwardDetailsPage({
             ? async () => {
                 setIsMutating(true)
                 try {
-                  const updated = await submitNoticeOfAwardRequest.fetcher({
+                  await submitNoticeOfAwardRequest.fetcher({
                     data: { noaId: noticeOfAward.id },
                   })
-                  refreshNoticeOfAward(updated)
                   toast.success('NOA submitted for approval.')
+                  await loadNoticeOfAward()
                 } catch (error) {
                   toast.error(
                     error instanceof Error
@@ -242,22 +227,26 @@ export function NoticeOfAwardDetailsPage({
             ? () => setApproveOpen(true)
             : undefined
         }
+        onOpenLogConforme={
+          role === 'procurement-staff' && noticeOfAward.status === 'approved'
+            ? () => setLogConformeOpen(true)
+            : undefined
+        }
         onLogMilestone={
           noticeOfAward.status === 'approved'
             ? async (milestone, file) => {
                 setIsMutating(true)
                 try {
-                  const updated =
-                    await logNoticeOfAwardMilestoneRequest.fetcher({
-                      data: {
-                        noaId: noticeOfAward.id,
-                        milestone,
-                        date: new Date().toISOString().slice(0, 10),
-                        file,
-                      },
-                    })
-                  refreshNoticeOfAward(updated)
+                  await logNoticeOfAwardMilestoneRequest.fetcher({
+                    data: {
+                      noaId: noticeOfAward.id,
+                      milestone,
+                      date: new Date().toISOString().slice(0, 10),
+                      file,
+                    },
+                  })
                   toast.success('Contract execution milestone logged.')
+                  await loadNoticeOfAward()
                 } catch (error) {
                   toast.error(
                     error instanceof Error
@@ -283,17 +272,16 @@ export function NoticeOfAwardDetailsPage({
 
                 setIsMutating(true)
                 try {
-                  const updated =
-                    await recordNoticeOfAwardExecutionJustificationRequest.fetcher(
-                      {
-                        data: {
-                          noaId: noticeOfAward.id,
-                          justification,
-                        },
+                  await recordNoticeOfAwardExecutionJustificationRequest.fetcher(
+                    {
+                      data: {
+                        noaId: noticeOfAward.id,
+                        justification,
                       },
-                    )
-                  refreshNoticeOfAward(updated)
+                    },
+                  )
                   toast.success('Contract execution justification logged.')
+                  await loadNoticeOfAward()
                 } catch (error) {
                   toast.error(
                     error instanceof Error
@@ -319,15 +307,14 @@ export function NoticeOfAwardDetailsPage({
 
                 setIsMutating(true)
                 try {
-                  const updated =
-                    await triggerNoticeOfAwardCascadeRequest.fetcher({
-                      data: {
-                        noaId: noticeOfAward.id,
-                        note: 'Forfeiture of bid security and promotion of the next-ranked bidder initiated.',
-                      },
-                    })
-                  refreshNoticeOfAward(updated)
+                  await triggerNoticeOfAwardCascadeRequest.fetcher({
+                    data: {
+                      noaId: noticeOfAward.id,
+                      note: 'Forfeiture of bid security and promotion of the next-ranked bidder initiated.',
+                    },
+                  })
                   toast.success('Post-qualification cascade triggered.')
+                  await loadNoticeOfAward()
                 } catch (error) {
                   toast.error(
                     error instanceof Error
@@ -348,15 +335,17 @@ export function NoticeOfAwardDetailsPage({
           onOpenChange={setReturnOpen}
           noaId={noticeOfAward.id}
           noaNumber={noticeOfAward.noaNumber}
+          supplierName={noticeOfAward.supplierName}
+          totalAmount={noticeOfAward.totalAmount}
           onReturn={async (payload) => {
             setIsMutating(true)
             try {
-              const updated = await returnNoticeOfAwardRequest.fetcher({
+              await returnNoticeOfAwardRequest.fetcher({
                 data: payload,
               })
-              refreshNoticeOfAward(updated)
               setReturnOpen(false)
               toast.success('NOA returned for revision.')
+              await loadNoticeOfAward()
             } catch (error) {
               toast.error(
                 error instanceof Error
@@ -376,15 +365,17 @@ export function NoticeOfAwardDetailsPage({
           onOpenChange={setApproveOpen}
           noaId={noticeOfAward.id}
           noaNumber={noticeOfAward.noaNumber}
+          supplierName={noticeOfAward.supplierName}
+          totalAmount={noticeOfAward.totalAmount}
           onApprove={async (payload) => {
             setIsMutating(true)
             try {
-              const updated = await approveNoticeOfAwardRequest.fetcher({
+              await approveNoticeOfAwardRequest.fetcher({
                 data: payload,
               })
-              refreshNoticeOfAward(updated)
               setApproveOpen(false)
-              toast.success('NOA approved / issued. 10-day SLA started.')
+              toast.success('NOA approved and issued successfully.')
+              await loadNoticeOfAward()
             } catch (error) {
               toast.error(
                 error instanceof Error
@@ -397,6 +388,40 @@ export function NoticeOfAwardDetailsPage({
           }}
         />
       ) : null}
+
+      <LogConformeDialog
+        open={logConformeOpen}
+        onOpenChange={setLogConformeOpen}
+        noaId={noticeOfAward.id}
+        noaNumber={noticeOfAward.noaNumber}
+        issuedAt={noticeOfAward.issuedAt}
+        isLoading={isMutating}
+        onConfirm={async ({ date, file, remarks }) => {
+          setIsMutating(true)
+          try {
+            await logNoticeOfAwardMilestoneRequest.fetcher({
+              data: {
+                noaId: noticeOfAward.id,
+                milestone: 'conforme_received_date',
+                date,
+                file: file ?? undefined,
+                remarks,
+              },
+            })
+            toast.success('NOA Receipt / Conforme logged successfully.')
+            await loadNoticeOfAward()
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : 'Failed to record NOA receipt.',
+            )
+            throw error
+          } finally {
+            setIsMutating(false)
+          }
+        }}
+      />
     </PageContainerDashtail>
   )
 }

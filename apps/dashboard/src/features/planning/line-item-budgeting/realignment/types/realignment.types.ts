@@ -16,6 +16,13 @@ export interface BudgetItem {
   q4: number
   total: number
   isDeleted?: boolean
+  detailIds?: string[]
+  quarterDetailIds?: {
+    q1?: string
+    q2?: string
+    q3?: string
+    q4?: string
+  }
 }
 
 export interface ItemOfExpenditure {

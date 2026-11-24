@@ -13,6 +13,7 @@ export interface SupplierOption {
   id: string
   name: string
   tin?: string
+  isRegistered?: boolean
 }
 
 export const SUPPLIER_OPTIONS: SupplierOption[] = [

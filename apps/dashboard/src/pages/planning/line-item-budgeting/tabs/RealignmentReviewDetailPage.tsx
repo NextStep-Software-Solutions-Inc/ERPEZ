@@ -3,8 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowLeft, CheckCircle, XCircle, Loader2, Info, ArrowRight, Activity as ActivityIcon, Layers } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, Loader2, Info, ArrowRight, Activity as ActivityIcon, Layers, FileText, Download, Eye } from 'lucide-react'
 import type { LIBAmendment } from '@/features/planning/line-item-budgeting/line-item-budget/types/type'
+import { useRealignmentPdf, formatModificationReason } from '@/features/planning/line-item-budgeting/realignment'
+import { RealignmentPdfPreviewDialog } from '@/features/planning/line-item-budgeting/realignment/dialogs/RealignmentPdfPreviewDialog'
 import { DraftAmendmentActivityView } from '@/features/planning/line-item-budgeting/realignment/components/DraftAmendmentActivityView'
 import { DraftAmendmentProjectView } from '@/features/planning/line-item-budgeting/realignment/components/DraftAmendmentProjectView'
 import {
@@ -42,6 +44,16 @@ export function RealignmentReviewDetailPage({
   isReturning,
 }: RealignmentReviewDetailPageProps) {
   const { toast } = useToast()
+  const {
+    downloadPdf,
+    previewPdf,
+    previewPdfUrl,
+    previewFileName,
+    isPreviewOpen,
+    setIsPreviewOpen,
+    isPreviewLoading,
+    isGenerating,
+  } = useRealignmentPdf()
   const [draftLib, setDraftLib] = useState<LIBDetails | null>(null)
   const [originalLib, setOriginalLib] = useState<LIBDetails | null>(null)
   const [isLoadingDraft, setIsLoadingDraft] = useState<boolean>(true)
@@ -369,6 +381,33 @@ export function RealignmentReviewDetailPage({
             </p>
           </div>
         </div>
+
+        {/* Realignment Document Actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => previewPdf(amendment.id, amendment.lineItemBudget?.libNumber)}
+            disabled={isGenerating}
+            className="h-8 text-xs font-semibold gap-1.5 shadow-2xs border-slate-300 text-slate-700 hover:bg-slate-50"
+          >
+            <Eye className="w-3.5 h-3.5 text-slate-500" />
+            Preview PDF
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => downloadPdf(amendment.id, amendment.lineItemBudget?.libNumber)}
+            disabled={isGenerating}
+            className="bg-red-600 hover:bg-red-700 text-white h-8 text-xs font-semibold gap-1.5 shadow-sm shadow-red-500/10"
+          >
+            {isGenerating ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <FileText className="w-3.5 h-3.5" />
+            )}
+            Download ISO Document
+          </Button>
+        </div>
       </div>
 
       {/* 2. Justification Summary Box */}
@@ -383,7 +422,7 @@ export function RealignmentReviewDetailPage({
           <div>
             <span className="font-extrabold text-slate-500 uppercase tracking-wide block mb-1">Reason Category</span>
             <Badge variant="outline" className="bg-slate-50 text-slate-700 font-semibold px-2.5 py-0.5">
-              {amendment.reason}
+              {formatModificationReason(amendment.reason)}
             </Badge>
           </div>
           <div>
@@ -528,6 +567,14 @@ export function RealignmentReviewDetailPage({
           </Button>
         </div>
       )}
+
+      <RealignmentPdfPreviewDialog
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        pdfUrl={previewPdfUrl}
+        fileName={previewFileName}
+        isLoading={isPreviewLoading}
+      />
     </div>
   )
 }

@@ -1,10 +1,11 @@
 import { createFileRoute, useSearch, useNavigate } from '@tanstack/react-router'
-import { Suspense, lazy, useState } from 'react'
+import { Suspense, lazy, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { ChevronLeft, ChevronRight, Calendar, AlertCircle, RefreshCw } from 'lucide-react'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 import { PageContainerDashtail } from '@/components/v2'
 import { PolicySidebarLayout } from '@/features/planning/fiscal-year-and-policies/components/layout/PolicySidebarLayout'
 import { Button } from '@/components/ui/button'
@@ -15,13 +16,17 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { usePermissions } from '@/hooks/usePermissions'
+import { AccessDeniedFallback } from '@/components/AccessDeniedFallBack'
 import {
   POLICY_DOMAINS,
-  POLICY_TABS,
   getDomainByTab,
   getTabsByDomain,
+  isTabPermitted,
+  resolveAccessibleTab,
   fiscalYearPoliciesSearchSchema,
   type PolicyDomain,
+  type PermissionChecker,
 } from './_constants'
 
 /**
@@ -30,14 +35,20 @@ import {
 function PolicySubNavigation({
   activeDomain,
   activeTab,
+  checker,
   onNavigate,
 }: {
   activeDomain: PolicyDomain
   activeTab: string
+  checker: PermissionChecker
   onNavigate: any
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const availableSubFeatures = getTabsByDomain(activeDomain)
+  const availableSubFeatures = getTabsByDomain(activeDomain).filter((tab) =>
+    isTabPermitted(tab, checker)
+  )
+
+  if (availableSubFeatures.length === 0) return null
 
   return (
     <TooltipProvider>
@@ -202,28 +213,137 @@ function renderTabContent(activeTab: string) {
 function FiscalYearAndPoliciesPage() {
   const navigate = useNavigate()
   const search = useSearch({ from: '/v2/fiscal-year-and-policies/' })
-  const activeTab = (search.tab as string) || 'fiscal-year-management'
+  const requestedTab = (search.tab as string) || 'fiscal-year-management'
+
+  const {
+    status,
+    isLoading,
+    isError,
+    isLoaded,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    refetch,
+  } = usePermissions()
+
+  const checker: PermissionChecker = {
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+  }
+
+  // Pure deterministic resolution (computed only once loaded)
+  const requestedDomain = getDomainByTab(requestedTab)
+  const { resolvedTab, isDenied } = isLoaded
+    ? resolveAccessibleTab({
+        requestedTab,
+        activeDomain: requestedDomain,
+        checker,
+      })
+    : { resolvedTab: requestedTab, isDenied: false }
+
+  // Unconditional hook call at top level to strictly adhere to React Rules of Hooks
+  useEffect(() => {
+    if (isLoaded && resolvedTab && resolvedTab !== requestedTab && !isDenied) {
+      navigate({
+        to: '/v2/fiscal-year-and-policies',
+        search: (prev) => ({
+          ...prev,
+          tab: resolvedTab,
+        }),
+        replace: true,
+      })
+    }
+  }, [isLoaded, resolvedTab, requestedTab, isDenied, navigate])
+
+  // 1. Gated Loading State: Do NOT render tab content while loading
+  if (status === 'loading' || status === 'idle' || isLoading || !isLoaded) {
+    return (
+      <div className="w-full space-y-6 pb-10">
+        <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+          <CardHeader>
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-64" />
+                <Skeleton className="h-4 w-96" />
+              </div>
+              <Skeleton className="h-8 w-24 rounded-full" />
+            </div>
+          </CardHeader>
+        </Card>
+        <div className="space-y-4 pt-4">
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="h-10 w-48" />
+          </div>
+          <div className="flex items-center justify-center py-20">
+            <Spinner size="lg" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 2. Gated Error State: Fail closed with retry action
+  if (status === 'error' || isError) {
+    return (
+      <div className="w-full space-y-6 pb-10">
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardHeader>
+            <div className="flex items-center gap-3 text-destructive">
+              <AlertCircle className="h-6 w-6" />
+              <div>
+                <CardTitle>Unable to Authorize Policies</CardTitle>
+                <CardDescription className="text-destructive/80">
+                  Could not retrieve your user permissions from the server.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <Button variant="outline" onClick={() => refetch()} className="gap-2">
+              <RefreshCw className="h-4 w-4" /> Retry Authorization
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // 3. Complete denial: 0 accessible tabs across the entire module
+  if (isDenied || !resolvedTab) {
+    return <AccessDeniedFallback />
+  }
+
+  const activeTab = resolvedTab
   const activeDomain = getDomainByTab(activeTab)
+
+  // Filter top domains to only those with at least one permitted sub-tab
+  const availableDomains = POLICY_DOMAINS.filter((domain) =>
+    getTabsByDomain(domain.id).some((tab) => isTabPermitted(tab, checker)),
+  )
 
   /**
    * Handle domain change via Top Tabs
-   * Navigates to the first sub-feature of that domain
+   * Navigates to the first permitted sub-feature of that domain
    */
   const handleDomainChange = (domainId: string) => {
     const domainValue = domainId as PolicyDomain
-    const firstTab = Object.values(POLICY_TABS).find(
-      (tab) => tab.domain === domainValue,
+    const firstPermittedTab = getTabsByDomain(domainValue).find((tab) =>
+      isTabPermitted(tab, checker),
     )?.id
 
-    navigate({
-      to: '/v2/fiscal-year-and-policies',
-      search: (prev) => ({
-        tab: firstTab || 'fiscal-year-management',
-        page: typeof prev.page === 'string' ? Number(prev.page) : prev.page,
-        limit: typeof prev.limit === 'string' ? Number(prev.limit) : prev.limit,
-      }),
-      replace: false,
-    })
+    if (firstPermittedTab) {
+      navigate({
+        to: '/v2/fiscal-year-and-policies',
+        search: (prev) => ({
+          ...prev,
+          tab: firstPermittedTab,
+        }),
+        replace: false,
+      })
+    }
   }
 
   const tabLoadingFallback = (
@@ -257,7 +377,7 @@ function FiscalYearAndPoliciesPage() {
         mode="tabbed"
         activeTab={activeDomain}
         onTabChange={handleDomainChange}
-        tabs={POLICY_DOMAINS.map((domain) => ({
+        tabs={availableDomains.map((domain) => ({
           id: domain.id,
           label: domain.label,
           description: domain.description,
@@ -266,6 +386,7 @@ function FiscalYearAndPoliciesPage() {
           <PolicySubNavigation
             activeDomain={activeDomain}
             activeTab={activeTab}
+            checker={checker}
             onNavigate={navigate}
           />
         }

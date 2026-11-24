@@ -30,11 +30,21 @@ export default function CreateOfficeDialog({
   const queryClient = useQueryClient()
 
   const handleCreateOffice = (data: OfficeFormType) => {
+    const payload = {
+      ...data,
+      organizationId: data.organizationId || null,
+      clusterId: data.clusterId || null,
+      parentId: data.parentId || null,
+      procurementWorkflowId: data.procurementWorkflowId || null,
+      description: data.description || null,
+      responsibilityCenterCode: data.responsibilityCenterCode || null,
+      budgetCostCenter: data.budgetCostCenter || null,
+    }
     toast.promise(
       mutateAsync(
         {
           pathParams: {},
-          payload: data,
+          payload,
         },
         {
           onSuccess: () => {

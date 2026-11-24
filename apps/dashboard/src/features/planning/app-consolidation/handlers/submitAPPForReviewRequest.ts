@@ -1,43 +1,35 @@
 /**
- * Submit APP for Review Request Handler
- * Mutation blueprint for changing APP status from Draft to Submitted
- * Used by BAC Secretariat to submit the APP for HoPE approval
+ * submitAPPForReviewRequest
+ * Submits an APP for review (Draft/Returned → Submitted).
+ * Delegates to changeAPPStatusRequest — kept for backward compatibility.
  */
 
-import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
-import type { AppMaster } from '../types'
+import type { MutationBlueprintFromTemplate, APIResponse } from 'erpez-shared-lib'
+import api from '@/services/api'
 
-const endpoint = '/app-consolidation/:appId/submit-for-review'
+const endpoint = '/apps/:appId/status' as const
 
 interface SubmitAPPPayload {
   appId: string
-  submittedAt: string
-  submittedBy: string
-  remarks?: string
+}
+
+interface SubmitAPPResult {
+  id: string
+  status: string
 }
 
 export const submitAPPForReviewRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
-  AppMaster,
+  SubmitAPPResult,
   undefined,
   SubmitAPPPayload
 > = {
   endpoint,
-  fetcher: async ({ payload }) => {
-    // TODO: Replace with real API call when backend is ready
-    // const response = await api.post(finalUrl, payload)
-    // return response.data
-    
+  fetcher: async ({ finalUrl, payload }) => {
     if (!payload) throw new Error('Payload is required')
-    
-    // Mock implementation
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    
-    return {
-      status: 'submitted',
-      submittedAt: payload.submittedAt,
-      submittedBy: payload.submittedBy,
-      updatedAt: payload.submittedAt,
-    } as any
+    const response = await api.patch<APIResponse<SubmitAPPResult>>(finalUrl, {
+      status: 'Submitted',
+    })
+    return response.data.data
   },
 }

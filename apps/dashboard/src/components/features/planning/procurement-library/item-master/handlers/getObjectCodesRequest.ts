@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   APIResponse,
   QueryBlueprintFromTemplate,
   QueryKey,
@@ -16,7 +16,7 @@ export const getObjectCodesRequest: QueryBlueprintFromTemplate<
   QueryKey
 > = {
   endpoint,
-  key: ({ url }) => [url],
+  key: ({ url, queryParams }) => [url, queryParams],
   fetcher: async ({ finalUrl, signal }) => {
     const response = await api.get<APIResponse<Array<ObjectCodeLookup>>>(
       finalUrl,

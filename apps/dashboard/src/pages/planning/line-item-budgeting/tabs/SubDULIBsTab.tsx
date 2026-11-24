@@ -41,6 +41,7 @@ import {
   Search, X, MoreVertical, Eye, CheckCircle2, Circle,
   AlertCircle, Clock, XCircle
 } from 'lucide-react'
+import { formatCurrencyPHP } from '@/utils/formatters'
 
 export interface SubDULIB {
   id: string
@@ -496,7 +497,7 @@ export function SubDULIBsTab() {
                     <div className="space-y-1">
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Amount</p>
                       <p className="text-lg font-bold text-gray-900">
-                        ₱{(lib.totalAmount / 1000).toFixed(0)}K
+                        {formatCurrencyPHP(lib.totalAmount)}
                       </p>
                     </div>
                     <div className="space-y-1">
@@ -628,7 +629,7 @@ export function SubDULIBsTab() {
                     Total Amount
                   </p>
                   <p className="text-lg font-bold text-gray-900">
-                    ₱{(viewingLib.totalAmount / 1000).toFixed(0)}K
+                    {formatCurrencyPHP(viewingLib.totalAmount)}
                   </p>
                 </div>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -690,7 +691,7 @@ export function SubDULIBsTab() {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm font-semibold text-gray-900">{selectedLib?.libNumber}</p>
             <p className="text-sm text-gray-600 mt-1">
-              Total Amount: ₱{selectedLib ? (selectedLib.totalAmount / 1000).toFixed(0) : 0}K
+              Total Amount: {formatCurrencyPHP(selectedLib?.totalAmount)}
             </p>
           </div>
           <div className="flex gap-3 justify-end">

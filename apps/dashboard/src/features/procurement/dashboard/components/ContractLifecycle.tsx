@@ -1,13 +1,13 @@
+import { FileCheck } from 'lucide-react'
+import type { ContractItem, ContractStatus } from '../types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { FileCheck } from 'lucide-react'
-import type { ContractItem, ContractStatus } from '../types'
 import { cn } from '@/lib/utils'
 import { formatCurrencyAbbr } from '@/utils/formatters'
 
 interface Props {
-  contracts: ContractItem[]
+  contracts: Array<ContractItem>
   isLoading?: boolean
 }
 

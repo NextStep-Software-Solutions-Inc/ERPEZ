@@ -1,0 +1,95 @@
+using System.Linq.Expressions;
+using ERPEZ.Shared.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+
+namespace ERPEZ.Shared.Persistence;
+
+/// <summary>
+/// Extension methods for ModelBuilder to configure common entity conventions.
+/// </summary>
+public static class ModelBuilderExtensions
+{
+    private static readonly ValueConverter<DateTime, DateTime> utcDateTimeConverter =
+        new(v => v.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(v, DateTimeKind.Utc) : v.ToUniversalTime(),
+            v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+    private static readonly ValueConverter<DateTime?, DateTime?> utcNullableDateTimeConverter =
+        new(v => v.HasValue ? (v.Value.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v.Value.ToUniversalTime()) : v,
+            v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
+
+    /// <summary>
+    /// Configures all entities with: primary keys (Guid with gen_random_uuid), 
+    /// schema based on namespace, enum conversions, UTC datetime conversions, and soft delete query filters.
+    /// </summary>
+    public static ModelBuilder ConfigureDefaultEntityConventions(this ModelBuilder modelBuilder)
+    {
+        // Set default schema for this context
+        modelBuilder.HasDefaultSchema("public");
+        
+        foreach (var entity in modelBuilder.Model.GetEntityTypes())
+        {
+            var idProperty = entity.FindProperty("Id");
+
+            // Configure primary keys for entities without explicit keys
+            if (idProperty != null && entity.FindPrimaryKey() == null)
+            {
+                if (idProperty.ClrType == typeof(Guid))
+                {
+                    idProperty.SetDefaultValueSql("gen_random_uuid()");
+                }
+                entity.SetPrimaryKey(idProperty);
+                idProperty.ValueGenerated = Microsoft.EntityFrameworkCore.Metadata.ValueGenerated.OnAdd;
+            }
+
+            // Configure schema for entities based on their subdirectory (automatic detection)
+            if (entity.ClrType.Namespace != null)
+            {
+                var namespaceParts = entity.ClrType.Namespace.Split('.');
+                var entitiesIndex = Array.IndexOf(namespaceParts, "Entities");
+
+                if (entitiesIndex >= 0 && entitiesIndex < namespaceParts.Length - 1)
+                {
+                    var schemaName = namespaceParts[entitiesIndex + 1].ToLowerInvariant();
+                    entity.SetSchema(schemaName);
+                }
+            }
+
+            // Configure enum properties to use string conversion
+            foreach (var property in entity.GetProperties().Where(p => p.ClrType.IsEnum))
+            {
+                modelBuilder.Entity(entity.ClrType)
+                    .Property(property.Name)
+                    .HasConversion<string>();
+            }
+
+            // Configure DateTime properties to ensure UTC kind for PostgreSQL timestamptz
+            foreach (var property in entity.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTime))
+                {
+                    property.SetValueConverter(utcDateTimeConverter);
+                }
+                else if (property.ClrType == typeof(DateTime?))
+                {
+                    property.SetValueConverter(utcNullableDateTimeConverter);
+                }
+            }
+
+            // Apply soft delete query filter for entities with IsDeleted property (duck-typing)
+            // This supports both ISoftDeleteEntity implementations and entities with the property directly
+            var isDeletedProperty = entity.FindProperty("IsDeleted");
+            if (isDeletedProperty != null)
+            {
+                var parameter = Expression.Parameter(entity.ClrType, "e");
+                var property = Expression.Property(parameter, "IsDeleted");
+                var notDeleted = Expression.Not(property);
+                var lambda = Expression.Lambda(notDeleted, parameter);
+                entity.SetQueryFilter(lambda);
+            }
+            
+        }
+
+        return modelBuilder;
+    }
+}

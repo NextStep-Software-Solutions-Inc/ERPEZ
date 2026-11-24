@@ -390,6 +390,17 @@ export const MODIFICATION_REASONS = [
   'AdditionalRequirements',
 ]
 
+export const MODIFICATION_REASON_LABELS: Record<string, string> = {
+  UnforeseenModification: 'Unforeseen Modification',
+  Reassessment: 'Reassessment',
+  AdditionalRequirements: 'Additional Requirements',
+}
+
+export const formatModificationReason = (reason?: string | null): string => {
+  if (!reason) return ''
+  return MODIFICATION_REASON_LABELS[reason] || reason.replace(/([a-z])([A-Z])/g, '$1 $2')
+}
+
 // ===== DEFAULT ITEM-OF-EXPENDITURE LOOKUP =====
 
 export const MOCK_IOE: Record<'PS' | 'MOOE' | 'CO', string[]> = {

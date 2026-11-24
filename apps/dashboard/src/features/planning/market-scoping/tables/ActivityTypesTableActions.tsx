@@ -40,10 +40,7 @@ export function ActivityTypesTableActions({
         <DropdownMenuContent align="end" className="w-40">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={onEdit}
-            className="cursor-pointer"
-          >
+          <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
             <Edit2 className="mr-2 h-4 w-4" />
             Edit
           </DropdownMenuItem>

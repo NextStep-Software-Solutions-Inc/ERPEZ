@@ -28,7 +28,8 @@ interface SelectWinnerDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   bidMatrix: BidMatrix
-  onConfirm: (selections: Record<string, string>) => void
+  onConfirm?: (selections: Record<string, string>) => void
+  readOnly?: boolean
 }
 
 function formatCurrency(amount: number | null | undefined): string {
@@ -47,9 +48,10 @@ interface LineItemRowProps {
   selectedId: string | null
   onSelect: (supplierId: string) => void
   onViewDetails: (bid: SupplierBid) => void
+  readOnly?: boolean
 }
 
-function LineItemRow({ item, selectedId, onSelect, onViewDetails }: LineItemRowProps) {
+function LineItemRow({ item, selectedId, onSelect, onViewDetails, readOnly }: LineItemRowProps) {
   const bids = item.lineItems ?? []
   const responsiveBids = bids.filter((b) => b.unitBid != null)
   const lowestBidId = useMemo(() => getLowestBidId(responsiveBids), [responsiveBids])
@@ -88,11 +90,14 @@ function LineItemRow({ item, selectedId, onSelect, onViewDetails }: LineItemRowP
               <button
                 key={bid.supplierId}
                 type="button"
-                onClick={() => onSelect(bid.supplierId)}
+                disabled={readOnly}
+                onClick={() => !readOnly && onSelect(bid.supplierId)}
                 className={`w-full text-left rounded-lg border p-3 transition-colors ${
                   isSelected
                     ? 'border-yellow-400 bg-yellow-50 ring-1 ring-yellow-400'
-                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                    : readOnly
+                      ? 'border-gray-200 bg-white opacity-70 cursor-default'
+                      : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -156,6 +161,7 @@ export function SelectWinnerDialog({
   onOpenChange,
   bidMatrix,
   onConfirm,
+  readOnly = false,
 }: SelectWinnerDialogProps) {
   const lineItems = bidMatrix.lineItems ?? []
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
@@ -180,6 +186,7 @@ export function SelectWinnerDialog({
   const hasUnsavedChanges = JSON.stringify(selections) !== JSON.stringify(initialSelections)
 
   const handleSelect = (lineItemId: string, supplierId: string) => {
+    if (readOnly) return
     setSelections((prev) => ({ ...prev, [lineItemId]: supplierId }))
   }
 
@@ -191,12 +198,12 @@ export function SelectWinnerDialog({
   }
 
   const handleConfirm = () => {
-    onConfirm(selections)
+    onConfirm?.(selections)
     onOpenChange(false)
   }
 
   const handleClose = () => {
-    if (hasUnsavedChanges) {
+    if (!readOnly && hasUnsavedChanges) {
       setShowUnsavedDialog(true)
     } else {
       onOpenChange(false)
@@ -221,43 +228,56 @@ export function SelectWinnerDialog({
 
           handleClose()
         }}
-        title="Select Winners"
-        description={`Choose the winning supplier for each line item (${selectedCount}/${totalItems} selected)`}
+        title={readOnly ? 'Award Decisions by Line Item' : 'Select Winners'}
+        description={
+          readOnly
+            ? `Review the winning supplier evaluated for each line item (${selectedCount}/${totalItems} awarded)`
+            : `Choose the winning supplier for each line item (${selectedCount}/${totalItems} selected)`
+        }
         size="lg"
         showCloseButton
         footer={
-          <div className="flex items-center justify-between w-full gap-3">
-            <div className="text-sm text-gray-500">
-              {allSelected ? (
-                <span className="flex items-center gap-1 text-green-600">
-                  <CheckCircle className="w-4 h-4" />
-                  All items have a winner selected
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 text-amber-600">
-                  <AlertCircle className="w-4 h-4" />
-                  {totalItems - selectedCount} item{totalItems - selectedCount !== 1 ? 's' : ''} pending
-                </span>
-              )}
+          readOnly ? (
+            <div className="flex items-center justify-between w-full gap-3">
+              <div className="text-xs text-gray-500">
+                This AOB is approved. Line item award decisions are finalized and locked.
+              </div>
+              <Button onClick={() => onOpenChange(false)}>Close</Button>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleConfirm}
-                disabled={selectedCount === 0}
-                className="gap-2"
-              >
-                <Trophy className="w-4 h-4" />
-                Confirm Winners
-              </Button>
+          ) : (
+            <div className="flex items-center justify-between w-full gap-3">
+              <div className="text-sm text-gray-500">
+                {allSelected ? (
+                  <span className="flex items-center gap-1 text-green-600">
+                    <CheckCircle className="w-4 h-4" />
+                    All items have a winner selected
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-amber-600">
+                    <AlertCircle className="w-4 h-4" />
+                    {totalItems - selectedCount} item{totalItems - selectedCount !== 1 ? 's' : ''} pending
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirm}
+                  disabled={selectedCount === 0}
+                  className="gap-2"
+                >
+                  <Trophy className="w-4 h-4" />
+                  Confirm Winners
+                </Button>
+              </div>
             </div>
-          </div>
+          )
         }
       >
         <div className="space-y-5 py-2">
-          {!allSelected && (
+          {!readOnly && !allSelected && (
             <Alert className="border-amber-200 bg-amber-50">
               <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-800 text-sm">
@@ -273,6 +293,7 @@ export function SelectWinnerDialog({
                 selectedId={selections[item.id] ?? null}
                 onSelect={(supplierId) => handleSelect(item.id, supplierId)}
                 onViewDetails={handleViewDetails}
+                readOnly={readOnly}
               />
               {idx < lineItems.length - 1 && <Separator className="mt-5" />}
             </div>

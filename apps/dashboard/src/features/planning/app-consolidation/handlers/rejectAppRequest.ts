@@ -1,59 +1,37 @@
-import type {
-  MutationBlueprintFromTemplate,
-} from 'erpez-shared-lib'
-import type { AppMaster } from '../types'
+/**
+ * rejectAppRequest
+ * Returns an APP to Draft (Submitted → Returned) with an optional reason.
+ * Delegates to the real PATCH /apps/{id}/status endpoint.
+ */
 
-const endpoint = '/apps/:appId/reject' as const
+import type { MutationBlueprintFromTemplate, APIResponse } from 'erpez-shared-lib'
+import api from '@/services/api'
+
+const endpoint = '/apps/:appId/status' as const
 
 interface RejectAppPayload {
   appId: string
   reason: string
 }
 
-/**
- * Reject APP for approval
- * Transitions from Submitted → Draft state with rejection reason
- * Only HoPE can reject
- * Returns APP to Draft status for BAC_SECRETARIAT to revise
- */
+interface RejectAppResult {
+  id: string
+  status: string
+}
+
 export const rejectAppRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
-  AppMaster,
+  RejectAppResult,
   undefined,
   RejectAppPayload
 > = {
   endpoint,
-  fetcher: async ({ finalUrl: _finalUrl, payload }) => {
-    // TODO: Replace with real API call when backend is ready
-    // const response = await api.post<APIResponse<AppMaster>>(_finalUrl, payload)
-    // return response.data.data
-
-    // MOCK DATA
-    return {
-      id: payload!.appId,
-      ppmpIds: [],
-      fiscalYear: 2024,
-      appName: 'APP 2024',
-      appCode: 'APP-2024-001',
-      appNumber: 'APP-2024-001',
-      appType: 'Indicative',
-      status: 'Draft' as const,
-      aggregationResults: { items: [], totalAmount: 0 },
-      bac: {
-        id: '',
-        appId: payload!.appId,
-        lineItems: [],
-        sourceFunds: [],
-        totalBudget: 0,
-        modeOfProcurements: [],
-      },
-      signatories: {},
-      rejectionReason: payload!.reason,
-      rejectedAt: new Date().toISOString(),
-      rejectedBy: 'hope-user-id',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      createdBy: 'current-user-id',
-    } as AppMaster
+  fetcher: async ({ finalUrl, payload }) => {
+    if (!payload) throw new Error('Payload is required')
+    const response = await api.patch<APIResponse<RejectAppResult>>(finalUrl, {
+      status: 'Returned',
+      remarks: payload.reason,
+    })
+    return response.data.data
   },
 }

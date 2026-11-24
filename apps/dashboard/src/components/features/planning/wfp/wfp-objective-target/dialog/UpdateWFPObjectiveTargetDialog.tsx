@@ -16,8 +16,9 @@ import { updateWFPObjectiveTargetRequest } from '../handlers/updateWFPObjectiveT
 import { getWFPObjectiveTargetRequest } from '../handlers/getWFPObjectiveTargetRequest'
 import UpdateWFPObjectiveTargetForm from '../form/UpdateWFPObjectiveTargetForm'
 import type { UpdateWFPObjectiveTargetValues } from '../form/UpdateWFPObjectiveTargetForm'
-import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
+import { ResponsiveDialog } from '@/components/ResponsiveDialog'
+import { extractErrorMessage } from '@/services/utils/messages'
 
 export const hasUnsavedUpdateFormAtom = atom(false)
 
@@ -42,6 +43,14 @@ export default function UpdateWFPObjectiveTargetDialog() {
 
   const wfpObjectiveTargetData = wfpObjectiveTargetResponse?.data
 
+  const existingTimelines = wfpObjectiveTargetData?.wfpObjectiveTimelines || []
+  const initialDates = existingTimelines.map((t: any) => ({
+    timelineType: t.timelineType || 'Quarterly',
+    startDate: t.startDate,
+    endDate: t.endDate,
+    value: t.targetValue || 0,
+  }))
+
   useEffect(() => {
     if (wfpObjectiveTargetData) {
       setFormData({
@@ -49,39 +58,34 @@ export default function UpdateWFPObjectiveTargetDialog() {
         activityName: wfpObjectiveTargetData.activityName,
         indicator: wfpObjectiveTargetData.indicator,
         weight: wfpObjectiveTargetData.weight,
+        dates: initialDates,
       })
     }
   }, [wfpObjectiveTargetData, setFormData])
 
   const handleUpdate = async (data: UpdateWFPObjectiveTargetValues) => {
     const { wfpObjectiveId, ...payload } = data
-    toast.promise(
-      mutateAsync(
-        {
-          pathParams: { id: selectedId },
-          payload,
-        },
-        {
-          onSuccess: () => {
-            void queryClient.invalidateQueries({
-              predicate: (query) => query.queryKey.some(key => 
-                typeof key === 'string' && (
-                  key.includes('/wfp-objective-activities') || 
-                  key.includes('/wfp-objectives')
-                )
-              ),
-            })
-            closeDialog(true)
-            setHasUnsavedChanges(false)
-          },
-        },
-      ),
-      {
-        loading: 'Updating Activity...',
-        success: 'Activity updated successfully!',
-        error: 'Failed to update Activity.',
-      },
-    )
+    const toastId = toast.loading('Updating Activity...')
+    try {
+      await mutateAsync({
+        pathParams: { id: selectedId },
+        payload,
+      })
+      void queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey.some(key => 
+          typeof key === 'string' && (
+            key.includes('/wfp-objective-activities') || 
+            key.includes('/wfp-objectives') ||
+            key.includes('/wfps')
+          )
+        ),
+      })
+      toast.success('Activity updated successfully!', { id: toastId })
+      closeDialog(true)
+      setHasUnsavedChanges(false)
+    } catch {
+      toast.dismiss(toastId)
+    }
   }
 
   const handleClose = () => {
@@ -136,9 +140,11 @@ export default function UpdateWFPObjectiveTargetDialog() {
               indicator: formData.indicator,
               activityName: formData.activityName,
               weight: formData.weight,
+              dates: initialDates,
               ...formData,
             }}
             wfpObjectiveId={wfpObjectiveTargetData?.wfpObjective?.id || ''}
+            wfpData={wfpObjectiveTargetData?.wfpObjective?.wfp || (wfpObjectiveTargetData as any)?.wfp}
           />
         )}
       </ResponsiveDialog>

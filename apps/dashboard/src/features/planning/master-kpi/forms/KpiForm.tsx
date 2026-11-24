@@ -425,13 +425,13 @@ export function KpiForm({
                 <div className="space-y-1">
                   <LabelWithInfo
                     label="Target Distribution Behavior"
-                    tooltip="Determines how targets are aggregated or distributed across time periods (e.g., Summative vs. Uniform)."
+                    tooltip="Controls how quarterly targets relate to the annual target: Summation (sum of quarters = annual), Uniform (each quarter = annual), Milestone (pass/fail markers), Maximum (ceiling cap), or Minimum (floor threshold)."
                   />
                   <DistributionBehaviorSelect
                     value={field.state.value ?? null}
                     onChange={field.handleChange}
                     disabled={isLoading}
-                    showDescription={false}
+                    showDescription={true}
                   />
                   <FieldInfo field={field} showErrors={submitAttempted} />
                 </div>

@@ -7,6 +7,8 @@
 
 import { createFileRoute } from '@tanstack/react-router'
 import ManageParametersPage from '@/pages/planning/market-scoping/ManageParametersPage'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 export const Route = createFileRoute(
   '/v2/(planning)/market-scoping/manage/parameters'
@@ -15,5 +17,12 @@ export const Route = createFileRoute(
 })
 
 function RouteComponent() {
-  return <ManageParametersPage />
+  return (
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Planning.MarketScoping.Manage}
+      message="You do not have permission to manage Market Scoping evaluation parameters."
+    >
+      <ManageParametersPage />
+    </RoutePermissionGuard>
+  )
 }

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * CatalogItemForm
  * Shared TanStack Form component used by both CreateItemDialog and EditItemDialog.
  * Validates with Zod via safeParse on submit.
@@ -24,7 +24,6 @@ import { toast } from 'sonner'
 import {
   CATALOG_UOM_OPTIONS,
   PROCUREMENT_CATEGORY_OPTIONS,
-  CATALOG_ITEM_STATUS_OPTIONS,
 } from '../types/catalog.types'
 import {
   catalogItemFormSchema,
@@ -65,7 +64,6 @@ export function CatalogItemForm({
       unspscCode: defaultValues?.unspscCode ?? '',
       isCSE: defaultValues?.isCSE ?? false,
       imageUrl: defaultValues?.imageUrl ?? null,
-      status: defaultValues?.status ?? 'Active',
     } as CatalogItemFormValues,
     onSubmit: async ({ value }) => {
       const result = catalogItemFormSchema.safeParse(value)
@@ -337,38 +335,7 @@ export function CatalogItemForm({
         </form.Field>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {/* Status (edit mode only) */}
-        {mode === 'edit' && (
-          <form.Field name="status">
-            {(field) => (
-              <div className="space-y-1.5">
-                <Label>Status</Label>
-                <Select
-                  value={field.state.value as string}
-                  onValueChange={(v) =>
-                    field.handleChange(
-                      v as (typeof CATALOG_ITEM_STATUS_OPTIONS)[number],
-                    )
-                  }
-                  disabled={isLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATALOG_ITEM_STATUS_OPTIONS.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </form.Field>
-        )}
-
+      <div>
         {/* Is CSE toggle */}
         <form.Field name="isCSE">
           {(field) => (

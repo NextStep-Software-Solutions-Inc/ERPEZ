@@ -1,0 +1,25 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using ERPEZ.Domain.Common;
+using Sieve.Attributes;
+
+namespace ERPEZ.Domain.Entities.Planning;
+
+public class OPCRRating : TenantScopedEntity
+{
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid OPCREvaluationId { get; set; }
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid PerformanceMeasureId { get; set; }
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid OPCRId { get; set; }
+    [Sieve(CanFilter = true, CanSort = true)]
+    [Column("DUKPITargetAssignmentId")]
+    public Guid DUKPITargetAssignmentId { get; set; }
+    [Sieve(CanFilter = true, CanSort = true)]
+    public int NumericalRating { get; set; }
+    public string? Remarks { get; set; }
+    public virtual OPCR OPCR { get; set; } = null!;
+    public virtual DUKPITargetAssignment DUKPITargetAssignment { get; set; } = null!;
+    public virtual OPCREvaluation OPCREvaluation { get; set; } = null!;
+    public virtual PerformanceMeasure PerformanceMeasure { get; set; } = null!;
+}

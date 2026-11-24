@@ -1,9 +1,10 @@
-﻿import {
+import {
   CircleCheckBig,
   Clock3,
   FileClock,
   LayoutList,
   RotateCcw,
+  type LucideIcon,
 } from 'lucide-react'
 import { useBacResolutionWorkspaceState } from './useBacResolutionWorkspaceState'
 import type {
@@ -15,7 +16,7 @@ export type MetricCard = {
   key: string
   label: string
   count: number
-  icon: any
+  icon: LucideIcon
   containerClass: string
   iconClass: string
   valueClass: string
@@ -34,15 +35,13 @@ export function useBacResolutionService(
     workspaceScope,
   )
 
-  const isLoading =
-    ws.isBacResolutionsLoading || ws.isBacResolutionsFetching || ws.isMutating
 
   const countByStatus = (status: BacResolutionInboxFilter) =>
     ws.inboxCards.find((item) => item.status === status)?.count ?? 0
 
   const summaryCount = ws.inboxCards
     .filter((item) => item.status !== 'all')
-    .reduce((total, item) => total + item.count, 0)
+
 
   const metricCards: MetricCard[] = [
     {
@@ -88,7 +87,7 @@ export function useBacResolutionService(
     {
       key: 'summary',
       label: 'Summary',
-      count: summaryCount,
+      count: 0,
       icon: LayoutList,
       containerClass:
         'border-default-200 bg-default-50/90 text-default-800 shadow-sm hover:shadow-md',
@@ -106,7 +105,7 @@ export function useBacResolutionService(
 
   return {
     ws,
-    isLoading,
+
     countByStatus,
     summaryCount,
     metricCards,

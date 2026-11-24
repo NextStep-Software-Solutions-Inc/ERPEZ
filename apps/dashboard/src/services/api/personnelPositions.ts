@@ -104,3 +104,35 @@ export async function createPersonnelPosition(
     throw error
   }
 }
+
+export interface UpdatePersonnelPositionRequestPayload {
+  positionId?: string | null
+  assignmentType?: string
+  isActive?: boolean
+  startDate?: string
+  endDate?: string | null
+}
+
+export async function updatePersonnelPosition(
+  id: string,
+  payload: UpdatePersonnelPositionRequestPayload,
+): Promise<boolean> {
+  try {
+    await api.put(`/personnel-positions/${id}`, payload)
+    return true
+  } catch (error) {
+    console.error(`Failed to update personnel position ${id} via API:`, error)
+    throw error
+  }
+}
+
+export async function deletePersonnelPosition(id: string): Promise<boolean> {
+  try {
+    await api.delete(`/personnel-positions/${id}`)
+    return true
+  } catch (error) {
+    console.error(`Failed to delete personnel position ${id} via API:`, error)
+    throw error
+  }
+}
+

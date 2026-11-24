@@ -1,33 +1,33 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ERPEZ", "ERPEZ", "{DEF73568-2D29-1B41-764E-1A44EBA236F6}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dashboard", "Dashboard", "{DEF73568-2D29-1B41-764E-1A44EBA236F6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TenantManagement", "TenantManagement", "{70D323E0-2C89-DD53-5CBF-C8AB0F77C698}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ERPEZ.TenantManagement.Api", "TenantManagement\ERPEZ.TenantManagement.Api\ERPEZ.TenantManagement.Api.csproj", "{58B93EFC-D5AC-4C61-ADE2-EDFD2ECA6EFB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TenantManagement.Api", "TenantManagement\TenantManagement.Api\TenantManagement.Api.csproj", "{58B93EFC-D5AC-4C61-ADE2-EDFD2ECA6EFB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ERPEZ.TenantManagement.Application", "TenantManagement\ERPEZ.TenantManagement.Application\ERPEZ.TenantManagement.Application.csproj", "{63F7B7F6-AD30-4A4D-B171-4748B4F2F0B2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TenantManagement.Application", "TenantManagement\TenantManagement.Application\TenantManagement.Application.csproj", "{63F7B7F6-AD30-4A4D-B171-4748B4F2F0B2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ERPEZ.TenantManagement.Domain", "TenantManagement\ERPEZ.TenantManagement.Domain\ERPEZ.TenantManagement.Domain.csproj", "{8C1DC27C-4357-4251-9C2D-0EDB53D22710}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TenantManagement.Domain", "TenantManagement\TenantManagement.Domain\TenantManagement.Domain.csproj", "{8C1DC27C-4357-4251-9C2D-0EDB53D22710}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ERPEZ.TenantManagement.Infrastructure", "TenantManagement\ERPEZ.TenantManagement.Infrastructure\ERPEZ.TenantManagement.Infrastructure.csproj", "{321A5556-1744-486C-B072-1DD04CDFC690}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TenantManagement.Infrastructure", "TenantManagement\TenantManagement.Infrastructure\TenantManagement.Infrastructure.csproj", "{321A5556-1744-486C-B072-1DD04CDFC690}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ERPEZ.Shared", "ERPEZ.Shared\ERPEZ.Shared.csproj", "{12345678-1234-1234-1234-123456789ABC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{12345678-1234-1234-1234-123456789ABC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ERPEZ.Api", "ERPEZ\ERPEZ.Api\ERPEZ.Api.csproj", "{F8C1C8F8-9E31-3495-01EA-53DA0ABACA9D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dashboard.Api", "Dashboard\Dashboard.Api\Dashboard.Api.csproj", "{F8C1C8F8-9E31-3495-01EA-53DA0ABACA9D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ERPEZ.Application", "ERPEZ\ERPEZ.Application\ERPEZ.Application.csproj", "{EEA7E61F-6A88-B047-BBED-B1DEADEBD6E2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dashboard.Application", "Dashboard\Dashboard.Application\Dashboard.Application.csproj", "{EEA7E61F-6A88-B047-BBED-B1DEADEBD6E2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ERPEZ.Domain", "ERPEZ\ERPEZ.Domain\ERPEZ.Domain.csproj", "{4DB2FDF9-3FB2-D88F-31D9-5444C9DD2F61}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dashboard.Domain", "Dashboard\Dashboard.Domain\Dashboard.Domain.csproj", "{4DB2FDF9-3FB2-D88F-31D9-5444C9DD2F61}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ERPEZ.Infrastructure", "ERPEZ\ERPEZ.Infrastructure\ERPEZ.Infrastructure.csproj", "{7F733A0B-A925-5F1E-1A8A-1A44056777F4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dashboard.Infrastructure", "Dashboard\Dashboard.Infrastructure\Dashboard.Infrastructure.csproj", "{7F733A0B-A925-5F1E-1A8A-1A44056777F4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ERPEZ.Application.UnitTests", "ERPEZ\ERPEZ.Application.UnitTests\ERPEZ.Application.UnitTests.csproj", "{87654321-4321-4321-4321-123456789ABC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dashboard.Application.UnitTests", "Dashboard\Dashboard.Application.UnitTests\Dashboard.Application.UnitTests.csproj", "{87654321-4321-4321-4321-123456789ABC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ERPEZ.TenantManagement.Application.UnitTests", "TenantManagement\ERPEZ.TenantManagement.Application.UnitTests\ERPEZ.TenantManagement.Application.UnitTests.csproj", "{98765432-4321-4321-4321-123456789ABC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TenantManagement.Application.UnitTests", "TenantManagement\TenantManagement.Application.UnitTests\TenantManagement.Application.UnitTests.csproj", "{98765432-4321-4321-4321-123456789ABC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -150,7 +150,7 @@ Global
 		{87654321-4321-4321-4321-123456789ABC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{87654321-4321-4321-4321-123456789ABC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{87654321-4321-4321-4321-123456789ABC}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{87654321-4321-4321-4321-4321-123456789ABC}.Debug|x64.Build.0 = Debug|Any CPU
+		{87654321-4321-4321-4321-123456789ABC}.Debug|x64.Build.0 = Debug|Any CPU
 		{87654321-4321-4321-4321-123456789ABC}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{87654321-4321-4321-4321-123456789ABC}.Debug|x86.Build.0 = Debug|Any CPU
 		{87654321-4321-4321-4321-123456789ABC}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -171,9 +171,6 @@ Global
 		{98765432-4321-4321-4321-123456789ABC}.Release|x64.Build.0 = Release|Any CPU
 		{98765432-4321-4321-4321-123456789ABC}.Release|x86.ActiveCfg = Release|Any CPU
 		{98765432-4321-4321-4321-123456789ABC}.Release|x86.Build.0 = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{58B93EFC-D5AC-4C61-ADE2-EDFD2ECA6EFB} = {70D323E0-2C89-DD53-5CBF-C8AB0F77C698}

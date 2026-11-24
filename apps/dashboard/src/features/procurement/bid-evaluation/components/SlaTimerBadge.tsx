@@ -92,8 +92,6 @@ export function SlaTimerBadge({
   // Yellow <= 2 days (172800 seconds)
   // Otherwise between 2 and 3 days, it's also green or transitioning.
   // The acceptance criteria states: "Green for > 3 days remaining, Yellow for <= 2 days"
-  // Let's implement this color coding strictly.
-  const secondsInThreeDays = 3 * 24 * 3600;
   const isYellow = timeLeft.totalSeconds <= 2 * 24 * 3600;
   const color = isYellow ? 'warning' : 'success';
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Input } from '@/components/ui/input'
 import { InputColor } from '@/lib/type'
 
@@ -23,18 +23,22 @@ export default function DebouncedInput({
   ...props
 }: DebouncedInputProps) {
   const [inputValue, setInputValue] = useState(value)
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
 
   useEffect(() => {
     setInputValue(value)
   }, [value])
 
   useEffect(() => {
+    if (inputValue === value) return
+
     const timer = setTimeout(() => {
-      onChange(inputValue)
+      onChangeRef.current(inputValue)
     }, debounceMs)
 
     return () => clearTimeout(timer)
-  }, [inputValue, onChange, debounceMs])
+  }, [inputValue, value, debounceMs])
 
   return (
     <Input

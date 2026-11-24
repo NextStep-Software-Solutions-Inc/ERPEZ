@@ -60,8 +60,8 @@ import { toSentenceCase } from '@/utils/formatters'
       )
     },
     cell: ({ row }) => {
-      const numberOfActivities = row.original.wfpObjectiveTargets?.length || 0
-      return <span>{numberOfActivities}</span>
+      const activities = (row.original as any).wfpObjectiveActivities || row.original.wfpObjectiveTargets || []
+      return <span>{activities.length}</span>
     }
   },
   {
@@ -78,8 +78,36 @@ import { toSentenceCase } from '@/utils/formatters'
       )
     },
     cell: ({ row }) => {
-      const weight = row.original.weight as number
-      return <span className="font-semibold text-green-700">{weight}%</span>
+      const objWeight = (row.original.weight as number) || 0
+      const activities = (row.original as any).wfpObjectiveActivities || row.original.wfpObjectiveTargets || []
+      const actsWeightSum = activities.reduce((sum: number, act: any) => sum + (Number(act.weight) || 0), 0)
+      
+      const isFullyAllocated = actsWeightSum === objWeight && objWeight > 0
+      const isOverAllocated = actsWeightSum > objWeight
+      const remaining = objWeight - actsWeightSum
+
+      return (
+        <div className="flex flex-col space-y-0.5">
+          <span className="font-bold text-slate-800 text-xs">{objWeight}%</span>
+          {objWeight > 0 && (
+            <div>
+              {isFullyAllocated ? (
+                <span className="text-[10px] text-emerald-600 font-semibold block">
+                  ✓ {actsWeightSum}% / {objWeight}% Activities Allocated
+                </span>
+              ) : isOverAllocated ? (
+                <span className="text-[10px] text-rose-600 font-semibold block">
+                  ⚠ {actsWeightSum}% / {objWeight}% ({actsWeightSum - objWeight}% Over)
+                </span>
+              ) : (
+                <span className="text-[10px] text-amber-600 font-semibold block">
+                  {actsWeightSum}% / {objWeight}% ({remaining}% Unallocated)
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )
     }
   },
   {

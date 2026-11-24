@@ -1,7 +1,9 @@
-﻿import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useNavigate } from '@tanstack/react-router'
 import { ManageAOBListPage } from '@/features/procurement/aob/components'
 import type { AOB } from '@/features/procurement/aob/types'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 export const Route = createFileRoute('/v2/(procurement)/manage-aob/')({
   component: ManageAobRoute,
@@ -17,5 +19,12 @@ function ManageAobRoute() {
     })
   }
 
-  return <ManageAOBListPage onViewDetails={handleViewDetails} />
+  return (
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Procurement.Aob.Manage}
+      message="You do not have permission to manage AOBs."
+    >
+      <ManageAOBListPage onViewDetails={handleViewDetails} />
+    </RoutePermissionGuard>
+  )
 }

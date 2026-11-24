@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Cascading UACS Category Mapping
  * Hierarchical structure for Procurement Category → Item Category
  * Used in Request Item Modal for cascading dropdown filtering
@@ -33,8 +33,8 @@ export const UACS_CASCADE_MAP = {
  */
 export function getUacsItemCategories(
   procurementCategory: keyof typeof UACS_CASCADE_MAP,
-): string[] {
-  return (UACS_CASCADE_MAP[procurementCategory] ?? []) as unknown as string[]
+): readonly string[] {
+  return UACS_CASCADE_MAP[procurementCategory] ?? []
 }
 
 /**
@@ -48,13 +48,13 @@ export const PROCUREMENT_CATEGORIES = Object.keys(UACS_CASCADE_MAP) as Array<
  * Status colors for badges
  */
 export const STATUS_COLORS = {
-  Draft: 'bg-gray-100 text-gray-800 border-gray-200',
-  Submitted: 'bg-blue-100 text-blue-900 border-blue-200',
-  Pending: 'bg-blue-100 text-blue-900 border-blue-200', // Legacy alias
-  Approved: 'bg-green-100 text-green-900 border-green-200', // Green
-  Returned: 'bg-red-100 text-red-900 border-red-200', // Red
-  Active: 'bg-green-100 text-green-900 border-green-200',
-  Inactive: 'bg-gray-100 text-gray-900 border-gray-200',
+  Draft: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+  Submitted: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800',
+  Pending: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800', // Legacy alias
+  Approved: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800',
+  Returned: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800',
+  Active: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800',
+  Inactive: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
 } as const
 
 /**

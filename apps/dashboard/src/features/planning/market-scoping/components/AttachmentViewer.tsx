@@ -25,12 +25,21 @@ interface AttachmentViewerProps {
   onRename?: (attachmentId: string, newName: string) => void
 }
 
-const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
+const IMAGE_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/gif',
+  'image/webp',
+]
 const PDF_TYPES = ['application/pdf']
 
 function getFileIcon(fileType?: string, fileName?: string) {
-  const isImage = IMAGE_TYPES.includes(fileType || '') || /\.(png|jpe?g|gif|webp)$/i.test(fileName || '')
-  const isPdf = PDF_TYPES.includes(fileType || '') || /\.pdf$/i.test(fileName || '')
+  const isImage =
+    IMAGE_TYPES.includes(fileType || '') ||
+    /\.(png|jpe?g|gif|webp)$/i.test(fileName || '')
+  const isPdf =
+    PDF_TYPES.includes(fileType || '') || /\.pdf$/i.test(fileName || '')
 
   if (isImage) return <ImageIcon className="w-4 h-4 text-blue-500" />
   if (isPdf) return <FileText className="w-4 h-4 text-red-500" />
@@ -51,7 +60,8 @@ export function AttachmentViewer({
   onRemove,
   onRename,
 }: AttachmentViewerProps) {
-  const [previewAttachment, setPreviewAttachment] = useState<FileAttachment | null>(null)
+  const [previewAttachment, setPreviewAttachment] =
+    useState<FileAttachment | null>(null)
 
   if (!attachments || attachments.length === 0) {
     return null
@@ -62,7 +72,10 @@ export function AttachmentViewer({
     setPreviewAttachment(attachment)
   }
 
-  const handleDownload = async (attachment: FileAttachment, e?: React.MouseEvent) => {
+  const handleDownload = async (
+    attachment: FileAttachment,
+    e?: React.MouseEvent,
+  ) => {
     if (e) e.stopPropagation()
     const rawUrl = attachment.fileUrl || ''
     if (rawUrl.startsWith('blob:') || rawUrl.startsWith('data:')) {
@@ -75,7 +88,9 @@ export function AttachmentViewer({
       return
     }
 
-    const candidateIds = [attachment.fileUrl, attachment.id].filter(Boolean) as string[]
+    const candidateIds = [attachment.fileUrl, attachment.id].filter(
+      (id): id is string => Boolean(id),
+    )
     for (let candidate of candidateIds) {
       if (candidate.includes('/files/download/')) {
         candidate = candidate.split('/files/download/').pop() || candidate
@@ -112,7 +127,9 @@ export function AttachmentViewer({
               className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md text-xs font-medium transition-colors"
             >
               {getFileIcon(file.fileType, file.fileName)}
-              <span className="truncate max-w-xs text-gray-800">{file.fileName}</span>
+              <span className="truncate max-w-xs text-gray-800">
+                {file.fileName}
+              </span>
               <button
                 onClick={(e) => handleView(file, e)}
                 className="ml-1 p-0.5 text-gray-500 hover:text-blue-600 transition-colors"
@@ -169,7 +186,10 @@ export function AttachmentViewer({
                       onClick={(e) => e.stopPropagation()}
                     />
                   ) : (
-                    <p className="text-sm font-medium text-gray-800 truncate" title={file.fileName}>
+                    <p
+                      className="text-sm font-medium text-gray-800 truncate"
+                      title={file.fileName}
+                    >
                       {file.fileName}
                     </p>
                   )}

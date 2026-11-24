@@ -16,7 +16,6 @@ import type {
 } from 'erpez-shared-lib'
 import api from '@/services/api'
 import type { PSDBMCategory } from '../types'
-import { getMockCategoriesFallback } from '../utils/psdbmFallback'
 
 const endpoint = '/api/psdbm/categories/:mode' as const
 
@@ -29,21 +28,8 @@ export const getPSDBMCategoriesRequest: QueryBlueprintFromTemplate<
   endpoint,
   key: ({ url }) => [url] as const,
   fetcher: async ({ finalUrl, signal }) => {
-    // Backend proxy endpoint: /api/psdbm/categories/:mode
-    // Uses configured VITE_ERPEZ_BACKEND_URL from environment
-    try {
-      const response = await api.get<APIResponse<PSDBMCategory[]>>(finalUrl, { signal })
-      return response.data
-    } catch (error) {
-      // Fallback: If URL doesn't return data, return mock categories
-      console.warn('[PSDBM Categories] API request failed, using mock data fallback', error)
-      return {
-        succeeded: true,
-        message: 'Using fallback mock data',
-        data: getMockCategoriesFallback(),
-        errors: {},
-      }
-    }
+    const response = await api.get<APIResponse<PSDBMCategory[]>>(finalUrl, { signal })
+    return response.data
   },
 
   // Aggressive caching - categories change infrequently

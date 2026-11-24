@@ -1,9 +1,7 @@
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { Loader2 } from 'lucide-react'
-import { useAtom } from 'jotai'
 import { useEffect } from 'react'
-import { updateFormDataAtom } from '../atoms'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -33,19 +31,15 @@ export default function UpdateWFPObjectiveForm({
   wfpId,
   initialValues
 }: UpdateWFPObjectiveFormProps) {
-  const [formData, setFormData] = useAtom(updateFormDataAtom)
-
   const form = useForm({
     defaultValues: {
       wfpId: wfpId,
       description: initialValues.description || '',
       weight: initialValues.weight || 0,
       outcome: initialValues.outcome || '',
-      ...formData,
     } as UpdateWFPObjectiveValues,
     onSubmit: (values) => {
       onSubmit({ ...values.value, wfpId })
-      setFormData({})
     },
   })
 
@@ -56,14 +50,9 @@ export default function UpdateWFPObjectiveForm({
         description: initialValues.description || '',
         weight: initialValues.weight || 0,
         outcome: initialValues.outcome || '',
-        ...formData,
       } as UpdateWFPObjectiveValues)
     }
-  }, [initialValues, wfpId, formData, form])
-
-  const updateFormData = (fieldName: keyof UpdateWFPObjectiveValues, value: UpdateWFPObjectiveValues[keyof UpdateWFPObjectiveValues]) => {
-    setFormData({ ...formData, [fieldName]: value })
-  }
+  }, [initialValues, wfpId, form])
 
   const isSubmitting = isLoading || form.state.isSubmitting
 
@@ -90,10 +79,7 @@ export default function UpdateWFPObjectiveForm({
               rows={3}
               value={field.state.value}
               onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                updateFormData('description', e.target.value)
-              }}
+              onChange={(e) => field.handleChange(e.target.value)}
               className={field.state.meta.errors.length > 0 ? 'border-red-500' : 'border-gray-300'}
             />
             {field.state.meta.errors.length > 0 && (
@@ -119,10 +105,7 @@ export default function UpdateWFPObjectiveForm({
               rows={3}
               value={field.state.value}
               onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                updateFormData('outcome', e.target.value)
-              }}
+              onChange={(e) => field.handleChange(e.target.value)}
               className="border-gray-300"
             />
           </div>
@@ -144,11 +127,7 @@ export default function UpdateWFPObjectiveForm({
                 placeholder="e.g. 25"
                 value={field.state.value}
                 onBlur={field.handleBlur}
-                onChange={(e) => {
-                  const val = Number(e.target.value)
-                  field.handleChange(val)
-                  updateFormData('weight', val)
-                }}
+                onChange={(e) => field.handleChange(Number(e.target.value))}
                 className={field.state.meta.errors.length > 0 ? 'border-red-500 pr-8' : 'border-gray-300 pr-8'}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
@@ -167,10 +146,7 @@ export default function UpdateWFPObjectiveForm({
         <Button
           type="button"
           variant="outline"
-          onClick={() => {
-            setFormData({})
-            onCancel()
-          }}
+          onClick={onCancel}
           disabled={isSubmitting}
           className="px-8 border-gray-300 text-gray-600"
         >

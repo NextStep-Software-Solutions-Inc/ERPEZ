@@ -157,7 +157,7 @@ export function FunctionTypeListPage({
                     search: {
                       ...searchParams,
                       functionCategory: functionType.id,
-                      strategicTargetTabView: 'KeyPerformanceIndicator',
+                      strategicTargetTabView: 'kpiAssigned',
                     },
                   })
                 }

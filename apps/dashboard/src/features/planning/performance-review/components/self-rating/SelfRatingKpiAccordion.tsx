@@ -26,6 +26,7 @@ interface SelfRatingKpiAccordionProps {
   openAccordions: string[]
   setOpenAccordions: Dispatch<SetStateAction<string[]>>
   isReadOnly: boolean
+  customWeights?: Partial<Record<KPICategory, number>>
   calc: {
     kpiAverages: Record<string, { self: number | null; final: number | null }>
     categoryAverages: {
@@ -51,6 +52,7 @@ export function SelfRatingKpiAccordion({
   openAccordions,
   setOpenAccordions,
   isReadOnly,
+  customWeights,
   calc,
   onUpdateSelfRating,
   onUpdateActual,
@@ -68,7 +70,7 @@ export function SelfRatingKpiAccordion({
       {SELF_RATING_CATEGORIES.map((category) => {
         const items = groupedKPIs[category]
         const catAvg = calc.categoryAverages.self[category]
-        const weight = KPI_CATEGORY_WEIGHTS[category]
+        const weight = customWeights?.[category] ?? KPI_CATEGORY_WEIGHTS[category]
         const completedCount = items.filter(
           (item) => calc.kpiAverages[item.id]?.self !== null,
         ).length
@@ -161,6 +163,7 @@ export function SelfRatingKpiAccordion({
             <div className="flex gap-6 flex-wrap">
               {SELF_RATING_CATEGORIES.map((cat) => {
                 const avg = calc.categoryAverages.self[cat]
+                const catWeight = customWeights?.[cat] ?? KPI_CATEGORY_WEIGHTS[cat]
                 return (
                   <div key={cat} className="text-center">
                     <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
@@ -172,7 +175,7 @@ export function SelfRatingKpiAccordion({
                       {avg?.toFixed(2) ?? '—'}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
-                      {(KPI_CATEGORY_WEIGHTS[cat] * 100).toFixed(0)}% weight
+                      {(catWeight * 100).toFixed(0)}% weight
                     </p>
                   </div>
                 )

@@ -18,7 +18,13 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import { getStatusBadgeColor, getStatusIcon, getSourceDisplay, type LIBStatus } from '../utils'
+import {
+  getStatusBadgeColor,
+  getStatusIcon,
+  getSourceDisplay,
+  formatScopeDisplay,
+  type LIBStatus,
+} from '../utils'
 
 interface LibListProps {
   libs: LIB[]
@@ -227,11 +233,17 @@ export const LibList = ({
                   </p>
                   <div className="flex flex-col gap-1">
                     <span className="text-sm font-semibold text-gray-900">
-                      scope: {lib.scope}
+                      {formatScopeDisplay(lib.scope)}
                     </span>
-                    <span className="text-xs text-gray-600">
-                      level: {lib.level}
-                    </span>
+                    {lib.level ? (
+                      <span className="text-xs text-gray-600">
+                        {lib.level} Level
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">
+                        N/A
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -289,7 +301,7 @@ export const LibList = ({
                     Activities
                   </p>
                   <p className="text-lg font-bold text-gray-900">
-                    {lib.activities?.length || 0}
+                    {lib.activityCount ?? lib.activities?.length ?? 0}
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -305,8 +317,7 @@ export const LibList = ({
                     Created
                   </p>
                   <p className="text-sm font-bold text-gray-900">
-                    {/* {new Date(lib.createdAt).toLocaleDateString()} */}
-                    {lib.createdAt}
+                    {lib.createdAt ? new Date(lib.createdAt).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
               </div>

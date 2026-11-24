@@ -20,10 +20,10 @@ export type ProcurementMode = {
   maxThreshold: number | null
   isArchived: boolean
   isActive: boolean
-  procurementCategory: {
+  procurementCategory?: {
     id: string
     name: string | null
-  }
+  } | null
   createdAt: string
   updatedAt: string | null
 }

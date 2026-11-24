@@ -340,7 +340,22 @@ export const CreateTemplateWizard = forwardRef<
                               <input
                                 type="radio"
                                 checked={field.state.value === type}
-                                onChange={() => field.handleChange(type)}
+                                onChange={() => {
+                                  field.handleChange(type)
+                                  if (type === ScaleType.FIXED) {
+                                    ;([1, 2, 3, 4, 5] as const).forEach((lvl) => {
+                                      const key = `rating${lvl}` as const
+                                      const current = form.getFieldValue(key)
+                                      if (current) {
+                                        form.setFieldValue(key, {
+                                          ...current,
+                                          minRange: undefined,
+                                          maxRange: undefined,
+                                        })
+                                      }
+                                    })
+                                  }
+                                }}
                                 className="w-4 h-4"
                               />
                               <span className="text-sm">

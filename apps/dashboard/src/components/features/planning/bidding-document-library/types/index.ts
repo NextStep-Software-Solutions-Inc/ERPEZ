@@ -13,19 +13,29 @@ export interface MasterDoc {
 
 export interface MasterDocumentFormData {
   name: string
-  description: string
+  description?: string
   envelope: 1 | 2
-  templateFile: string
+  templateFile?: string
   templateFileId?: string
   templatePreviewUrl?: string
   templateFileType?: string
 }
 
+export const PROCUREMENT_CATEGORIES = [
+  'Goods',
+  'Infrastructure',
+  'Consulting',
+  'SVP',
+] as const
+
+export type ProcurementCategoryType = (typeof PROCUREMENT_CATEGORIES)[number]
+
 export interface Profile {
   id: string
   name: string
   description: string
-  documentIds: string[]
+  procurementCategory: ProcurementCategoryType | string
+  documentIds: Array<string>
   itemCount: number       
   techCount: number        
   finCount: number        
@@ -60,6 +70,7 @@ export interface Project {
   category: 'Goods' | 'Infrastructure' | 'Consulting'
   refNumber: string
   profileId: string
-  checklist: ProjectChecklistItem[]
+  checklist: Array<ProjectChecklistItem>
   status: 'Draft Checklist' | 'Finalized'
+  projectStatus?: string
 }

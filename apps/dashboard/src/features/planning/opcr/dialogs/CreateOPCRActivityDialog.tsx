@@ -10,6 +10,7 @@ import SubmitButton from '@/components/SubmitButton'
 
 interface CreateOPCRActivityDialogProps {
   onActivityCreated: (activity: CreateOPCRActivityFormValues) => void
+  officeId?: string
   isOpen?: boolean
   onOpenChange?: (open: boolean) => void
   triggerClassName?: string
@@ -22,6 +23,7 @@ interface CreateOPCRActivityDialogProps {
 
 export function CreateOPCRActivityDialog({
   onActivityCreated,
+  officeId,
   isOpen: externalIsOpen,
   onOpenChange: externalOnOpenChange,
   triggerClassName,
@@ -83,6 +85,7 @@ export function CreateOPCRActivityDialog({
       <div className="p-2">
         <CreateOPCRActivityForm
           onActivityCreated={onActivityCreated}
+          officeId={officeId}
           defaultKpi={defaultKpi}
           defaultDimension={defaultDimension}
           defaultSubKpiId={defaultSubKpiId}

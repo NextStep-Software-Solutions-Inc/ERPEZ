@@ -6,12 +6,12 @@ import CreateOPCRForm, { type OPCRFormApi } from './CreateOPCRForm'
 import SubmitButton from '@/components/SubmitButton'
 
 interface CreateOPCRDialogProps {
-  existingFiscalYears: number[]
+  existingFiscalYears?: number[]
 }
 
 export default function CreateOPCRDialog({
   existingFiscalYears,
-}: CreateOPCRDialogProps) {
+}: CreateOPCRDialogProps = {}) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<OPCRFormApi | null>(null)
 

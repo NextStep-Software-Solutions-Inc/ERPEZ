@@ -62,59 +62,88 @@ export function adaptApiActivitiesToFrontend(
       objectMap.forEach((objDetails, objectId) => {
         const objectName = objDetails[0].object?.name || 'Unnamed Object'
 
-        // Map backend details to Frontend BudgetItem
-        const items: FrontendBudgetItem[] = objDetails.map((detail) => {
-          const budget = detail.budget || 0
-          let q1 = 0,
-            q2 = 0,
-            q3 = 0,
-            q4 = 0
+        // Group details under this object by item description / WFP expenditure ID
+        const itemGroups = new Map<string, LineItemBudgetDetails[]>()
 
-          if (
-            detail.timelineType?.toLowerCase() === 'quarterly' &&
-            detail.startDate
-          ) {
-            const month = new Date(detail.startDate).getMonth()
-            if (month >= 0 && month <= 2) q1 = budget
-            else if (month >= 3 && month <= 5) q2 = budget
-            else if (month >= 6 && month <= 8) q3 = budget
-            else if (month >= 9 && month <= 11) q4 = budget
-            else q1 = budget
-          } else if (
-            detail.timelineType?.toLowerCase() === 'monthly' &&
-            detail.startDate
-          ) {
-            // For monthly, place it in the corresponding quarter for the UI
-            const month = new Date(detail.startDate).getMonth()
-            if (month >= 0 && month <= 2) q1 = budget
-            else if (month >= 3 && month <= 5) q2 = budget
-            else if (month >= 6 && month <= 8) q3 = budget
-            else if (month >= 9 && month <= 11) q4 = budget
-            else q1 = budget
-          } else {
-            // Fallback: divide evenly if we can't determine period
-            const qVal = budget / 4
-            q1 = qVal
-            q2 = qVal
-            q3 = qVal
-            q4 = qVal
-          }
-
-          const description =
+        objDetails.forEach((detail) => {
+          const desc =
             detail.description ||
             detail.wfpObjectiveActivityExpenditure?.itemDescription ||
+            objectName ||
+            'No Description'
+          const groupKey = detail.wfpObjectiveActivityExpenditureId
+            ? `wfp-${detail.wfpObjectiveActivityExpenditureId}`
+            : desc.trim().toLowerCase()
+
+          if (!itemGroups.has(groupKey)) {
+            itemGroups.set(groupKey, [])
+          }
+          itemGroups.get(groupKey)!.push(detail)
+        })
+
+        const items: FrontendBudgetItem[] = []
+
+        itemGroups.forEach((groupDetails) => {
+          const first = groupDetails[0]
+          const description =
+            first.description ||
+            first.wfpObjectiveActivityExpenditure?.itemDescription ||
+            objectName ||
             'No Description'
 
-          return {
-            id: detail.id,
+          let q1 = 0
+          let q2 = 0
+          let q3 = 0
+          let q4 = 0
+          const quarterDetailIds: {
+            q1?: string
+            q2?: string
+            q3?: string
+            q4?: string
+          } = {}
+
+          groupDetails.forEach((detail) => {
+            const budget = detail.budget || 0
+            if (detail.startDate) {
+              const month = new Date(detail.startDate).getMonth()
+              if (month >= 0 && month <= 2) {
+                q1 += budget
+                quarterDetailIds.q1 = detail.id
+              } else if (month >= 3 && month <= 5) {
+                q2 += budget
+                quarterDetailIds.q2 = detail.id
+              } else if (month >= 6 && month <= 8) {
+                q3 += budget
+                quarterDetailIds.q3 = detail.id
+              } else if (month >= 9 && month <= 11) {
+                q4 += budget
+                quarterDetailIds.q4 = detail.id
+              } else {
+                q1 += budget
+                quarterDetailIds.q1 = detail.id
+              }
+            } else {
+              // Fallback: divide evenly if we can't determine period
+              const qVal = budget / 4
+              q1 += qVal
+              q2 += qVal
+              q3 += qVal
+              q4 += qVal
+            }
+          })
+
+          items.push({
+            id: first.id,
             description,
             q1,
             q2,
             q3,
             q4,
-            total: budget,
+            total: q1 + q2 + q3 + q4,
             isDeleted: false,
-          }
+            detailIds: groupDetails.map((d) => d.id),
+            quarterDetailIds,
+          })
         })
 
         itemsOfExpenditure.push({

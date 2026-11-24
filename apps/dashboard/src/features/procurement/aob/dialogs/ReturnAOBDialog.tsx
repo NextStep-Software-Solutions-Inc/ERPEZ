@@ -130,7 +130,7 @@ export function ReturnAOBDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-md max-h-96 overflow-y-auto">
+      <AlertDialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
             <AlertTriangle className="w-5 h-5" />
@@ -247,15 +247,19 @@ export function ReturnAOBDialog({
         </Form>
 
         {/* Dialog Footer */}
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isSubmitting}>
+        <AlertDialogFooter className="gap-2 sm:gap-2 pt-2">
+          <AlertDialogCancel
+            variant="outline"
+            disabled={isSubmitting}
+            className="h-10 px-5 text-sm font-medium border-gray-300 text-gray-700 hover:bg-gray-50"
+          >
             Keep AOB
           </AlertDialogCancel>
           <AlertDialogAction
             form="return-aob-form"
             type="submit"
             disabled={isSubmitting || !form.formState.isValid}
-            className="bg-amber-600 hover:bg-amber-700"
+            className="h-10 px-6 text-sm font-semibold bg-amber-600 hover:bg-amber-700 text-white min-w-[140px] shadow-sm"
           >
             {isSubmitting ? 'Returning...' : 'Return AOB'}
           </AlertDialogAction>

@@ -20,3 +20,8 @@ export { default as AddPPMPItemExpenditureDialog } from './AddPPMPItemExpenditur
 export { default as AddPPMPItemsModal } from './AddPPMPItemsModal'
 export { default as EditPPMPItemAllocationsDialog } from './EditPPMPItemAllocationsDialog'
 export { ConsolidationWorkspaceSheet } from './ConsolidationWorkspaceSheet'
+export { MasterPPMPViewerModal } from './MasterPPMPViewerModal'
+export { default as AssociateMarketScopingDialog } from './AssociateMarketScopingDialog'
+export { CreateSupplementalPpmpDialog } from './CreateSupplementalPpmpDialog'
+export { ReturnPPMPDialog } from './ReturnPPMPDialog'
+

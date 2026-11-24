@@ -36,6 +36,8 @@ export type ConsolidatedPR = {
   status: 'DRAFT' | 'APPROVED/FOR BAC UTILIZATION'
   selectedPRItems: Array<ConsolidatedPRItem>
   itemMOPs?: Record<string, { mop?: string; allowPartial?: boolean }> // key: item.id
+  endUser?: string
+  totalAmount?: number
 }
 
 interface ConsolidatedPRStore {

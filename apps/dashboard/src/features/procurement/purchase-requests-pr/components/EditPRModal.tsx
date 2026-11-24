@@ -116,8 +116,7 @@ export function EditPRModal({ open, onOpenChange, pr, onSuccess }: EditPRModalPr
       toast({ title: 'Purchase Request updated', description: `${data.prNumber} saved.` })
       onOpenChange(false)
       onSuccess?.(merged)
-    } catch (e) {
-      console.error(e)
+    } catch {
       toast({ title: 'Error', description: 'Failed to save changes.', variant: 'destructive' })
     } finally {
       setIsSubmitting(false)

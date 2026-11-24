@@ -370,7 +370,7 @@ export type AgencyMasterBudget = {
   id: string
   fiscalYearId: string
   fundSourceId: string
-  sourceDocumentType: number
+  sourceDocumentType: string  // API returns enum name e.g. "NEPGAA", "PRE", "MOA", "Others"
   sourceDocumentTypeEnum: number[]
   psAmount: number
   mooeAmount: number
@@ -424,6 +424,16 @@ export type SubOfficeCeiling = {
   subOffice: SubOfficeCeilingSubOffice
   fundSource: SubOfficeCeilingFundSource
   fiscalYear: SubOfficeCeilingFiscalYear
+}
+
+// Item Category (CSE & Non-CSE items grouping)
+export type ItemCategory = {
+  id: string
+  name: string
+  description: string | null
+  isActive: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 // Re-export procurement types

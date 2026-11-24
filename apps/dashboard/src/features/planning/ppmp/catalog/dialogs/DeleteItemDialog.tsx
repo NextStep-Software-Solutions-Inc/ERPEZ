@@ -1,4 +1,4 @@
-﻿/**
+/**
  * DeleteItemDialog
  * Confirmation AlertDialog for deactivating a catalog item (soft-delete).
  * Controlled by deleteItemDialogOpenAtom + itemToDeleteAtom.
@@ -21,18 +21,18 @@ import {
   deleteItemDialogOpenAtom,
   itemToDeleteAtom,
 } from '../atoms/catalogDialogAtoms'
-import { deactivateCatalogItemAtom } from '../atoms/catalogAtoms'
+import { deleteCatalogItemAtom } from '../atoms/catalogAtoms'
 
 export function DeleteItemDialog() {
   const [open, setOpen] = useAtom(deleteItemDialogOpenAtom)
   const item = useAtomValue(itemToDeleteAtom)
-  const deactivateItem = useSetAtom(deactivateCatalogItemAtom)
+  const deleteItem = useSetAtom(deleteCatalogItemAtom)
 
   if (!item) return null
 
-  const handleDeactivate = () => {
-    deactivateItem(item.id)
-    toast.success(`"${item.name}" has been deactivated.`)
+  const handleDelete = () => {
+    deleteItem(item.id)
+    toast.success(`"${item.name}" has been removed.`)
     setOpen(false)
   }
 
@@ -40,20 +40,19 @@ export function DeleteItemDialog() {
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogContent className="z-999">
         <AlertDialogHeader>
-          <AlertDialogTitle>Deactivate Catalog Item?</AlertDialogTitle>
+          <AlertDialogTitle>Delete Catalog Item?</AlertDialogTitle>
           <AlertDialogDescription>
-            <strong>{item.name}</strong> will be marked as <em>Inactive</em> and
-            hidden from user catalogs. This can be reversed by editing the item
-            and setting status to Active.
+            Are you sure you want to delete <strong>{item.name}</strong> from
+            the catalog?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleDeactivate}
+            onClick={handleDelete}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            Deactivate
+            Delete
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

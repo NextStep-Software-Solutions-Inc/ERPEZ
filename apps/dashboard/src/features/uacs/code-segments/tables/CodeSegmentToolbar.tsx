@@ -1,5 +1,5 @@
 import { ChevronDown, Plus } from 'lucide-react'
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import type { Table } from '@tanstack/react-table'
 import {
   DropdownMenu,
@@ -17,6 +17,10 @@ interface CodeSegmentToolbarProps<TData = any> {
   searchColumn?: string
   onAdd?: () => void
   addLabel?: string
+  /** When provided, overrides client-side column filtering with a server-side search callback */
+  onSearch?: (value: string) => void
+  /** Controlled search value (used together with onSearch for server-side search) */
+  searchValue?: string
 }
 
 export default function CodeSegmentToolbar<TData = any>({
@@ -26,12 +30,52 @@ export default function CodeSegmentToolbar<TData = any>({
   searchColumn = 'name',
   onAdd,
   addLabel = 'Add',
+  onSearch,
+  searchValue,
 }: CodeSegmentToolbarProps<TData>) {
-  const [searchValue, setSearchValue] = React.useState('')
+  // Local state always reflects what the user typed (instant feedback)
+  const [localSearchValue, setLocalSearchValue] = React.useState(searchValue ?? '')
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Sync controlled searchValue into local state when parent resets it (e.g. on clear)
+  useEffect(() => {
+    if (onSearch !== undefined && searchValue !== undefined && searchValue !== localSearchValue) {
+      setLocalSearchValue(searchValue)
+    }
+  }, [searchValue]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
 
   const handleSearchChange = (value: string) => {
-    setSearchValue(value)
-    table.getColumn(searchColumn)?.setFilterValue(value)
+    // Always update the input immediately for snappy UX
+    setLocalSearchValue(value)
+
+    // Debounce the actual filter/search action (400ms)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      if (onSearch) {
+        // Server-side search: delegate to parent
+        onSearch(value)
+      } else {
+        // Client-side search: filter via TanStack table column
+        table.getColumn(searchColumn)?.setFilterValue(value)
+      }
+    }, 400)
+  }
+
+  const handleClear = () => {
+    setLocalSearchValue('')
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (onSearch) {
+      onSearch('')
+    } else {
+      table.getColumn(searchColumn)?.setFilterValue('')
+    }
   }
 
   return (
@@ -40,15 +84,15 @@ export default function CodeSegmentToolbar<TData = any>({
         <div className="flex flex-row space-x-2 flex-1 min-w-0">
           <Input
             placeholder={searchPlaceholder}
-            value={searchValue}
+            value={localSearchValue}
             onChange={(event) => handleSearchChange(event.target.value)}
             className="flex-1 min-w-0 max-w-sm"
           />
-          {searchValue && (
+          {localSearchValue && (
             <Button
               type="button"
               variant="ghost"
-              onClick={() => handleSearchChange('')}
+              onClick={handleClear}
               className="h-10 flex-shrink-0"
             >
               Clear

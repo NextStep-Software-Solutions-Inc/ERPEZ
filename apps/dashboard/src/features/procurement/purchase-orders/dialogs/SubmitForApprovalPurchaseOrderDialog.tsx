@@ -15,6 +15,7 @@ type SubmitForApprovalPurchaseOrderDialogProps = {
   onOpenChange: (open: boolean) => void
   purchaseOrder: PurchaseOrder | null
   onConfirm: (purchaseOrderId: string) => void
+  isSubmitting?: boolean
 }
 
 export function SubmitForApprovalPurchaseOrderDialog({
@@ -22,12 +23,12 @@ export function SubmitForApprovalPurchaseOrderDialog({
   onOpenChange,
   purchaseOrder,
   onConfirm,
+  isSubmitting = false,
 }: SubmitForApprovalPurchaseOrderDialogProps) {
   if (!purchaseOrder) return null
 
   const handleConfirm = () => {
     onConfirm(purchaseOrder.id)
-    onOpenChange(false)
   }
 
   return (
@@ -115,12 +116,12 @@ export function SubmitForApprovalPurchaseOrderDialog({
         </p>
 
         <DialogFooter>
-          <Button variant="outline" color="secondary" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="secondary" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button className="gap-2" onClick={handleConfirm}>
+          <Button className="gap-2" onClick={handleConfirm} disabled={isSubmitting}>
             <Send className="h-4 w-4" />
-            Submit for Approval
+            {isSubmitting ? 'Submitting...' : 'Submit for Approval'}
           </Button>
         </DialogFooter>
       </DialogContent>

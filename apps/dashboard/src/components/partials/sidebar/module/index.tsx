@@ -8,15 +8,16 @@ import FooterMenu from "./footer-menu";
 import LogoutFooter from "./logout-footer";
 import MenuOverlayPortal from "./MenuOverlayPortal";
 import { cn, getDynamicPath, isLocationMatch, translate } from "@/lib/utils";
-import { ModernNavType, menusConfig, } from "@/config/menus";
+import { ModernNavType } from "@/config/menus";
 import { useSidebar, useThemeStore } from "@/store";
 import { SiteLogo } from "@/components/svg";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Button } from "@/components/ui/button";
+import { useFilteredNavMenus } from "@/hooks/useFilteredNavMenus";
 
 const ModuleSidebar = ({ trans }: { trans: any }) => {
-  const menus = menusConfig?.sidebarNav?.modern || [];
+  const { modern: menus } = useFilteredNavMenus();
   const { subMenu, setSubmenu, collapsed, setCollapsed, sidebarBg } =
     useSidebar();
   const { isRtl } = useThemeStore();

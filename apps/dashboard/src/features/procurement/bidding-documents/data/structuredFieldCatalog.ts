@@ -1,4 +1,4 @@
-﻿import type { ProcurementCategory } from '../../bidding-schedule/types'
+import type { ProcurementCategory } from '../../bidding-schedule/types'
 import type {
   BiddingDocumentFieldDefinition,
   BiddingDocumentFieldOption,
@@ -929,11 +929,13 @@ export function normalizeStructuredFieldValues(
     'bidValidityDays',
   )
   if (legacyBidValidityDays) {
+    normalized.bidValidityDays = legacyBidValidityDays
     normalized.bidValidityPeriodDays = legacyBidValidityDays
   }
 
   const legacyLotGrouping = getLegacyStructuredFieldValue(source, 'lotGrouping')
   if (legacyLotGrouping) {
+    normalized.lotGrouping = legacyLotGrouping
     normalized.partialBidsLotGroupingDetails = legacyLotGrouping
     normalized.partialBidsPolicy = /single/i.test(legacyLotGrouping)
       ? 'not-allowed'
@@ -945,6 +947,7 @@ export function normalizeStructuredFieldValues(
     'deliveryPeriod',
   )
   if (legacyDeliveryPeriod) {
+    normalized.deliveryPeriod = legacyDeliveryPeriod
     if (record.procurementCategory === 'consulting') {
       normalized.contractTimePeriod = legacyDeliveryPeriod
     } else {

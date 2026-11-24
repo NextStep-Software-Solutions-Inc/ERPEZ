@@ -8,42 +8,41 @@ import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select"
 import {
-    Calendar,
-    HardDrive,
-    FileArchive,
     CheckCircle2,
-    Download,
+    KeyRound,
     Database,
     Cpu,
+    HardDrive,
     PackageIcon,
 } from "lucide-react"
+import { useNavigate } from "react-router"
 
 export default function PackageCloudTab() {
+    const navigate = useNavigate()
     return (
         <Card className="flex flex-col gap-6 p-4 border border-gray-100 dark:border-gray-700">
             <Card>
                 <CardHeader>
                     <div className="flex items-center gap-3">
                         <PackageIcon className="h-6 w-6 text-primary" />
-                        <CardTitle className="m-0 leading-none">TenantFlow Cloud Connector</CardTitle>
+                        <CardTitle className="m-0 leading-none">ERP-EZ Cloud Connector</CardTitle>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                        Cloud deployment package with auto-scaling capabilities
+                        Cloud workspace integration specifications for hybrid environments
                     </p>
                 </CardHeader>
                 <CardContent className="space-y-6 flex flex-col">
                     {/* Version + Deployment */}
                     <div className="flex flex-wrap items-center justify-between gap-4 px-2">
                         <div className="flex flex-col items-start justify-start gap-2">
-                            <p className="text-sm font-medium">Version</p>
+                            <p className="text-sm font-medium">Release Channel</p>
                             <Select defaultValue="v3.0.1">
                                 <SelectTrigger className="w-40">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="v3.0.1">v3.0.1<Badge variant="default" className="bg-muted text-blue-600">Latest</Badge></SelectItem>
+                                    <SelectItem value="v3.0.1">v3.0.1<Badge variant="default" className="bg-muted text-blue-600">Current</Badge></SelectItem>
                                     <SelectItem value="v2.0.0">v2.0.0</SelectItem>
-                                    <SelectItem value="v1.9.0">v1.9.0</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -53,23 +52,17 @@ export default function PackageCloudTab() {
                         </div>
                     </div>
 
-                    {/* Meta Info */}
-                    <div className="flex flex-col gap-6 p-4 items-center justify-center">
-                        <div className="flex items-center  text-sm text-muted-foreground w-full justify-between px-12">
-                            <div className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" /> 2025-02-15
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <HardDrive className="h-4 w-4" /> 45.2MB
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <FileArchive className="h-4 w-4" /> ZIP Archive
-                            </div>
-                        </div>
+                    {/* Enterprise Distribution Notice & License Action */}
+                    <div className="flex flex-col gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 items-center justify-center text-center">
+                        <p className="text-xs text-slate-600 max-w-lg leading-relaxed">
+                            Cloud SaaS workspaces are provisioned and updated automatically. For hybrid deployments, manage your workspace license and domain configuration in License Management.
+                        </p>
 
-                        {/* Download Button */}
-                        <Button className="w-[60%] bg-[var(--button-blue)]">
-                            <Download className="h-4 w-4 mr-2" /> Download v3.0.1
+                        <Button
+                            onClick={() => navigate("/license-management")}
+                            className="w-full sm:w-[60%] bg-[var(--button-blue)] text-white"
+                        >
+                            <KeyRound className="h-4 w-4 mr-2" /> View License Configuration
                         </Button>
                     </div>
                 </CardContent>
@@ -78,15 +71,15 @@ export default function PackageCloudTab() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>What's New</CardTitle>
-                        <p className="text-muted-foreground text-sm">Changes in v3.0.1</p>
+                        <CardTitle>Included Capabilities</CardTitle>
+                        <p className="text-muted-foreground text-sm">Cloud workspace features</p>
                     </CardHeader>
                     <CardContent className="space-y-2 text-sm">
                         {[
-                            "New authentication endpoints",
-                            "Rate limiting improvements",
-                            "Enhanced error handling",
-                            "API documentation updates",
+                            "Multi-tenant workspace isolation",
+                            "Clerk SSO authentication & RBAC enforcement",
+                            "Centralized module activation (AMS, PBMS, PMS)",
+                            "Domain-bound license validation",
                         ].map((item, idx) => (
                             <div key={idx} className="flex items-center gap-2">
                                 <CheckCircle2 className="h-4 w-4 text-green-500" />

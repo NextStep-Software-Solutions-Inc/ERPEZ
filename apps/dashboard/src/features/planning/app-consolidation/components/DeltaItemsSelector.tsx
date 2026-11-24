@@ -185,7 +185,7 @@ export function DeltaItemsSelector({
                           <Badge className="bg-blue-100 text-blue-800">Modified</Badge>
                         )}
                       </TableCell>
-                      <TableCell className="font-mono text-sm">{item.code}</TableCell>
+                      <TableCell className="text-sm font-medium">{item.code}</TableCell>
                       <TableCell className="max-w-xs truncate text-sm">{item.description}</TableCell>
                       <TableCell className="text-right font-medium">
                         {item.isNewItem ? '0' : item.originalQuantity}

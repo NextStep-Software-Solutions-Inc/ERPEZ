@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useAtom } from 'jotai'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -32,6 +33,86 @@ import api from '@/services/api'
 import { transformAppDetailToAppMaster } from '../utils/transformAppDetail'
 import { getAPPDetailRequest } from '../handlers/getAPPDetailRequest'
 
+interface PPMPListItem {
+  id: string
+  ppmpNumber: string
+  officeName?: string
+  fiscalYearName?: string
+  fiscalYear?: string | number
+  fiscalYearYear?: string | number
+  fiscalYearId?: string
+  fundSourceId?: string
+  isFinal?: boolean
+  IsFinal?: boolean
+  ppmpType?: string
+  PPMPType?: string
+  sourcePPMPId?: string | null
+  SourcePPMPId?: string | null
+  supplementalNumber?: number | null
+  SupplementalNumber?: number | null
+  consolidatedAppId?: string | null
+  consolidatedAppNumber?: string | null
+  consolidatedAppRootId?: string | null
+  PPMPItems?: unknown[]
+  [key: string]: unknown
+}
+
+interface FundSourceItem {
+  id: string
+  name: string
+  code?: string
+}
+
+export function getPpmpPlanType(ppmp: PPMPListItem): 'Supplemental' | 'Final' | 'Indicative' {
+  const isSupplemental =
+    ppmp.ppmpType === 'Supplemental' ||
+    ppmp.PPMPType === 'Supplemental' ||
+    Boolean(ppmp.sourcePPMPId || ppmp.SourcePPMPId) ||
+    Boolean(ppmp.ppmpNumber?.toUpperCase().startsWith('SUPPLEMENTAL'))
+  if (isSupplemental) return 'Supplemental'
+
+  const isFinal = Boolean(ppmp.isFinal ?? ppmp.IsFinal)
+  if (isFinal) return 'Final'
+
+  return 'Indicative'
+}
+
+function renderPlanTypeBadge(ppmp: PPMPListItem) {
+  const planType = getPpmpPlanType(ppmp)
+
+  if (planType === 'Supplemental') {
+    const suppNum = ppmp.supplementalNumber ?? ppmp.SupplementalNumber
+    return (
+      <Badge
+        variant="outline"
+        className="text-xs font-medium px-2.5 py-0.5 border-purple-200 bg-purple-50 text-purple-700"
+      >
+        Supplemental {suppNum ? `#${suppNum}` : ''}
+      </Badge>
+    )
+  }
+
+  if (planType === 'Final') {
+    return (
+      <Badge
+        variant="outline"
+        className="text-xs font-medium px-2.5 py-0.5 border-emerald-200 bg-emerald-50 text-emerald-700"
+      >
+        Final PPMP
+      </Badge>
+    )
+  }
+
+  return (
+    <Badge
+      variant="outline"
+      className="text-xs font-medium px-2.5 py-0.5 border-slate-200 bg-slate-50 text-slate-700"
+    >
+      Indicative
+    </Badge>
+  )
+}
+
 export function SelectPPMPDialog() {
   // ============================================================================
   // SECTION 1: STATE HOOKS (must be first)
@@ -44,10 +125,11 @@ export function SelectPPMPDialog() {
   const [searchTerm, setSearchTerm] = useState('')
   
   // Live API states
-  const [ppmps, setPpmps] = useState<any[]>([])
+  const [ppmps, setPpmps] = useState<PPMPListItem[]>([])
   const [loading, setLoading] = useState(false)
-  const [fundSources, setFundSources] = useState<any[]>([])
+  const [fundSources, setFundSources] = useState<FundSourceItem[]>([])
   const [selectedFundSourceId, setSelectedFundSourceId] = useState<string>('all')
+  const [selectedPlanType, setSelectedPlanType] = useState<string>('all')
   const [loadingFundSources, setLoadingFundSources] = useState(false)
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
@@ -88,6 +170,7 @@ export function SelectPPMPDialog() {
     } else {
       setFundSources([])
       setSelectedFundSourceId('all')
+      setSelectedPlanType('all')
     }
   }, [open])
 
@@ -125,6 +208,9 @@ export function SelectPPMPDialog() {
         filters.push(`fiscalYearName==${fyYear}`)
       }
 
+      // Strictly filter for Approved PPMPs only (unapproved PPMPs cannot be consolidated into an APP)
+      filters.push('status==Approved')
+
       if (selectedFundSourceId && selectedFundSourceId !== 'all') {
         filters.push(`fundSourceId==${selectedFundSourceId}`)
       }
@@ -137,11 +223,13 @@ export function SelectPPMPDialog() {
       .then((response) => {
         if (response.data?.succeeded) {
           const rawPpmps = response.data.data || []
-          // Additional safety filter by Fiscal Year
-          const fyFiltered = rawPpmps.filter((p: any) => {
+          // Additional safety filter by Fiscal Year and Approved status
+          const fyFiltered = rawPpmps.filter((p: PPMPListItem) => {
             if (fyId && p.fiscalYearId && p.fiscalYearId.toLowerCase() !== fyId.toLowerCase()) return false
             const pYearStr = p.fiscalYearName || p.fiscalYear || p.fiscalYearYear
             if (fyYear && pYearStr && String(pYearStr) !== String(fyYear)) return false
+            const statusStr = String(p.status || p.Status || '').toLowerCase()
+            if (statusStr !== 'approved') return false
             return true
           })
           setPpmps(fyFiltered)
@@ -166,58 +254,116 @@ export function SelectPPMPDialog() {
   // ============================================================================
 
   // Helper to determine PPMP eligibility and status
-  const getPPMPStatus = useCallback((ppmp: any) => {
-    const isAlreadyInCurrentApp = currentApp?.ppmpIds?.includes(ppmp.id) ||
-      currentApp?.appPpmps?.some((ap: any) => ap.ppmpId === ppmp.id)
+  const getPPMPStatus = useCallback(
+    (ppmp: PPMPListItem) => {
+      const isAlreadyInCurrentApp =
+        currentApp?.ppmpIds?.includes(ppmp.id) ||
+        currentApp?.appPpmps?.some((ap: { ppmpId?: string }) => ap.ppmpId === ppmp.id)
 
-    const isLinkedToOtherApp = Boolean(ppmp.consolidatedIntoId && ppmp.consolidatedIntoId !== currentApp?.id)
+      const currentAppRootId = currentApp?.sourceAppId || currentApp?.id
 
-    const fyId = currentApp?.fiscalYearId
-    const fyYear = currentApp?.fiscalYear
-    const pYearStr = ppmp.fiscalYearName || ppmp.fiscalYear || ppmp.fiscalYearYear
+      // Check if linked to an unrelated APP lineage
+      const isLinkedToUnrelatedApp = Boolean(
+        ppmp.consolidatedAppId &&
+        ppmp.consolidatedAppId !== currentApp?.id &&
+        ppmp.consolidatedAppRootId &&
+        currentAppRootId &&
+        ppmp.consolidatedAppRootId.toLowerCase() !== currentAppRootId.toLowerCase()
+      )
 
-    const isFiscalYearMismatch = Boolean(
-      (fyId && ppmp.fiscalYearId && ppmp.fiscalYearId.toLowerCase() !== fyId.toLowerCase()) ||
-      (fyYear && pYearStr && String(pYearStr) !== String(fyYear))
-    )
+      const fyId = currentApp?.fiscalYearId
+      const fyYear = currentApp?.fiscalYear
+      const pYearStr = ppmp.fiscalYearName || ppmp.fiscalYear || ppmp.fiscalYearYear
 
-    const isEligible = !isAlreadyInCurrentApp && !isLinkedToOtherApp && !isFiscalYearMismatch
+      const isFiscalYearMismatch = Boolean(
+        (fyId && ppmp.fiscalYearId && ppmp.fiscalYearId.toLowerCase() !== fyId.toLowerCase()) ||
+        (fyYear && pYearStr && String(pYearStr) !== String(fyYear))
+      )
 
-    let badgeText = 'Available'
-    let badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-300'
-    let reasonText = ''
+      const planType = getPpmpPlanType(ppmp)
+      const isSupplemental = planType === 'Supplemental'
+      const isTargetAppUpdated = (currentApp?.appType || '').toLowerCase() === 'updated'
 
-    if (isAlreadyInCurrentApp) {
-      badgeText = 'Already Added'
-      badgeStyle = 'bg-amber-100 text-amber-800 border-amber-300'
-      reasonText = 'Already part of the current APP'
-    } else if (isLinkedToOtherApp) {
-      badgeText = 'Already Linked'
-      badgeStyle = 'bg-purple-100 text-purple-800 border-purple-300'
-      reasonText = 'Already linked to another APP'
-    } else if (isFiscalYearMismatch) {
-      badgeText = 'Fiscal Year Mismatch'
-      badgeStyle = 'bg-red-100 text-red-800 border-red-300'
-      reasonText = `Fiscal Year mismatch (${pYearStr || 'Unknown'} vs APP ${fyYear || ''})`
-    }
+      // Business Rule: Supplemental PPMPs can ONLY be consolidated into an Updated APP.
+      // Indicative and Final APPs establish the initial baseline and reject Supplemental PPMPs.
+      const isSupplementalMismatch = isSupplemental && !isTargetAppUpdated
 
-    return {
-      isAlreadyInCurrentApp,
-      isLinkedToOtherApp,
-      isFiscalYearMismatch,
-      isEligible,
-      badgeText,
-      badgeStyle,
-      reasonText,
-    }
-  }, [currentApp])
+      const statusStr = String(ppmp.status || ppmp.Status || '').toLowerCase()
+      const isApproved = statusStr === 'approved'
 
-  // Filter eligible PPMPs from currently loaded list
+      const isEligible =
+        isApproved &&
+        !isAlreadyInCurrentApp &&
+        !isLinkedToUnrelatedApp &&
+        !isFiscalYearMismatch &&
+        !isSupplementalMismatch
+
+      let badgeText = 'Available'
+      let badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-300'
+      let reasonText = ''
+
+      if (!isApproved) {
+        badgeText = 'Unapproved'
+        badgeStyle = 'bg-rose-100 text-rose-800 border-rose-300'
+        reasonText = `Only approved PPMPs can be consolidated into an APP (current: ${ppmp.status || 'Draft'})`
+      } else if (isAlreadyInCurrentApp) {
+        badgeText = 'Already Added'
+        badgeStyle = 'bg-amber-100 text-amber-800 border-amber-300'
+        reasonText = 'Already part of the current APP'
+      } else if (isLinkedToUnrelatedApp) {
+        badgeText = 'Already Consolidated'
+        badgeStyle = 'bg-purple-100 text-purple-800 border-purple-300'
+        reasonText = `Already consolidated in ${ppmp.consolidatedAppNumber || 'another APP'}`
+      } else if (isFiscalYearMismatch) {
+        badgeText = 'Fiscal Year Mismatch'
+        badgeStyle = 'bg-red-100 text-red-800 border-red-300'
+        reasonText = `Fiscal Year mismatch (${pYearStr || 'Unknown'} vs APP ${fyYear || ''})`
+      } else if (isSupplementalMismatch) {
+        badgeText = 'Ineligible'
+        badgeStyle = 'bg-slate-100 text-slate-700 border-slate-300'
+        reasonText = `Supplemental PPMPs can only be consolidated into an Updated APP (current: ${currentApp?.appType || 'Indicative'})`
+      }
+
+      return {
+        isAlreadyInCurrentApp,
+        isLinkedToUnrelatedApp,
+        isFiscalYearMismatch,
+        isSupplementalMismatch,
+        isEligible,
+        badgeText,
+        badgeStyle,
+        reasonText,
+        planType,
+      }
+    },
+    [currentApp],
+  )
+
+  // Filter displayed PPMPs by search and plan type filter, ensuring unapproved PPMPs do not appear
+  const displayedPpmps = useMemo(() => {
+    return ppmps
+      .filter((p) => String(p.status || p.Status || '').toLowerCase() === 'approved')
+      .filter((p) => {
+        if (selectedPlanType === 'all') return true
+        const type = getPpmpPlanType(p)
+        if (selectedPlanType === 'indicative') return type === 'Indicative'
+        if (selectedPlanType === 'final') return type === 'Final'
+        if (selectedPlanType === 'supplemental') return type === 'Supplemental'
+        return true
+      })
+  }, [ppmps, selectedPlanType])
+
+  // Filter eligible PPMPs from currently displayed list (for select-all)
+  const eligibleDisplayedPPMPs = useMemo(() => {
+    return displayedPpmps.filter((p) => getPPMPStatus(p).isEligible)
+  }, [displayedPpmps, getPPMPStatus])
+
+  // Total eligible across entire loaded set
   const eligiblePPMPs = useMemo(() => {
     return ppmps.filter((p) => getPPMPStatus(p).isEligible)
   }, [ppmps, getPPMPStatus])
 
-  // Selected eligible PPMPs set
+  // Selected eligible PPMPs set across all loaded PPMPs
   const selectedEligiblePPMPs = useMemo(() => {
     return ppmps.filter((p) => selectedPPMPIds.has(p.id) && getPPMPStatus(p).isEligible)
   }, [ppmps, selectedPPMPIds, getPPMPStatus])
@@ -247,19 +393,21 @@ export function SelectPPMPDialog() {
 
   const toggleSelectAll = useCallback(() => {
     setSelectedPPMPIds((prev) => {
-      const allEligibleSelected = eligiblePPMPs.length > 0 && eligiblePPMPs.every((p) => prev.has(p.id))
+      const allEligibleSelected =
+        eligibleDisplayedPPMPs.length > 0 &&
+        eligibleDisplayedPPMPs.every((p) => prev.has(p.id))
       const newSelected = new Set(prev)
 
       if (allEligibleSelected) {
-        // Deselect all eligible
-        eligiblePPMPs.forEach((p) => newSelected.delete(p.id))
+        // Deselect all eligible currently displayed
+        eligibleDisplayedPPMPs.forEach((p) => newSelected.delete(p.id))
       } else {
-        // Select all eligible
-        eligiblePPMPs.forEach((p) => newSelected.add(p.id))
+        // Select all eligible currently displayed
+        eligibleDisplayedPPMPs.forEach((p) => newSelected.add(p.id))
       }
       return newSelected
     })
-  }, [eligiblePPMPs])
+  }, [eligibleDisplayedPPMPs])
 
   const handleAddPPMPs = useCallback(async () => {
     if (!currentApp) {
@@ -289,21 +437,17 @@ export function SelectPPMPDialog() {
           setAppList((prevList) => prevList.map((app) => app.id === currentApp.id ? transformedApp : app))
         }
 
-        // Invalidate react-query cache to force all components using APP details to refresh
-        queryClient.invalidateQueries({
-          queryKey: [`/apps/${currentApp.id}`],
-        })
-        queryClient.invalidateQueries({
-          queryKey: [getAPPDetailRequest.endpoint, currentApp.id],
-        })
-        queryClient.invalidateQueries({
-          queryKey: ['/apps'],
+        void queryClient.invalidateQueries({
+          predicate: (query) =>
+            typeof query.queryKey[0] === 'string' &&
+            (query.queryKey[0].startsWith('/apps') || query.queryKey[0].startsWith('/ppmps')),
         })
 
         toast.success(`${eligibleIdsToSubmit.length} PPMP(s) consolidated successfully`)
         setOpen(false)
         setSelectedPPMPIds(new Set())
         setSearchTerm('')
+        setSelectedPlanType('all')
       } else {
         const errorMsg = response.data?.message || 'Failed to select PPMPs'
         toast.error(errorMsg)
@@ -345,7 +489,9 @@ export function SelectPPMPDialog() {
   }
 
   const displayApp = currentApp
-  const isAllEligibleSelected = eligiblePPMPs.length > 0 && eligiblePPMPs.every((p) => selectedPPMPIds.has(p.id))
+  const isAllEligibleSelected =
+    eligibleDisplayedPPMPs.length > 0 &&
+    eligibleDisplayedPPMPs.every((p) => selectedPPMPIds.has(p.id))
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -367,22 +513,47 @@ export function SelectPPMPDialog() {
             disabled={isAdding || loading}
           />
 
-          {/* Filter Dropdown */}
-          <div className="space-y-1">
-            <Label className="text-xs font-medium text-gray-600">Fund Source</Label>
-            <Select value={selectedFundSourceId} onValueChange={setSelectedFundSourceId} disabled={isAdding || loading || loadingFundSources}>
-              <SelectTrigger className="h-9 text-sm bg-white border border-gray-300 hover:border-gray-400 cursor-pointer">
-                <SelectValue placeholder="All Fund Sources" />
-              </SelectTrigger>
-              <SelectContent className="z-[999999]">
-                <SelectItem value="all">All Fund Sources</SelectItem>
-                {fundSources.map((fs) => (
-                  <SelectItem key={fs.id} value={fs.id}>
-                    {fs.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Filters: Fund Source & Plan Type */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-gray-600">Fund Source</Label>
+              <Select
+                value={selectedFundSourceId}
+                onValueChange={setSelectedFundSourceId}
+                disabled={isAdding || loading || loadingFundSources}
+              >
+                <SelectTrigger className="h-9 text-sm bg-white border border-gray-300 hover:border-gray-400 cursor-pointer">
+                  <SelectValue placeholder="All Fund Sources" />
+                </SelectTrigger>
+                <SelectContent className="z-[999999]">
+                  <SelectItem value="all">All Fund Sources</SelectItem>
+                  {fundSources.map((fs) => (
+                    <SelectItem key={fs.id} value={fs.id}>
+                      {fs.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-gray-600">Plan Type</Label>
+              <Select
+                value={selectedPlanType}
+                onValueChange={setSelectedPlanType}
+                disabled={isAdding || loading}
+              >
+                <SelectTrigger className="h-9 text-sm bg-white border border-gray-300 hover:border-gray-400 cursor-pointer">
+                  <SelectValue placeholder="All Plan Types" />
+                </SelectTrigger>
+                <SelectContent className="z-[999999]">
+                  <SelectItem value="all">All Plan Types</SelectItem>
+                  <SelectItem value="indicative">Indicative</SelectItem>
+                  <SelectItem value="final">Final PPMP</SelectItem>
+                  <SelectItem value="supplemental">Supplemental</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <Card className="border-blue-200 bg-blue-50">
@@ -398,16 +569,17 @@ export function SelectPPMPDialog() {
               <Label className="text-base font-semibold">
                 Available PPMPs
                 <span className="text-xs font-normal text-gray-500 ml-2">
-                  ({eligiblePPMPs.length} eligible)
+                  ({eligibleDisplayedPPMPs.length} eligible
+                  {selectedPlanType !== 'all' ? ` of ${eligiblePPMPs.length} total` : ''})
                 </span>
               </Label>
-              {!loading && eligiblePPMPs.length > 0 && (
+              {!loading && eligibleDisplayedPPMPs.length > 0 && (
                 <button
                   onClick={toggleSelectAll}
                   disabled={isAdding}
                   className="text-sm text-blue-600 hover:text-blue-700 disabled:text-gray-400 font-medium cursor-pointer"
                 >
-                  {isAllEligibleSelected ? 'Deselect All Eligible' : 'Select All Eligible'}
+                  {isAllEligibleSelected ? 'Deselect All Visible' : 'Select All Visible'}
                 </button>
               )}
             </div>
@@ -417,9 +589,9 @@ export function SelectPPMPDialog() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 <p className="text-sm text-gray-500 font-medium">Loading PPMPs...</p>
               </div>
-            ) : ppmps.length > 0 ? (
+            ) : displayedPpmps.length > 0 ? (
               <div className="border border-gray-200 rounded-lg p-3 bg-white space-y-2 max-h-64 overflow-y-auto">
-                {ppmps.map((ppmp) => {
+                {displayedPpmps.map((ppmp) => {
                   const status = getPPMPStatus(ppmp)
                   const isChecked = selectedPPMPIds.has(ppmp.id) && status.isEligible
 
@@ -443,7 +615,10 @@ export function SelectPPMPDialog() {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <p className="font-semibold text-gray-900 text-base">{ppmp.ppmpNumber}</p>
+                          <div className="flex items-center gap-2 flex-wrap min-w-0">
+                            <p className="font-semibold text-gray-900 text-base">{ppmp.ppmpNumber}</p>
+                            {renderPlanTypeBadge(ppmp)}
+                          </div>
                           <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${status.badgeStyle}`}>
                             {status.badgeText}
                           </span>
@@ -463,7 +638,9 @@ export function SelectPPMPDialog() {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
-                {searchTerm ? 'No PPMPs match your search' : 'No PPMPs available'}
+                {searchTerm || selectedPlanType !== 'all'
+                  ? 'No PPMPs match your search or filter'
+                  : 'No PPMPs available'}
               </div>
             )}
           </div>
@@ -491,6 +668,7 @@ export function SelectPPMPDialog() {
               setOpen(false)
               setSelectedPPMPIds(new Set())
               setSearchTerm('')
+              setSelectedPlanType('all')
             }}
             disabled={isAdding || loading}
             className="pointer-events-auto cursor-pointer"

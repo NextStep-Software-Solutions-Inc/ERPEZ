@@ -1,6 +1,6 @@
-import { Progress } from '@/components/ui/progress'
 import { GitMerge } from 'lucide-react'
 import type { ConsolidatePRMetadata } from '../../types'
+import { Progress } from '@/components/ui/progress'
 
 interface Props {
   metadata: ConsolidatePRMetadata

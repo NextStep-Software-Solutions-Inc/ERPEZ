@@ -20,6 +20,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import * as PopoverPrimitive from '@radix-ui/react-popover'
 import {
   CalendarIcon,
   Search,
@@ -29,9 +30,14 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useToast } from '@/components/ui/use-toast'
-import { useContractStore, Contract, NOA } from '../store/contractStore'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import {
+  useCreateContract,
+  useUpdateContract,
+  useGetAvailableNoasForContract,
+} from '../handlers/hooks'
+import type { AvailableNoaForContract, ContractListItem, ContractDetail } from '../types'
 
 const createContractSchema = z.object({
   contractDate: z.date({ message: 'Contract date is required' }),
@@ -42,22 +48,12 @@ const createContractSchema = z.object({
 
 type CreateContractFormData = z.infer<typeof createContractSchema>
 
-// UUID helper
-function generateUUID(): string {
-  const nativeId = (globalThis as any).crypto?.randomUUID?.()
-  if (typeof nativeId === 'string') return nativeId
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0
-    const v = c === 'x' ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
-}
-
 interface CreateContractModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: (contractId: string) => void
-  initialContract?: Contract | null
+  /** Pass a ContractListItem or ContractDetail when editing an existing draft/returned contract */
+  initialContract?: ContractListItem | ContractDetail | null
 }
 
 export function CreateContractModal({
@@ -66,29 +62,21 @@ export function CreateContractModal({
   onSuccess,
   initialContract = null,
 }: CreateContractModalProps) {
-  const {
-    contracts,
-    addContract,
-    updateContract,
-    getApprovedNOAs,
-    getNOAById,
-  } = useContractStore()
   const { toast } = useToast()
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
-  const [selectedNOA, setSelectedNOA] = useState<NOA | null>(null)
+  const [selectedNOA, setSelectedNOA] = useState<AvailableNoaForContract | null>(null)
   const [noaSearchOpen, setNoaSearchOpen] = useState(false)
   const [noaSearchQuery, setNoaSearchQuery] = useState('')
 
-  // Approved NOAs are sourced from Manage NOA.
-  const linkedNoaIds = new Set(
-    contracts
-      .filter((contract) => contract.id !== initialContract?.id)
-      .map((contract) => contract.noaId),
-  )
-  const approvedNOAs = getApprovedNOAs().filter(
-    (noa) => !linkedNoaIds.has(noa.id) || noa.id === initialContract?.noaId,
-  )
+  const isEditing = !!initialContract
+
+  // Fetch available NOAs from the real API
+  const { data: availableNoas = [], isLoading: noasLoading } = useGetAvailableNoasForContract(open)
+
+  const createMutation = useCreateContract()
+  const updateMutation = useUpdateContract(initialContract?.id)
+
+  const isSubmitting = createMutation.isPending || updateMutation.isPending
 
   const form = useForm<CreateContractFormData>({
     resolver: zodResolver(createContractSchema),
@@ -100,112 +88,87 @@ export function CreateContractModal({
     },
   })
 
-  // Watch noaId changes to update selected NOA
+  // Update selectedNOA when noaId changes
   const watchedNoaId = form.watch('noaId')
   useEffect(() => {
     if (watchedNoaId) {
-      const noa = getNOAById(watchedNoaId)
-      setSelectedNOA(noa || null)
+      const noa = availableNoas.find((n) => n.id === watchedNoaId) ?? null
+      setSelectedNOA(noa)
     } else {
       setSelectedNOA(null)
     }
-  }, [watchedNoaId, getNOAById])
+  }, [watchedNoaId, availableNoas])
 
   // Initialize form when editing
   useEffect(() => {
-    if (initialContract) {
+    if (initialContract && open) {
       form.reset({
         contractDate: initialContract.contractDate
           ? new Date(initialContract.contractDate)
           : new Date(),
         contractNumber: initialContract.contractNumber,
         description: initialContract.description || '',
-        noaId: initialContract.noaId,
+        noaId: initialContract.noticeOfAwardId,
       })
-      const noa = getNOAById(initialContract.noaId)
-      setSelectedNOA(noa || null)
-    } else {
-      // reset when modal closes
-      if (!open) {
-        form.reset({
-          contractDate: new Date(),
-          contractNumber: '',
-          description: '',
-          noaId: '',
-        })
-        setSelectedNOA(null)
-        setNoaSearchQuery('')
-      }
+      // For editing, selectedNOA lookup happens via the watchedNoaId effect above
+    } else if (!open) {
+      form.reset({
+        contractDate: new Date(),
+        contractNumber: '',
+        description: '',
+        noaId: '',
+      })
+      setSelectedNOA(null)
+      setNoaSearchQuery('')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialContract, open])
 
   const onSubmit = async (data: CreateContractFormData) => {
-    setIsSubmitting(true)
     try {
-      if (!selectedNOA) {
-        toast({
-          title: 'Error',
-          description: 'Please select a valid NOA',
+      if (isEditing && initialContract) {
+        await updateMutation.mutateAsync({
+          contractNumber: data.contractNumber,
+          contractDate: format(data.contractDate, 'yyyy-MM-dd'),
+          description: data.description,
         })
-        setIsSubmitting(false)
-        return
-      }
-
-      const contract: Contract = {
-        id: initialContract?.id || generateUUID(),
-        contractDate: format(data.contractDate, 'yyyy-MM-dd'),
-        contractNumber: data.contractNumber,
-        description: data.description || '',
-        noaId: selectedNOA.id,
-        noaNumber: selectedNOA.noaNumber,
-        supplierName: selectedNOA.supplierName,
-        supplierId: selectedNOA.supplierId,
-        totalAmount: selectedNOA.totalAmount,
-        items: selectedNOA.items.map((item) => ({ ...item })),
-        category: selectedNOA.category,
-        status: 'draft',
-        createdAt: initialContract?.createdAt || new Date().toISOString(),
-        modeOfProcurement: selectedNOA.modeOfProcurement,
-        wfpScope: selectedNOA.wfpScope,
-        projectTitle: selectedNOA.projectTitle,
-        linkedNoticeOfAward: selectedNOA.linkedNoticeOfAward,
-      }
-
-      if (initialContract) {
-        updateContract(initialContract.id, contract)
         toast({
           title: 'Contract Updated',
-          description: `${contract.contractNumber} has been updated successfully.`,
+          description: `${data.contractNumber} has been updated.`,
         })
+        onOpenChange(false)
+        if (onSuccess) onSuccess(initialContract.id)
       } else {
-        addContract(contract)
+        const newId = await createMutation.mutateAsync({
+          noticeOfAwardId: data.noaId,
+          contractNumber: data.contractNumber,
+          contractDate: format(data.contractDate, 'yyyy-MM-dd'),
+          description: data.description,
+        })
+        const contractId = typeof newId === 'string' ? newId : String(newId)
         toast({
           title: 'Contract Created',
-          description: `${contract.contractNumber} has been created as draft.`,
+          description: `${data.contractNumber} has been created as Draft.`,
         })
+        onOpenChange(false)
+        if (onSuccess && contractId) onSuccess(contractId)
       }
-
-      onOpenChange(false)
-      if (onSuccess) onSuccess(contract.id)
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to create contract. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to save contract. Please try again.',
       })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
   // Filter NOAs based on search query
-  const searchFilteredNOAs = approvedNOAs.filter((noa) => {
+  const searchFilteredNOAs = availableNoas.filter((noa) => {
     const query = noaSearchQuery.toLowerCase()
     return (
       noa.noaNumber.toLowerCase().includes(query) ||
       noa.supplierName.toLowerCase().includes(query) ||
-      noa.description?.toLowerCase().includes(query) ||
-      noa.category.toLowerCase().includes(query)
+      (noa.projectTitle ?? '').toLowerCase().includes(query) ||
+      (noa.modeOfProcurement ?? '').toLowerCase().includes(query)
     )
   })
 
@@ -213,9 +176,9 @@ export function CreateContractModal({
     <ResponsiveDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={initialContract ? 'Edit Contract' : 'Create Contract'}
+      title={isEditing ? 'Edit Contract' : 'Create Contract'}
       description={
-        initialContract
+        isEditing
           ? 'Update contract information'
           : 'Create a new contract by linking an approved NOA'
       }
@@ -296,9 +259,7 @@ export function CreateContractModal({
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium">
-                  Description
-                </FormLabel>
+                <FormLabel className="text-sm font-medium">Description</FormLabel>
                 <FormControl>
                   <Textarea
                     placeholder="Enter contract description"
@@ -312,130 +273,161 @@ export function CreateContractModal({
             )}
           />
 
-          {/* NOA Selection */}
-          <FormField
-            control={form.control}
-            name="noaId"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel className="text-sm font-medium">
-                  Link NOA <span className="text-destructive">*</span>
-                </FormLabel>
-                <Popover open={noaSearchOpen} onOpenChange={setNoaSearchOpen}>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className={cn(
-                          'w-full justify-between',
-                          !field.value && 'text-muted-foreground',
-                        )}
-                      >
-                        {field.value
-                          ? selectedNOA?.noaNumber || '-- Select NOA --'
-                          : '-- Select NOA --'}
-                        <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[400px] p-0" align="start">
-                    <div className="p-2">
-                      <Input
-                        placeholder="Search approved NOA by number, supplier, or category..."
-                        value={noaSearchQuery}
-                        onChange={(e) => setNoaSearchQuery(e.target.value)}
-                        className="mb-2"
-                      />
-                      <div className="text-xs font-medium text-muted-foreground mb-2 px-2">
-                        Approved NOAs from Manage NOA
-                      </div>
-                      <div className="max-h-[300px] overflow-y-auto">
-                        {searchFilteredNOAs.length === 0 ? (
-                          <div className="py-6 text-center text-sm text-muted-foreground">
-                            No approved unlinked NOA found.
-                          </div>
-                        ) : (
-                          searchFilteredNOAs.map((noa) => (
-                            <div
-                              key={noa.id}
-                              onClick={() => {
-                                field.onChange(noa.id)
-                                setNoaSearchOpen(false)
-                              }}
-                              className="flex flex-col items-start py-3 px-2 cursor-pointer hover:bg-accent rounded-md transition-colors"
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <span className="font-medium">
-                                  {noa.noaNumber}
-                                </span>
-                                <Badge variant="outline" className="ml-2">
-                                  {noa.category}
-                                </Badge>
-                              </div>
-                              <span className="text-sm text-muted-foreground mt-1">
-                                {noa.supplierName}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                ₱ {noa.totalAmount.toLocaleString()} •{' '}
-                                {format(new Date(noa.noaDate), 'MMM dd, yyyy')}
-                              </span>
+          {/* NOA Selection — hidden when editing (NOA cannot change after creation) */}
+          {!isEditing && (
+            <FormField
+              control={form.control}
+              name="noaId"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel className="text-sm font-medium">
+                    Link NOA <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <Popover open={noaSearchOpen} onOpenChange={setNoaSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            'w-full justify-between',
+                            !field.value && 'text-muted-foreground',
+                          )}
+                          disabled={noasLoading}
+                        >
+                          {noasLoading
+                            ? 'Loading available NOAs...'
+                            : field.value
+                              ? selectedNOA?.noaNumber || '-- Select NOA --'
+                              : '-- Select NOA --'}
+                          <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverPrimitive.Content
+                      side="bottom"
+                      align="start"
+                      sideOffset={4}
+                      avoidCollisions={false}
+                      className={cn(
+                        'z-[99999] w-[var(--radix-popover-trigger-width)] min-w-[340px] rounded-md border bg-popover p-0 text-popover-foreground shadow-xl outline-none',
+                        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2',
+                      )}
+                      onWheel={(e) => e.stopPropagation()}
+                    >
+                      <div className="p-2">
+                        <Input
+                          placeholder="Search by NOA number, supplier, or project..."
+                          value={noaSearchQuery}
+                          onChange={(e) => setNoaSearchQuery(e.target.value)}
+                          className="mb-2"
+                        />
+                        <div className="text-xs font-medium text-muted-foreground mb-2 px-2">
+                          Approved NOAs available for contract
+                        </div>
+                        <div
+                          ref={(el) => {
+                            if (el) {
+                              el.onwheel = (e) => e.stopPropagation()
+                            }
+                          }}
+                          onWheel={(e) => e.stopPropagation()}
+                          className="max-h-[250px] overflow-y-auto"
+                        >
+                          {searchFilteredNOAs.length === 0 ? (
+                            <div className="py-6 text-center text-sm text-muted-foreground">
+                              {noasLoading ? 'Loading...' : 'No approved unlinked NOA found.'}
                             </div>
-                          ))
-                        )}
+                          ) : (
+                            searchFilteredNOAs.map((noa) => (
+                              <div
+                                key={noa.id}
+                                onClick={() => {
+                                  field.onChange(noa.id)
+                                  setNoaSearchOpen(false)
+                                }}
+                                className="flex flex-col items-start py-3 px-2 cursor-pointer hover:bg-accent rounded-md transition-colors"
+                              >
+                                <div className="flex items-center justify-between w-full">
+                                  <span className="font-medium">{noa.noaNumber}</span>
+                                  {noa.noticeOfAwardType && (
+                                    <Badge variant="outline" className="ml-2">
+                                      {noa.noticeOfAwardType}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <span className="text-sm text-muted-foreground mt-1">
+                                  {noa.supplierName}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {noa.projectTitle && `${noa.projectTitle} • `}
+                                  ₱ {noa.totalAmount.toLocaleString()} •{' '}
+                                  {noa.noaDate ? format(new Date(noa.noaDate), 'MMM dd, yyyy') : '—'}
+                                </span>
+                              </div>
+                            ))
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                    </PopoverPrimitive.Content>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
-          {/* Auto-filled Supplier and Amount (Read-only) */}
-          {selectedNOA && (
+          {/* Linked NOA Information / Auto-filled Supplier and Amount (Read-only) */}
+          {(selectedNOA || isEditing) && (
             <div className="space-y-3 p-4 bg-muted/50 rounded-lg border">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <FileText className="h-4 w-4" />
-                <span>Auto-filled from NOA</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <FileText className="h-4 w-4" />
+                  <span>{isEditing ? 'Linked Notice of Award' : 'Auto-filled from NOA'}</span>
+                </div>
+                {(selectedNOA?.noaNumber || initialContract?.noaNumber) && (
+                  <Badge variant="outline" className="text-xs">
+                    {selectedNOA?.noaNumber || initialContract?.noaNumber}
+                  </Badge>
+                )}
               </div>
 
               <div className="grid grid-cols-1 gap-3">
-                <div className="flex items-start gap-3">
-                  <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Supplier
-                    </p>
-                    <p className="text-sm font-semibold">
-                      {selectedNOA.supplierName}
-                    </p>
+                {(selectedNOA?.supplierName || initialContract?.supplierName) && (
+                  <div className="flex items-start gap-3">
+                    <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-muted-foreground">Supplier</p>
+                      <p className="text-sm font-semibold">
+                        {selectedNOA?.supplierName || initialContract?.supplierName}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="flex items-start gap-3">
-                  <DollarSign className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Total Amount
-                    </p>
-                    <p className="text-sm font-semibold">
-                      ₱ {selectedNOA.totalAmount.toLocaleString()}
-                    </p>
+                {(selectedNOA?.projectTitle || initialContract?.projectTitle) && (
+                  <div className="flex items-start gap-3">
+                    <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-muted-foreground">Project</p>
+                      <p className="text-sm font-semibold">
+                        {selectedNOA?.projectTitle || initialContract?.projectTitle}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="flex items-start gap-3">
-                  <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Items
-                    </p>
-                    <p className="text-sm font-semibold">
-                      {selectedNOA.items.length} item(s)
-                    </p>
+                {(selectedNOA?.totalAmount !== undefined || initialContract?.totalAmount !== undefined) && (
+                  <div className="flex items-start gap-3">
+                    <DollarSign className="h-5 w-5 text-muted-foreground mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-muted-foreground">Total Amount</p>
+                      <p className="text-sm font-semibold">
+                        ₱ {(selectedNOA?.totalAmount ?? initialContract?.totalAmount ?? 0).toLocaleString()}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           )}
@@ -452,8 +444,8 @@ export function CreateContractModal({
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting
-                ? 'Creating...'
-                : initialContract
+                ? isEditing ? 'Updating...' : 'Creating...'
+                : isEditing
                   ? 'Update Contract'
                   : 'Create Contract'}
             </Button>

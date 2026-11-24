@@ -7,4 +7,6 @@
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { getPersonnelPositionsRequest } from '../handlers/getPersonnelPositionsRequest'
 
-export const usePersonnelPositions = createQueryHookFromTemplate(getPersonnelPositionsRequest)
+export const usePersonnelPositions = createQueryHookFromTemplate(
+  getPersonnelPositionsRequest,
+)

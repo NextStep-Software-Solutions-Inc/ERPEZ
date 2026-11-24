@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { submitWfpDialogAtom } from '../dialog/SubmitWfpDialog'
 import { updateDialogAtom, deleteDialogAtom, approveDialogAtom } from '../atoms'
+import { usePermissions } from '@/hooks/usePermissions'
+import { PERMISSIONS } from '@/constants/permissions'
 
 interface ActionsProps {
   data: WFP
@@ -22,16 +24,22 @@ interface ActionsProps {
 
 export function Actions({ data, readonly, actions }: ActionsProps) {
   const navigate = useNavigate()
+  const { hasPermission } = usePermissions()
   const [, setUpdateDialogState] = useAtom(updateDialogAtom)
   const [, setSubmitDialogState] = useAtom(submitWfpDialogAtom)
   const [, setDeleteDialogState] = useAtom(deleteDialogAtom)
   const [, setApprovedDialogState] = useAtom(approveDialogAtom)
 
-  const showWrite = actions?.includes('write') && data.status === 'Draft' && !readonly
-  const showRead = actions?.includes('read') && !readonly
-  const showSubmit = actions?.includes('submit') && data.status === 'Draft' && !readonly
-  const showApprove = actions?.includes('submit') && data.status === 'Submitted' && !readonly
-  const showDelete = actions?.includes('delete') && data.status === 'Draft' && !readonly
+  const canUpdate = hasPermission(PERMISSIONS.Planning.Wfp.Update)
+  const canSubmit = hasPermission(PERMISSIONS.Planning.Wfp.Submit)
+  const canApprove = hasPermission(PERMISSIONS.Planning.Wfp.Approve)
+  const canDelete = hasPermission(PERMISSIONS.Planning.Wfp.Delete)
+
+  const showWrite = canUpdate && data.status === 'Draft' && !readonly
+  const showRead = !readonly
+  const showSubmit = canSubmit && data.status === 'Draft' && !readonly
+  const showApprove = canApprove && data.status === 'Submitted' && !readonly
+  const showDelete = canDelete && data.status === 'Draft' && !readonly
 
   return (
     <DropdownMenu>

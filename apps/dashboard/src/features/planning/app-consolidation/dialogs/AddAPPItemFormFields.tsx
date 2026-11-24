@@ -15,6 +15,7 @@ import { FileText, Building2, Coins, Calendar, Info, Layers } from 'lucide-react
 
 export interface AddAPPItemFormData {
   ppmpItemId: string
+  itemNameOverride: string
   procurementModeId: string
   fundSourceId: string
   officeId: string
@@ -161,6 +162,7 @@ export function AddAPPItemFormFields({
             const isAttached = attachedPpmpItemIds.has(val)
             if (isAttached) return
 
+            const defaultName = selectedItem?.name || selectedItem?.code || ''
             const defaultDesc = selectedItem?.description || selectedItem?.name || ''
             const defaultStart = selectedItem?.procurementStartDate || ''
             const defaultEnd = selectedItem?.procurementEndDate || ''
@@ -168,6 +170,7 @@ export function AddAPPItemFormFields({
             setFormData((p) => ({
               ...p,
               ppmpItemId: val,
+              itemNameOverride: defaultName || p.itemNameOverride || '',
               procurementModeId: selectedItem?.procurementModeId || p.procurementModeId,
               officeId: selectedItem?.PPMP?.officeId || p.officeId,
               fundSourceId: selectedItem?.PPMP?.fundSourceId || p.fundSourceId,
@@ -257,7 +260,7 @@ export function AddAPPItemFormFields({
                 <Info className="w-3.5 h-3.5 text-blue-600" />
                 Inherited PPMP Allocation Info
               </span>
-              <span className="font-mono font-bold bg-blue-600 text-white px-2 py-0.5 rounded text-xs shadow-2xs">
+              <span className="font-bold bg-blue-600 text-white px-2 py-0.5 rounded text-xs shadow-2xs">
                 {ppmpNumberStr}
               </span>
             </div>
@@ -300,6 +303,18 @@ export function AddAPPItemFormFields({
               </span>
             </div>
           </div>
+
+          {/* Source PPMP Item Lineage Reference */}
+          <div className="pt-2 border-t border-blue-100/80 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+            <div className="bg-white/70 p-2 rounded-lg border border-gray-100">
+              <span className="text-[11px] text-gray-500 font-medium block">Source PPMP Item (Immutable):</span>
+              <span className="font-semibold text-gray-900 line-clamp-1">{selectedPPMPItem.name || selectedPPMPItem.code || '—'}</span>
+            </div>
+            <div className="bg-white/70 p-2 rounded-lg border border-gray-100">
+              <span className="text-[11px] text-gray-500 font-medium block">Source PPMP Description (Immutable):</span>
+              <span className="font-semibold text-gray-900 line-clamp-1">{selectedPPMPItem.description || selectedPPMPItem.name || '—'}</span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -311,18 +326,44 @@ export function AddAPPItemFormFields({
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Project Title / Item Name */}
+          <div className="space-y-2 col-span-1 md:col-span-2">
+            <Label htmlFor="itemNameOverride" className="text-sm font-semibold flex items-center justify-between">
+              <span>Project Title / Item Name</span>
+              <span className="text-xs font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                Column 1 on APP (Editable Override)
+              </span>
+            </Label>
+            <Input
+              id="itemNameOverride"
+              placeholder="Project Title / Item Name for APP document..."
+              value={formData.itemNameOverride}
+              onChange={(e) => setFormData((p) => ({ ...p, itemNameOverride: e.target.value }))}
+            />
+            <p className="text-[11px] text-gray-500">
+              Overrides the title appearing on the consolidated APP and generated document without modifying the original PPMP.
+            </p>
+          </div>
+
           {/* General Description */}
           <div className="space-y-2 col-span-1 md:col-span-2">
             <Label htmlFor="generalDescription" className="text-sm font-semibold flex items-center justify-between">
               <span>General Description</span>
-              <span className="text-xs font-normal text-gray-500">(Inherited from PPMP, editable)</span>
+              <span className="text-xs font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                Column 3 on APP (Editable Override)
+              </span>
             </Label>
-            <Input
+            <textarea
               id="generalDescription"
+              rows={Math.min(10, Math.max(4, Math.ceil(((formData.generalDescription || '').length) / 65)))}
               placeholder="General Description of the project item..."
               value={formData.generalDescription}
               onChange={(e) => setFormData((p) => ({ ...p, generalDescription: e.target.value }))}
+              className="flex min-h-[110px] w-full rounded-md border border-input bg-transparent px-3 py-2.5 text-sm leading-relaxed resize-y shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             />
+            <p className="text-[11px] text-gray-500">
+              Overrides the general project description appearing on the consolidated APP and generated document.
+            </p>
           </div>
 
           {/* Mode of Procurement */}

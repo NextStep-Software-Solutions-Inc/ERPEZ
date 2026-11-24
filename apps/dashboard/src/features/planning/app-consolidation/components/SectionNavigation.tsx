@@ -38,7 +38,7 @@ export function SectionNavigation({ activeSection, onSectionChange }: SectionNav
             }`}
           >
             <BarChart3 className="w-4 h-4" />
-            Aggregations
+            Summary
           </Button>
 
           <Button
@@ -50,7 +50,7 @@ export function SectionNavigation({ activeSection, onSectionChange }: SectionNav
             }`}
           >
             <Settings className="w-4 h-4" />
-            BAC Details
+            APP Item Details
           </Button>
 
           <Button

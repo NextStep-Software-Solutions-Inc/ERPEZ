@@ -55,10 +55,11 @@ export default function OrganizationLayout({ children }: OrganizationLayoutProps
         </CardHeader>
         <CardContent className="space-y-6">
           <Tabs value={tab} onValueChange={setActiveTab}>
-            <TabsList className="grid-cols-4 gap-2 p-0 w-fit">
+            <TabsList className="grid-cols-5 gap-2 p-0 w-fit">
               <TabsTrigger value="structural-management" className="px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">Structural Management</TabsTrigger>
               <TabsTrigger value="staffing-and-plantilla" className="px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">Staffing and Plantilla</TabsTrigger>
               <TabsTrigger value="personnel-reporting" className="px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">Personnel Reporting</TabsTrigger>
+              <TabsTrigger value="operational-roles" className="px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">Operational Roles</TabsTrigger>
               <TabsTrigger value="settings" className="px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">Settings</TabsTrigger>
             </TabsList>
             {children}

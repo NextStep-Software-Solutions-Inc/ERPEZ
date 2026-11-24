@@ -7,105 +7,53 @@ import { UpdateExpenseClassDialog } from '@/features/uacs/code-segments/dialogs/
 import { DeleteExpenseClassDialog } from '@/features/uacs/code-segments/dialogs/DeleteExpenseClassDialog'
 import { createExpenseClassColumns } from '@/features/uacs/code-segments/tables/ExpenseClassColumns'
 import ExpenseClassToolbar from '@/features/uacs/code-segments/tables/ExpenseClassToolbar'
-import { fiscalYearAtom } from '@/features/uacs/code-segments/atoms/fiscalYearAtom'
 import { showInactiveCodesAtom } from '@/features/uacs/code-segments/atoms/showInactiveCodesAtom'
 import type { ExpenseClass } from '@/features/uacs/code-segments/types/expenseClassTypes'
 import type { MetaActions } from '@/types/global'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { getExpenseClassesRequest } from '@/features/uacs/code-segments/handlers/getExpenseClassesRequest'
 
-// Mock data
-const mockExpenseClasses: ExpenseClass[] = [
-  // 2025 Expense Classes (carry-forward base)
-  {
-    id: '2025-1',
-    code: 'PS',
-    name: 'Personnel Services',
-    description: 'Salaries and wages for employees',
-    type: 1,
-    isActive: true,
-    fiscalYear: 2025,
-  },
-  {
-    id: '2025-2',
-    code: 'MOOE',
-    name: 'Maintenance & Other Operating Expenses',
-    description: 'Operations and maintenance costs',
-    type: 2,
-    isActive: true,
-    fiscalYear: 2025,
-  },
-  {
-    id: '2025-3',
-    code: 'CO',
-    name: 'Capital Outlay',
-    description: 'Equipment and infrastructure investment',
-    type: 3,
-    isActive: true,
-    fiscalYear: 2025,
-  },
-  {
-    id: '2025-4',
-    code: 'FE',
-    name: 'Financial Expenditure',
-    description: 'Loans and financial assistance',
-    type: 4,
-    isActive: true,
-    fiscalYear: 2025,
-  },
-  // 2026 Expense Classes (carry-forward from 2025)
-  {
-    id: '1',
-    code: 'PS',
-    name: 'Personnel Services',
-    description: 'Salaries and wages for employees',
-    type: 1,
-    isActive: true,
-    fiscalYear: 2026,
-  },
-  {
-    id: '2',
-    code: 'MOOE',
-    name: 'Maintenance & Other Operating Expenses',
-    description: 'Operations and maintenance costs',
-    type: 2,
-    isActive: true,
-    fiscalYear: 2026,
-  },
-  {
-    id: '3',
-    code: 'CO',
-    name: 'Capital Outlay',
-    description: 'Equipment and infrastructure investment',
-    type: 3,
-    isActive: true,
-    fiscalYear: 2026,
-  },
-  {
-    id: '4',
-    code: 'FE',
-    name: 'Financial Expenditure',
-    description: 'Loans and financial assistance',
-    type: 4,
-    isActive: true,
-    fiscalYear: 2026,
-  },
-]
+const useExpenseClasses = createQueryHookFromTemplate(getExpenseClassesRequest)
 
 export function ExpenseClassTab() {
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [search, setSearch] = useState('')
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<ExpenseClass | undefined>()
   const [deletingItem, setDeletingItem] = useState<ExpenseClass | undefined>()
-  const [selectedFY] = useAtom(fiscalYearAtom)
   const [showInactive] = useAtom(showInactiveCodesAtom)
 
   const actions: MetaActions = ['write', 'delete']
 
+  // Build Sieve filter string for server-side search
+  const sieveFilters = useMemo(() => {
+    if (!search.trim()) return undefined
+    return `Name@=*${search.trim()}|Code@=*${search.trim()}`
+  }, [search])
+
+  // Fetch expense classes from API with server-side pagination & search
+  const { data: apiResponse, isLoading, error } = useExpenseClasses({
+    pathParams: {},
+    queryParams: {
+      pageNumber: page,
+      pageSize: pageSize,
+      ...(sieveFilters ? { filters: sieveFilters } : {}),
+    },
+  })
+
+  const handleSearch = (value: string) => {
+    setSearch(value)
+    setPage(1)
+  }
+
   const filteredData = useMemo(() => {
-    return mockExpenseClasses.filter((item) => {
-      if ((item.fiscalYear ?? 0) !== selectedFY) return false
+    const list = apiResponse?.data || []
+    return list.filter((item) => {
       if (!showInactive && !item.isActive) return false
       return true
     })
-  }, [selectedFY, showInactive])
+  }, [apiResponse, showInactive])
 
   const columns = useMemo(
     () =>
@@ -116,22 +64,24 @@ export function ExpenseClassTab() {
     []
   )
 
-  const handleAddExpenseClass = async (data: any) => {
-    // Mock submission
-    console.log('Adding expense class:', data)
-    setAddDialogOpen(false)
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center text-muted-foreground">Loading expense classes...</div>
+        </CardContent>
+      </Card>
+    )
   }
 
-  const handleUpdateExpenseClass = async (data: any) => {
-    // Mock submission
-    console.log('Updating expense class:', data)
-    setEditingItem(undefined)
-  }
-
-  const handleDeleteExpenseClass = async () => {
-    // Mock deletion
-    console.log('Deleting expense class:', deletingItem)
-    setDeletingItem(undefined)
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center text-red-500">Error loading expense classes</div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -153,13 +103,25 @@ export function ExpenseClassTab() {
             data={filteredData}
             actions={actions}
             readonly={false}
-            fixedPageSize={10}
+            manualPagination={true}
+            pageCount={apiResponse?.totalPages || 1}
+            pageIndex={page - 1}
+            pageSize={pageSize}
+            totalCount={apiResponse?.totalCount || 0}
+            onPaginationChange={({ pageIndex, pageSize: newPageSize }) => {
+              setPage(pageIndex + 1)
+              if (newPageSize !== pageSize) {
+                setPageSize(newPageSize)
+              }
+            }}
             toolbar={(table) => (
               <ExpenseClassToolbar
                 table={table}
                 showColumnVisibility={true}
                 onAdd={() => setAddDialogOpen(true)}
                 addLabel="Add Expense Class"
+                onSearch={handleSearch}
+                searchValue={search}
               />
             )}
           />
@@ -169,22 +131,20 @@ export function ExpenseClassTab() {
       <AddExpenseClassDialog
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
-        onSubmit={handleAddExpenseClass}
       />
 
       <UpdateExpenseClassDialog
         open={!!editingItem}
         onOpenChange={(open) => !open && setEditingItem(undefined)}
         expenseClass={editingItem}
-        onSuccess={handleUpdateExpenseClass}
       />
 
       <DeleteExpenseClassDialog
         open={!!deletingItem}
         onOpenChange={(open) => !open && setDeletingItem(undefined)}
         expenseClass={deletingItem}
-        onConfirm={handleDeleteExpenseClass}
       />
     </>
   )
 }
+

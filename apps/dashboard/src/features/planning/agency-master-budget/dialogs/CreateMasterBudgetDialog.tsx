@@ -17,6 +17,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/use-toast'
+import { FundSourceCombobox } from '@/components/features/planning/fund-source/components/FundSourceCombobox'
 import type { CreateAgencyMasterBudgetPayload } from '@/features/planning/agency-master-budget/handlers/createAgencyMasterBudgetRequest'
 import type { UpdateAgencyMasterBudgetPayload } from '@/features/planning/agency-master-budget/handlers/updateAgencyMasterBudgetRequest'
 
@@ -57,13 +58,27 @@ interface CreateMasterBudgetDialogProps {
   isSubmitting?: boolean
 }
 
-// Maps sourceDocumentType integer to Select option value
+// Source document options — value must be parseable by the backend's Enum.TryParse<SourceDocumentTypeEnum>
+// which accepts both the name ("NEPGAA") and the integer ("0").
+// We use the enum names here to be consistent with what the API returns.
 const SOURCE_DOCUMENTS = [
-  { value: '0', label: 'NEP/GAA (Regular Funds)' },
-  { value: '1', label: 'PRE (Internally Generated Income)' },
-  { value: '2', label: 'MOA (External Grants)' },
-  { value: '3', label: 'Other' },
+  { value: 'NEPGAA', label: 'NEP/GAA (Regular Funds)' },
+  { value: 'PRE', label: 'PRE (Internally Generated Income)' },
+  { value: 'MOA', label: 'MOA (External Grants)' },
+  { value: 'Others', label: 'Other' },
 ]
+
+// Normalize a stored sourceDocumentType (could be integer string "0" or enum name "NEPGAA") to an enum name
+const SOURCE_DOC_INT_TO_NAME: Record<string, string> = {
+  '0': 'NEPGAA',
+  '1': 'PRE',
+  '2': 'MOA',
+  '3': 'Others',
+}
+const normalizeSourceDocType = (val: string | number): string => {
+  const s = String(val)
+  return SOURCE_DOC_INT_TO_NAME[s] ?? s
+}
 
 export function CreateMasterBudgetDialog({
   open,
@@ -83,7 +98,7 @@ export function CreateMasterBudgetDialog({
       return {
         fiscalYearId: editingBudget.fiscalYearId,
         fundSourceId: editingBudget.fundSourceId,
-        sourceDocumentType: String(editingBudget.sourceDocumentType),
+        sourceDocumentType: normalizeSourceDocType(editingBudget.sourceDocumentType),
         psAmount: editingBudget.psAmount,
         mooeAmount: editingBudget.mooeAmount,
         coAmount: editingBudget.coAmount,
@@ -240,21 +255,16 @@ export function CreateMasterBudgetDialog({
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <Select
+            <FundSourceCombobox
+              options={fundClusters}
               value={formData.fundSourceId}
-              onValueChange={(value) => setFormData({ ...formData, fundSourceId: value })}
-            >
-              <SelectTrigger className={`h-10 border-gray-200 ${errors.fundSourceId ? 'border-red-500' : ''}`}>
-                <SelectValue placeholder="Select Fund Source" />
-              </SelectTrigger>
-              <SelectContent>
-                {fundClusters.map((fc) => (
-                  <SelectItem key={fc.id} value={fc.id}>
-                    {fc.code ? `${fc.code} - ${fc.name}` : fc.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onValueChange={(value) =>
+                setFormData({ ...formData, fundSourceId: value })
+              }
+              placeholder="Select Fund Source"
+              searchPlaceholder="Search by code, name, authorization..."
+              className={errors.fundSourceId ? 'ring-1 ring-red-500 rounded-md' : ''}
+            />
             {errors.fundSourceId && (
               <p className="text-xs text-red-500">{errors.fundSourceId}</p>
             )}

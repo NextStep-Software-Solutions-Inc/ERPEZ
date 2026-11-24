@@ -1,4 +1,4 @@
-﻿import { Eye, Edit3, Trash2 } from 'lucide-react'
+import { Eye, Edit3, Trash2 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { LIB } from '@/features/planning/line-item-budgeting/line-item-budget/types'
@@ -59,7 +59,7 @@ export const LibListItem = ({
       <td className="px-6 py-4">
         <div className="space-y-1">
           <p className="text-sm text-gray-900">
-            {lib.activities?.length || 0} activities
+            {lib.activityCount ?? lib.activities?.length ?? 0} activities
           </p>
           <p className="text-xs text-gray-500">0 completed</p>
         </div>

@@ -39,6 +39,7 @@ import {
   Sheild,
   Stacks2,
 } from '@/components/svg'
+import { PERMISSIONS } from '@/constants/permissions'
 
 export interface MenuItemProps {
   title: string
@@ -48,7 +49,13 @@ export interface MenuItemProps {
   megaMenu?: Array<MenuItemProps>
   multi_menu?: Array<MenuItemProps>
   nested?: Array<MenuItemProps>
-  onClick: () => void
+  onClick?: () => void
+  /** Single permission key (or array) required to see this item */
+  permission?: string | readonly string[]
+  /** Additional permission keys — user must hold at least one */
+  permissions?: readonly string[]
+  /** If true, this item is a section header (treated specially during filtering) */
+  isHeader?: boolean
 }
 
 export const menusConfig = {
@@ -986,25 +993,26 @@ export const menusConfig = {
         title: 'Dashboard Overview',
         icon: DashBoard,
         href: '/v2/dashboard',
+        permission: [
+          PERMISSIONS.Planning.Dashboard.ViewGlobal,
+          PERMISSIONS.Planning.Dashboard.ViewOffice,
+        ],
       },
       {
         title: 'Strategic Planning',
         icon: ChartBar,
         child: [
           {
-            title: 'MFO Reference',
-            href: '/v2/mfo-reference',
-            icon: Book,
-          },
-          {
             title: 'KPI Library',
             href: '/v2/kpi-library',
             icon: ClipBoard2,
+            permission: PERMISSIONS.Planning.Kpi.View,
           },
           {
             title: 'Annual Performance Planning',
             href: '/v2/annual-performance-planning',
             icon: ChartArea,
+            permission: PERMISSIONS.Planning.Target.Manage,
           },
         ],
       },
@@ -1016,11 +1024,13 @@ export const menusConfig = {
             title: 'Commitments (OPCR)',
             href: '/v2/commitments',
             icon: ClipBoard,
+            permission: PERMISSIONS.Planning.Opcr.View,
           },
           {
             title: 'Work and Financial Plan',
             href: '/v2/wfp',
             icon: Files,
+            permission: PERMISSIONS.Planning.Wfp.View,
           },
         ],
       },
@@ -1032,6 +1042,7 @@ export const menusConfig = {
             title: 'Line-Item Budgeting',
             href: '/v2/line-item-budgeting',
             icon: Note3,
+            permission: PERMISSIONS.Planning.Lib.View,
           },
         ],
       },
@@ -1043,16 +1054,19 @@ export const menusConfig = {
             title: 'Market Scoping',
             href: '/v2/market-scoping',
             icon: ClipBoard,
+            permission: PERMISSIONS.Planning.MarketScoping.View,
           },
           {
             title: 'PPMP',
             href: '/v2/ppmp',
             icon: ClipBoard2,
+            permission: PERMISSIONS.Procurement.Ppmp.View,
           },
           {
             title: 'APP Consolidation',
             href: '/v2/app-consolidation',
             icon: Note,
+            permission: PERMISSIONS.Procurement.App.Manage,
           },
         ],
       },
@@ -1060,16 +1074,20 @@ export const menusConfig = {
         title: 'Performance Review',
         icon: Note2,
         href: '/v2/performance-review',
-      },
-      {
-        title: 'Reports',
-        icon: Files,
-        href: '/v2/reports',
+        permission: [
+          PERMISSIONS.Planning.Opcr.View,
+          PERMISSIONS.Planning.Opcr.Evaluate,
+        ],
       },
       {
         title: 'Dashboard',
         icon: DashBoard,
         href: '/v2/procurement-dashboard',
+        permission: [
+          PERMISSIONS.Procurement.Ppmp.View,
+          PERMISSIONS.Procurement.App.Manage,
+          PERMISSIONS.Procurement.Pr.Manage,
+        ],
       },
       // Supplier Portal — sidebarNav.modern (modern layout variant)
       {
@@ -1080,16 +1098,25 @@ export const menusConfig = {
             title: 'RFQ Item',
             href: '/v2/supplier-portal/rfq-item',
             icon: Envelope,
+            permission: [
+              PERMISSIONS.Procurement.Supplier.View,
+              PERMISSIONS.Procurement.Rfq.Manage,
+            ],
           },
           {
             title: 'Direct Contracting Item',
             href: '/v2/supplier-portal/direct-contracting-item',
             icon: Cart,
+            permission: [
+              PERMISSIONS.Procurement.Supplier.View,
+              PERMISSIONS.Procurement.Po.Manage,
+            ],
           },
           {
             title: 'Manage Supplier Portal',
             href: '/v2/manage-supplier-portal',
             icon: Envelope,
+            permission: PERMISSIONS.Procurement.Supplier.Manage,
           },
         ],
       },
@@ -1101,21 +1128,31 @@ export const menusConfig = {
             title: 'Agency Purchase Requests (APR)',
             href: '/v2/agency-purchase-requests-apr',
             icon: ClipBoard2,
+            permission: PERMISSIONS.Procurement.Pr.Create,
           },
           {
             title: 'Purchase Requests (PR)',
             href: '/v2/purchase-requests-pr',
             icon: ClipBoard,
+            permission: PERMISSIONS.Procurement.Pr.Create,
           },
           {
             title: 'Manage PRs',
             href: '/v2/manage-prs',
             icon: Note3,
+            permission: PERMISSIONS.Procurement.Pr.Manage,
+          },
+          {
+            title: 'Consolidate PRs',
+            href: '/v2/consolidate-prs',
+            icon: Files,
+            permission: PERMISSIONS.Procurement.Pr.Manage,
           },
           {
             title: 'Manage APRs',
             href: '/v2/manage-aprs',
             icon: Note,
+            permission: PERMISSIONS.Procurement.Pr.Manage,
           },
         ],
       },
@@ -1127,16 +1164,7 @@ export const menusConfig = {
             title: 'BAC Resolutions',
             href: '/v2/bac-resolutions',
             icon: Book,
-          },
-          {
-            title: 'BAC Resolutions (Public Bidding)',
-            href: '/v2/bac-resolutions-public-bidding',
-            icon: Book,
-          },
-          {
-            title: 'Manage BAC Resolutions',
-            href: '/v2/manage-bac-resolutions',
-            icon: Files,
+            permission: PERMISSIONS.Procurement.Bac.Manage,
           },
         ],
       },
@@ -1148,16 +1176,13 @@ export const menusConfig = {
             title: 'Direct Acquisition Request',
             href: '/v2/direct-acquisition-request',
             icon: Envelope,
+            permission: PERMISSIONS.Procurement.Pr.Create,
           },
           {
             title: 'Manage Direct Acquisition',
             href: '/v2/manage-direct-acquisition',
             icon: Files,
-          },
-          {
-            title: 'Manage Supplier Direct Acquisition',
-            href: '/v2/manage-supplier-direct-acquisition',
-            icon: Files,
+            permission: PERMISSIONS.Procurement.Po.Manage,
           },
         ],
       },
@@ -1168,14 +1193,17 @@ export const menusConfig = {
           {
             title: 'Direct Contracting Request',
             href: '/v2/direct-contracting-request',
+            permission: PERMISSIONS.Procurement.Pr.Create,
           },
           {
             title: 'Manage Direct Contracting',
             href: '/v2/manage-direct-contracting',
+            permission: PERMISSIONS.Procurement.Po.Manage,
           },
           {
             title: 'Manage Supplier Direct Contracting',
             href: '/v2/manage-supplier-direct-contracting',
+            permission: PERMISSIONS.Procurement.Supplier.Manage,
           },
         ],
       },
@@ -1187,52 +1215,61 @@ export const menusConfig = {
             title: 'Request for Quotation (RFQ)',
             href: '/v2/request-for-quotation-rfq',
             icon: Envelope,
+            permission: PERMISSIONS.Procurement.Rfq.Manage,
           },
           {
             title: 'Manage RFQ',
             href: '/v2/manage-rfq',
             icon: Note,
+            permission: PERMISSIONS.Procurement.Rfq.Manage,
           },
           {
             title: 'Abstract of Bids (AOB)',
             href: '/v2/abstract-of-bids-aob',
             icon: ChartBar,
+            permission: PERMISSIONS.Procurement.Aob.Manage,
           },
           {
             title: 'Manage AOB',
             href: '/v2/manage-aob',
             icon: Files,
+            permission: PERMISSIONS.Procurement.Aob.Manage,
           },
         ],
       },
       {
-        title: 'Public Bidding',
+        title: 'Competitive Bidding',
         icon: Files,
         child: [
           {
             title: 'Master BAC Calendar',
             href: '/v2/bidding-master-calendar',
             icon: Calendar,
+            permission: PERMISSIONS.Procurement.Bac.Manage,
           },
           {
             title: 'Bidding Documents',
             href: '/v2/bidding-documents',
             icon: Note3,
+            permission: PERMISSIONS.Procurement.BiddingDocuments.View,
           },
           {
             title: 'Bid Evaluation',
             href: '/v2/bid-evaluation',
             icon: Note2,
+            permission: PERMISSIONS.Procurement.Bac.Manage,
           },
           {
             title: 'Notice of Award (NOA)',
             href: '/v2/notice-of-award-noa',
             icon: Files,
+            permission: PERMISSIONS.Procurement.Bac.Manage,
           },
           {
             title: 'Manage NOA',
             href: '/v2/manage-noa',
             icon: Note2,
+            permission: PERMISSIONS.Procurement.Bac.Manage,
           },
         ],
       },
@@ -1241,75 +1278,90 @@ export const menusConfig = {
         icon: ClipBoard,
         child: [
           {
-            title: 'PO : SVP',
-            href: '/v2/po-svp',
+            title: 'Purchase Orders',
+            href: '/v2/purchase-orders',
             icon: ClipBoard2,
-          },
-          {
-            title: 'PO: PUBLIC BIDDING',
-            href: '/v2/po-public-bidding',
-            icon: ClipBoard2,
-          },
-          {
-            title: 'PO: Direct Acquisition',
-            href: '/v2/po-direct-acquisition',
-            icon: ClipBoard2,
+            permission: PERMISSIONS.Procurement.Po.Manage,
           },
           {
             title: 'Contracts (For Consulting/Infrastructure)',
             href: '/v2/contracts-consulting-infrastructure',
             icon: Files,
+            permission: PERMISSIONS.Procurement.Po.Manage,
           },
           {
             title: 'Manage Contracts',
             href: '/v2/manage-contracts',
             icon: Note3,
+            permission: PERMISSIONS.Procurement.Po.Manage,
           },
           {
             title: 'Notice to Proceed (NTP)',
             href: '/v2/notice-to-proceed-ntp',
             icon: Calendar,
+            permission: PERMISSIONS.Procurement.Po.Manage,
           },
           {
             title: 'Manage NTP',
             href: '/v2/manage-ntp',
             icon: Note2,
+            permission: PERMISSIONS.Procurement.Po.Manage,
           },
         ],
       },
       {
         title: 'System Administration',
         icon: Sheild,
+        permission: [
+          PERMISSIONS.Planning.FiscalYear.View,
+          PERMISSIONS.Planning.FiscalYear.Manage,
+          PERMISSIONS.Admin.OrgStructure.View,
+          PERMISSIONS.Admin.OrgStructure.Manage,
+          PERMISSIONS.Finance.Uacs.View,
+          PERMISSIONS.Finance.Uacs.Manage,
+          PERMISSIONS.Procurement.ProcurementLibrary.View,
+          PERMISSIONS.Procurement.ProcurementLibrary.Manage,
+          PERMISSIONS.Planning.MarketScoping.View,
+          PERMISSIONS.Planning.MarketScoping.Manage,
+          PERMISSIONS.Procurement.BiddingDocuments.View,
+          PERMISSIONS.Procurement.BiddingDocuments.Manage,
+        ] as const,
         child: [
           {
             title: 'Market Scoping',
             href: '/v2/market-scoping/settings',
             icon: ListFill,
+            permission: PERMISSIONS.Planning.MarketScoping.Manage,
           },
           {
             title: 'Bidding Document Library',
             href: '/v2/bidding-document-library',
             icon: ListFill,
+            permission: PERMISSIONS.Procurement.BiddingDocuments.View,
           },
           {
             title: 'Fiscal Year & Policies',
             href: '/v2/fiscal-year-and-policies',
             icon: Calendar,
+            permission: PERMISSIONS.Planning.FiscalYear.View,
           },
           {
             title: 'Organization Structure',
             href: '/v2/organization',
             icon: Building2,
+            permission: PERMISSIONS.Admin.OrgStructure.View,
           },
           {
             title: 'UACS Library',
             href: '/v2/uacs-library',
             icon: Book,
+            permission: PERMISSIONS.Finance.Uacs.View,
           },
           {
             title: 'Procurement Library',
             href: '/v2/procurement-library',
             icon: ListFill,
+            permission: PERMISSIONS.Procurement.ProcurementLibrary.View,
           },
         ],
       },
@@ -1317,6 +1369,7 @@ export const menusConfig = {
         title: 'BAC',
         icon: Sheild,
         href: '/v2/bac',
+        permission: PERMISSIONS.Procurement.Bac.Manage,
       },
     ],
     classic: [
@@ -1328,25 +1381,26 @@ export const menusConfig = {
         title: 'Dashboard Overview',
         icon: DashBoard,
         href: '/v2/dashboard',
+        permission: [
+          PERMISSIONS.Planning.Dashboard.ViewGlobal,
+          PERMISSIONS.Planning.Dashboard.ViewOffice,
+        ],
       },
       {
         title: 'Strategic Planning',
         icon: ChartBar,
         child: [
           {
-            title: 'MFO Reference',
-            href: '/v2/mfo-reference',
-            icon: Book,
-          },
-          {
             title: 'KPI Library',
             href: '/v2/kpi-library',
             icon: ClipBoard2,
+            permission: PERMISSIONS.Planning.Kpi.View,
           },
           {
             title: 'Annual Performance Planning',
             href: '/v2/annual-performance-planning',
             icon: ChartArea,
+            permission: PERMISSIONS.Planning.Target.Manage,
           },
         ],
       },
@@ -1358,11 +1412,13 @@ export const menusConfig = {
             title: 'Commitments (OPCR)',
             href: '/v2/commitments',
             icon: ClipBoard,
+            permission: PERMISSIONS.Planning.Opcr.View,
           },
           {
             title: 'Work and Financial Plan',
             href: '/v2/wfp',
             icon: Files,
+            permission: PERMISSIONS.Planning.Wfp.View,
           },
         ],
       },
@@ -1374,6 +1430,7 @@ export const menusConfig = {
             title: 'Line-Item Budgeting',
             href: '/v2/line-item-budgeting',
             icon: Note3,
+            permission: PERMISSIONS.Planning.Lib.View,
           },
         ],
       },
@@ -1385,16 +1442,19 @@ export const menusConfig = {
             title: 'Market Scoping',
             href: '/v2/market-scoping',
             icon: ClipBoard,
+            permission: PERMISSIONS.Planning.MarketScoping.View,
           },
           {
             title: 'PPMP',
             href: '/v2/ppmp',
             icon: ClipBoard2,
+            permission: PERMISSIONS.Procurement.Ppmp.View,
           },
           {
             title: 'APP Consolidation',
             href: '/v2/app-consolidation',
             icon: Note,
+            permission: PERMISSIONS.Procurement.App.Manage,
           },
         ],
       },
@@ -1402,11 +1462,10 @@ export const menusConfig = {
         title: 'Performance Review',
         icon: Note2,
         href: '/v2/performance-review',
-      },
-      {
-        title: 'Reports',
-        icon: Files,
-        href: '/v2/reports',
+        permission: [
+          PERMISSIONS.Planning.Opcr.View,
+          PERMISSIONS.Planning.Opcr.Evaluate,
+        ],
       },
       {
         isHeader: true,
@@ -1416,6 +1475,11 @@ export const menusConfig = {
         title: 'Dashboard',
         icon: DashBoard,
         href: '/v2/procurement-dashboard',
+        permission: [
+          PERMISSIONS.Procurement.Ppmp.View,
+          PERMISSIONS.Procurement.App.Manage,
+          PERMISSIONS.Procurement.Pr.Manage,
+        ],
       },
       // Supplier Portal — sidebarNav.classic (classic layout variant)
       {
@@ -1426,16 +1490,25 @@ export const menusConfig = {
             title: 'RFQ Item',
             href: '/v2/supplier-portal/rfq-item',
             icon: Envelope,
+            permission: [
+              PERMISSIONS.Procurement.Supplier.View,
+              PERMISSIONS.Procurement.Rfq.Manage,
+            ],
           },
           {
             title: 'Direct Contracting Item',
             href: '/v2/supplier-portal/direct-contracting-item',
             icon: Cart,
+            permission: [
+              PERMISSIONS.Procurement.Supplier.View,
+              PERMISSIONS.Procurement.Po.Manage,
+            ],
           },
           {
             title: 'Manage Supplier Portal',
             href: '/v2/manage-supplier-portal',
             icon: Envelope,
+            permission: PERMISSIONS.Procurement.Supplier.Manage,
           },
         ],
       },
@@ -1447,26 +1520,31 @@ export const menusConfig = {
             title: 'Agency Purchase Requests (APR)',
             href: '/v2/agency-purchase-requests-apr',
             icon: ClipBoard2,
+            permission: PERMISSIONS.Procurement.Pr.Create,
           },
           {
             title: 'Purchase Requests (PR)',
             href: '/v2/purchase-requests-pr',
             icon: ClipBoard,
+            permission: PERMISSIONS.Procurement.Pr.Create,
           },
           {
             title: 'Manage PRs',
             href: '/v2/manage-prs',
             icon: Note3,
+            permission: PERMISSIONS.Procurement.Pr.Manage,
           },
           {
             title: 'Consolidate PRs',
             href: '/v2/consolidate-prs',
             icon: Files,
+            permission: PERMISSIONS.Procurement.Pr.Manage,
           },
           {
             title: 'Manage APRs',
             href: '/v2/manage-aprs',
             icon: Note,
+            permission: PERMISSIONS.Procurement.Pr.Manage,
           },
         ],
       },
@@ -1478,16 +1556,7 @@ export const menusConfig = {
             title: 'BAC Resolutions',
             href: '/v2/bac-resolutions',
             icon: Book,
-          },
-          {
-            title: 'BAC Resolutions (Public Bidding)',
-            href: '/v2/bac-resolutions-public-bidding',
-            icon: Book,
-          },
-          {
-            title: 'Manage BAC Resolutions',
-            href: '/v2/manage-bac-resolutions',
-            icon: Files,
+            permission: PERMISSIONS.Procurement.Bac.Manage,
           },
         ],
       },
@@ -1499,16 +1568,13 @@ export const menusConfig = {
             title: 'Direct Acquisition Request',
             href: '/v2/direct-acquisition-request',
             icon: Envelope,
+            permission: PERMISSIONS.Procurement.Pr.Create,
           },
           {
             title: 'Manage Direct Acquisition',
             href: '/v2/manage-direct-acquisition',
             icon: Files,
-          },
-          {
-            title: 'Manage Supplier Direct Acquisition',
-            href: '/v2/manage-supplier-direct-acquisition',
-            icon: Files,
+            permission: PERMISSIONS.Procurement.Po.Manage,
           },
         ],
       },
@@ -1520,16 +1586,19 @@ export const menusConfig = {
             title: 'Direct Contracting Request',
             href: '/v2/direct-contracting-request',
             icon: Envelope,
+            permission: PERMISSIONS.Procurement.Pr.Create,
           },
           {
             title: 'Manage Direct Contracting',
             href: '/v2/manage-direct-contracting',
             icon: Files,
+            permission: PERMISSIONS.Procurement.Po.Manage,
           },
           {
             title: 'Manage Supplier Direct Contracting',
             href: '/v2/manage-supplier-direct-contracting',
             icon: Files,
+            permission: PERMISSIONS.Procurement.Supplier.Manage,
           },
         ],
       },
@@ -1541,52 +1610,61 @@ export const menusConfig = {
             title: 'Request for Quotation (RFQ)',
             href: '/v2/request-for-quotation-rfq',
             icon: Envelope,
+            permission: PERMISSIONS.Procurement.Rfq.Manage,
           },
           {
             title: 'Manage RFQ',
             href: '/v2/manage-rfq',
             icon: Note,
+            permission: PERMISSIONS.Procurement.Rfq.Manage,
           },
           {
             title: 'Abstract of Bids (AOB)',
             href: '/v2/abstract-of-bids-aob',
             icon: ChartBar,
+            permission: PERMISSIONS.Procurement.Aob.Manage,
           },
           {
             title: 'Manage AOB',
             href: '/v2/manage-aob',
             icon: Files,
+            permission: PERMISSIONS.Procurement.Aob.Manage,
           },
         ],
       },
       {
-        title: 'Public Bidding',
+        title: 'Competitive Bidding',
         icon: Files,
         child: [
           {
             title: 'Master BAC Calendar',
             href: '/v2/bidding-master-calendar',
             icon: Calendar,
+            permission: PERMISSIONS.Procurement.Bac.Manage,
           },
           {
             title: 'Bidding Documents',
             href: '/v2/bidding-documents',
             icon: Note3,
+            permission: PERMISSIONS.Procurement.BiddingDocuments.View,
           },
           {
             title: 'Bid Evaluation',
             href: '/v2/bid-evaluation',
             icon: Note2,
+            permission: PERMISSIONS.Procurement.Bac.Manage,
           },
           {
             title: 'Notice of Award (NOA)',
             href: '/v2/notice-of-award-noa',
             icon: Files,
+            permission: PERMISSIONS.Procurement.Bac.Manage,
           },
           {
             title: 'Manage NOA',
             href: '/v2/manage-noa',
             icon: Note2,
+            permission: PERMISSIONS.Procurement.Bac.Manage,
           },
         ],
       },
@@ -1595,39 +1673,34 @@ export const menusConfig = {
         icon: ClipBoard,
         child: [
           {
-            title: 'PO : SVP',
-            href: '/v2/po-svp',
+            title: 'Purchase Orders',
+            href: '/v2/purchase-orders',
             icon: ClipBoard2,
-          },
-          {
-            title: 'PO: PUBLIC BIDDING',
-            href: '/v2/po-public-bidding',
-            icon: ClipBoard2,
-          },
-          {
-            title: 'PO: Direct Acquisition',
-            href: '/v2/po-direct-acquisition',
-            icon: ClipBoard2,
+            permission: PERMISSIONS.Procurement.Po.Manage,
           },
           {
             title: 'Contracts (For Consulting/Infrastructure)',
             href: '/v2/contracts-consulting-infrastructure',
             icon: Files,
+            permission: PERMISSIONS.Procurement.Po.Manage,
           },
           {
             title: 'Manage Contracts',
             href: '/v2/manage-contracts',
             icon: Note3,
+            permission: PERMISSIONS.Procurement.Po.Manage,
           },
           {
             title: 'Notice to Proceed (NTP)',
             href: '/v2/notice-to-proceed-ntp',
             icon: Calendar,
+            permission: PERMISSIONS.Procurement.Po.Manage,
           },
           {
             title: 'Manage NTP',
             href: '/v2/manage-ntp',
             icon: Note2,
+            permission: PERMISSIONS.Procurement.Po.Manage,
           },
         ],
       },
@@ -1638,36 +1711,56 @@ export const menusConfig = {
       {
         title: 'System Administration',
         icon: Sheild,
+        permission: [
+          PERMISSIONS.Planning.FiscalYear.View,
+          PERMISSIONS.Planning.FiscalYear.Manage,
+          PERMISSIONS.Admin.OrgStructure.View,
+          PERMISSIONS.Admin.OrgStructure.Manage,
+          PERMISSIONS.Finance.Uacs.View,
+          PERMISSIONS.Finance.Uacs.Manage,
+          PERMISSIONS.Procurement.ProcurementLibrary.View,
+          PERMISSIONS.Procurement.ProcurementLibrary.Manage,
+          PERMISSIONS.Planning.MarketScoping.View,
+          PERMISSIONS.Planning.MarketScoping.Manage,
+          PERMISSIONS.Procurement.BiddingDocuments.View,
+          PERMISSIONS.Procurement.BiddingDocuments.Manage,
+        ] as const,
         child: [
           {
             title: 'Fiscal Year & Policies',
             href: '/v2/fiscal-year-and-policies',
             icon: Calendar,
+            permission: PERMISSIONS.Planning.FiscalYear.View,
           },
           {
             title: 'Organization Structure',
             href: '/v2/organization',
             icon: Building2,
+            permission: PERMISSIONS.Admin.OrgStructure.View,
           },
           {
             title: 'UACS Library',
             href: '/v2/uacs-library',
             icon: Book,
+            permission: PERMISSIONS.Finance.Uacs.View,
           },
           {
             title: 'Procurement Library',
             href: '/v2/procurement-library',
             icon: ListFill,
+            permission: PERMISSIONS.Procurement.ProcurementLibrary.View,
           },
           {
             title: 'Market Scoping',
             href: '/v2/market-scoping/settings',
             icon: ListFill,
+            permission: PERMISSIONS.Planning.MarketScoping.Manage,
           },
           {
             title: 'Bidding Document Library',
             href: '/v2/bidding-document-library',
             icon: ListFill,
+            permission: PERMISSIONS.Procurement.BiddingDocuments.View,
           },
         ],
       },
@@ -1675,6 +1768,7 @@ export const menusConfig = {
         title: 'BAC',
         icon: Sheild,
         href: '/v2/bac',
+        permission: PERMISSIONS.Procurement.Bac.Manage,
       },
     ],
   },

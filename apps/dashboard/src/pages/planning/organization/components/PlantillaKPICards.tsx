@@ -41,7 +41,8 @@ export default function PlantillaKPICards() {
 
   const totalAuthorized = data?.totalPositions || 0
   const filledPositions = data?.filledPositions || 0
-  const vacancyRate = Math.round(data?.vacancyVariance || 0)
+  const vacantPositions = data?.vacantPositions ?? (totalAuthorized - filledPositions)
+  const vacancyRate = totalAuthorized > 0 ? Math.round((vacantPositions / totalAuthorized) * 100) : 0
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card className="shadow-sm border border-default-200 bg-card">

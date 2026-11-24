@@ -10,11 +10,17 @@ import {
 import { TrashIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import type { ExpenseClass } from '../types/expenseClassTypes'
+import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
+import { deleteExpenseClassRequest } from '../handlers/deleteExpenseClassRequest'
+import { getExpenseClassesRequest } from '../handlers/getExpenseClassesRequest'
+
+const useDeleteExpenseClass = createMutationHookFromTemplate(deleteExpenseClassRequest)
 
 interface DeleteExpenseClassDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   expenseClass?: ExpenseClass
+  onSuccess?: () => void
   onConfirm?: () => Promise<void>
 }
 
@@ -22,15 +28,38 @@ export function DeleteExpenseClassDialog({
   open,
   onOpenChange,
   expenseClass,
+  onSuccess,
   onConfirm,
 }: DeleteExpenseClassDialogProps) {
+  const queryClient = useQueryClient()
+  const { mutateAsync, isPending } = useDeleteExpenseClass()
+
   const handleDelete = async () => {
+    if (!expenseClass?.id) return
+
     try {
-      await onConfirm?.()
-      toast.success(`Expense class "${expenseClass?.name}" deleted successfully!`)
+      if (onConfirm) {
+        await onConfirm()
+      } else {
+        await mutateAsync({
+          pathParams: { id: expenseClass.id },
+        })
+      }
+
+      toast.success(`Expense class "${expenseClass.name}" deleted successfully!`)
+
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === getExpenseClassesRequest.endpoint ||
+          (typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith(getExpenseClassesRequest.endpoint)),
+      })
+
       onOpenChange(false)
+      onSuccess?.()
     } catch (err) {
-      toast.error('Failed to delete expense class.')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete expense class.'
+      toast.error(errorMessage)
+      console.error(err)
     }
   }
 
@@ -47,12 +76,17 @@ export function DeleteExpenseClassDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="flex justify-end gap-3">
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-            Delete
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDelete}
+            disabled={isPending}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            {isPending ? 'Deleting...' : 'Delete'}
           </AlertDialogAction>
         </div>
       </AlertDialogContent>
     </AlertDialog>
   )
 }
+

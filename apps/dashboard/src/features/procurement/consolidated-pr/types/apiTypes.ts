@@ -17,7 +17,18 @@ export interface ConsolidatedPR {
   status: string
 }
 
-// ─── GET /consolidated-prs/{id} ───────────────────────────────────────────────
+export interface ConsolidatedPrBacResolution {
+  id: string
+  procurementProjectId: string
+  projectTitle: string
+  resolutionNumber: string
+  resolutionType: string
+  dateResolved: string
+  status: string
+  resolvedLocation?: string
+  abc: number
+  sourceType: string
+}
 
 export interface ConsolidatedPrDetail {
   id: string
@@ -27,6 +38,8 @@ export interface ConsolidatedPrDetail {
   purpose: string
   status: string
   prs?: ConsolidatedPrLinkedPr[]
+  modeOfProcurement?: string
+  bacResolutions?: ConsolidatedPrBacResolution[]
 }
 
 export interface ConsolidatedPrLinkedPr {

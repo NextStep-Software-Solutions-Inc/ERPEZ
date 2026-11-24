@@ -14,6 +14,7 @@ export function useRatingScaleTemplateQuery(id: string | null | undefined) {
   })
 }
 
+
 export function useUpdateRatingScaleTemplateMutation() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -26,3 +27,4 @@ export function useUpdateRatingScaleTemplateMutation() {
     }
   })
 }
+

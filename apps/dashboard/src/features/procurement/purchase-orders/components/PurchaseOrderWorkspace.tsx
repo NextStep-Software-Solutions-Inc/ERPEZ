@@ -1,4 +1,4 @@
-﻿import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { PurchaseOrderActionBar } from './PurchaseOrderActionBar'
 import { PurchaseOrderTable } from './PurchaseOrderTable'
 import { PODirectAcquisitionDetailsPage } from './PODirectAcquisitionDetailsPage'
@@ -7,15 +7,26 @@ import {
   CreateDirectAcquisitionPurchaseOrderDialog,
   CreatePublicBiddingPurchaseOrderDialog,
   CreateSvpPurchaseOrderDialog,
+  EditPurchaseOrderDialog,
   ReturnPurchaseOrderDialog,
-  SelectAobDialog,
-  SelectDirectAcquisitionDialog,
-  SelectNoaDialog,
   SubmitForApprovalPurchaseOrderDialog,
 } from '../dialogs'
-import { usePurchaseOrderStore } from '../data/purchaseOrderStore'
+import {
+  useGetPurchaseOrders,
+  useUpdatePurchaseOrder,
+  useDeletePurchaseOrder,
+  useSubmitPurchaseOrderForApproval,
+  useApprovePurchaseOrder,
+  useReturnPurchaseOrder,
+  uploadPoDocument,
+} from '../handlers'
 import { downloadPurchaseOrderBlob } from '../utils/downloadPurchaseOrderBlob'
+import { downloadPurchaseOrderPdf } from '../handlers/generatePurchaseOrderDocumentRequest'
+import { printPurchaseOrder } from '../utils/printPurchaseOrder'
+import { normalizePoStatus } from './PurchaseOrderStatusBadge'
+import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import type {
+  PurchaseOrder,
   PurchaseOrderListFilter,
   PurchaseOrderMode,
   PurchaseOrderRole,
@@ -23,7 +34,24 @@ import type {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { FileText, Wallet, TrendingUp, List, Layers, ShoppingCart } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  FileText,
+  Wallet,
+  TrendingUp,
+  List,
+  Layers,
+  ShoppingCart,
+  Loader2,
+  ChevronDown,
+} from 'lucide-react'
+import { toast } from 'sonner'
 
 type PurchaseOrderWorkspaceProps = {
   title: string
@@ -31,6 +59,8 @@ type PurchaseOrderWorkspaceProps = {
   mode: PurchaseOrderMode
   role: PurchaseOrderRole
   defaultFilter?: PurchaseOrderListFilter
+  initialModeTab?: 'all' | 'svp' | 'public-bidding' | 'direct-acquisition'
+  onModeTabChange?: (tab: 'all' | 'svp' | 'public-bidding' | 'direct-acquisition') => void
 }
 
 export function PurchaseOrderWorkspace({
@@ -39,40 +69,75 @@ export function PurchaseOrderWorkspace({
   mode,
   role,
   defaultFilter = 'all',
+  initialModeTab,
+  onModeTabChange,
 }: PurchaseOrderWorkspaceProps) {
-  const purchaseOrders = usePurchaseOrderStore((state) => state.purchaseOrders)
-  const printPurchaseOrder = usePurchaseOrderStore((state) => state.printPurchaseOrder)
-  const submitForApproval = usePurchaseOrderStore((state) => state.submitForApproval)
-  const linkAob = usePurchaseOrderStore((state) => state.linkAob)
-  const linkNoa = usePurchaseOrderStore((state) => state.linkNoa)
-  const returnPurchaseOrder = usePurchaseOrderStore((state) => state.returnPurchaseOrder)
-  const approvePurchaseOrder = usePurchaseOrderStore((state) => state.approvePurchaseOrder)
-  const linkDirectAcquisition = usePurchaseOrderStore((state) => state.linkDirectAcquisition)
-
   const [search, setSearch] = useState('')
   const [activeFilter, setActiveFilter] = useState<PurchaseOrderListFilter>(defaultFilter)
+  const [selectedModeTab, setSelectedModeTab] = useState<'all' | 'svp' | 'public-bidding' | 'direct-acquisition'>(
+    initialModeTab || 'all'
+  )
+
+  useEffect(() => {
+    if (initialModeTab && initialModeTab !== selectedModeTab) {
+      setSelectedModeTab(initialModeTab)
+    }
+  }, [initialModeTab])
+
+  const handleTabChange = (val: 'all' | 'svp' | 'public-bidding' | 'direct-acquisition') => {
+    setSelectedModeTab(val)
+    onModeTabChange?.(val)
+  }
+
+  const effectiveMode = mode === 'all' ? selectedModeTab : mode
 
   // Force Direct Acquisition workspace to show all rows by default
   useEffect(() => {
-    if (mode === 'direct-acquisition') setActiveFilter('all')
-  }, [mode])
+    if (effectiveMode === 'direct-acquisition') setActiveFilter('all')
+  }, [effectiveMode])
+
+  const modeFilter = useMemo(() => {
+    if (effectiveMode === 'svp') return 'ProcurementMode==SVP'
+    if (effectiveMode === 'public-bidding') return 'ProcurementMode==PUBLIC_BIDDING'
+    if (effectiveMode === 'direct-acquisition') return 'ProcurementMode==DIRECT_ACQUISITION'
+    return undefined
+  }, [effectiveMode])
+
+  const { data: poResponse, isLoading, refetch } = useGetPurchaseOrders({
+    filters: modeFilter,
+    search: search ? search.trim() : undefined,
+    pageSize: 100,
+  })
+
+  const purchaseOrders = useMemo(() => {
+    if (!poResponse) return []
+    if (Array.isArray(poResponse)) return poResponse
+    if (Array.isArray((poResponse as any).data)) return (poResponse as any).data
+    if (Array.isArray((poResponse as any).items)) return (poResponse as any).items
+    return []
+  }, [poResponse])
+
+  // CRUD & Workflow mutations
+  const deleteMutation = useDeletePurchaseOrder()
+  const submitMutation = useSubmitPurchaseOrderForApproval()
+  const approveMutation = useApprovePurchaseOrder()
+  const returnMutation = useReturnPurchaseOrder()
 
   const [isSvpCreateOpen, setIsSvpCreateOpen] = useState(false)
   const [isPublicBiddingCreateOpen, setIsPublicBiddingCreateOpen] = useState(false)
   const [isDirectAcquisitionCreateOpen, setIsDirectAcquisitionCreateOpen] = useState(false)
   const [selectedPurchaseOrderId, setSelectedPurchaseOrderId] = useState<string | null>(null)
-  const [isAobPickerOpen, setIsAobPickerOpen] = useState(false)
-  const [isNoaPickerOpen, setIsNoaPickerOpen] = useState(false)
+  const [editingPurchaseOrder, setEditingPurchaseOrder] = useState<PurchaseOrder | null>(null)
+  const [deletingPurchaseOrderId, setDeletingPurchaseOrderId] = useState<string | null>(null)
   const [isReturnOpen, setIsReturnOpen] = useState(false)
   const [isApproveOpen, setIsApproveOpen] = useState(false)
   const [isSubmitForApprovalOpen, setIsSubmitForApprovalOpen] = useState(false)
   const [submitForApprovalPurchaseOrderId, setSubmitForApprovalPurchaseOrderId] = useState<string | null>(null)
-  const [, setIsDaPickerOpen] = useState(false)
   const [viewingDaPurchaseOrderId, setViewingDaPurchaseOrderId] = useState<string | null>(null)
 
-  const selectedPurchaseOrder = useMemo(
-    () => purchaseOrders.find((po) => po.id === selectedPurchaseOrderId),
-    [purchaseOrders, selectedPurchaseOrderId],
+  const deletingPurchaseOrder = useMemo(
+    () => purchaseOrders.find((po) => po.id === deletingPurchaseOrderId) ?? null,
+    [purchaseOrders, deletingPurchaseOrderId],
   )
 
   const submitForApprovalPurchaseOrder = useMemo(
@@ -80,72 +145,93 @@ export function PurchaseOrderWorkspace({
     [purchaseOrders, submitForApprovalPurchaseOrderId],
   )
 
-  const sourceFilteredRows = useMemo(() => {
-    const byMode = purchaseOrders.filter((purchaseOrder) => {
-      if (mode === 'svp') return purchaseOrder.source === 'svp'
-      if (mode === 'public-bidding') return purchaseOrder.source === 'public-bidding'
-      if (mode === 'direct-acquisition') return purchaseOrder.source === 'direct-acquisition'
-      return true
-    })
-
-    return byMode.filter((purchaseOrder) => {
-      const matchesFilter = activeFilter === 'all' ? true : purchaseOrder.status === activeFilter
-      const haystack = [purchaseOrder.poNumber, purchaseOrder.description, purchaseOrder.supplierName ?? '', purchaseOrder.sourceDocumentNumber ?? '']
-        .join(' ')
-        .toLowerCase()
-
-      return matchesFilter && haystack.includes(search.toLowerCase())
-    })
-  }, [activeFilter, mode, purchaseOrders, search])
-
-  const modeFilteredRows = useMemo(() => {
+  const filteredRows = useMemo(() => {
     return purchaseOrders.filter((purchaseOrder) => {
-      if (mode === 'svp') return purchaseOrder.source === 'svp'
-      if (mode === 'public-bidding') return purchaseOrder.source === 'public-bidding'
-      if (mode === 'direct-acquisition') return purchaseOrder.source === 'direct-acquisition'
-      return true
+      const normalized = normalizePoStatus(purchaseOrder.status)
+      if (activeFilter === 'all') return true
+      if (activeFilter === 'submitted' || activeFilter === 'for-approval') {
+        return normalized === 'for-approval' || normalized === 'submitted'
+      }
+      return normalized === activeFilter.toLowerCase().replace(/[-_\s]/g, '') || normalized === activeFilter
     })
-  }, [mode, purchaseOrders])
+  }, [activeFilter, purchaseOrders])
 
-  // PO metrics
-  const MODE_ROWS = modeFilteredRows
-  const totalPOAmount = MODE_ROWS.reduce((s, p) => s + p.totalAmount, 0)
-  const submittedPORows = MODE_ROWS.filter((p) => p.status !== 'draft')
-  const totalSubmittedPOAmount = submittedPORows.reduce((s, p) => s + p.totalAmount, 0)
-  // Prefer real budget data if available on POs; otherwise only show a fabricated "buffer" in dev or when explicitly enabled.
-  const hasBudgetSource = purchaseOrders.some((p) => typeof (p as any).budgetAmount === 'number')
+  // PO metrics - accurately segmented by status
+  const totalPOAmount = purchaseOrders.reduce((s, p) => s + (p.totalAmount || 0), 0)
+  const approvedPORows = purchaseOrders.filter((p) => normalizePoStatus(p.status) === 'approved')
+  const totalApprovedPOAmount = approvedPORows.reduce((s, p) => s + (p.totalAmount || 0), 0)
 
-  let availablePOBalance: number | null = null
+  const poCountSummary = {
+    draft: purchaseOrders.filter((p) => normalizePoStatus(p.status) === 'draft').length,
+    submitted: purchaseOrders.filter((p) => {
+      const s = normalizePoStatus(p.status)
+      return s === 'for-approval' || s === 'submitted'
+    }).length,
+    approved: approvedPORows.length,
+    returned: purchaseOrders.filter((p) => normalizePoStatus(p.status) === 'returned').length,
+  }
 
-  if (hasBudgetSource) {
-    // Derive available balance from real budget fields when present
-    const totalBudget = purchaseOrders.reduce((s, p) => s + ((p as any).budgetAmount ?? 0), 0)
-    availablePOBalance = totalBudget - totalSubmittedPOAmount
-  } else {
-    // Do NOT surface a misleading fabricated budget in production.
-    // Allow a developer opt-in via NODE_ENV=development or an explicit env flag.
-    const enablePlaceholder =
-      process.env.NODE_ENV === 'development' ||
-      process.env.REACT_APP_ENABLE_PLACEHOLDER_PO_BALANCE === 'true'
+  const modeLabel =
+    effectiveMode === 'svp'
+      ? 'SVP'
+      : effectiveMode === 'direct-acquisition'
+        ? 'Direct Acquisition'
+        : effectiveMode === 'public-bidding'
+          ? 'Public Bidding'
+          : 'All Modes'
 
-    if (enablePlaceholder) {
-      const PO_BUFFER = 10_000_000 // clearly a dev placeholder; controlled by the flag above
-      const totalPOBudget = Math.max(totalPOAmount, totalSubmittedPOAmount + PO_BUFFER)
-      availablePOBalance = totalPOBudget - totalSubmittedPOAmount
-    } else {
-      // Hide the widget by keeping availablePOBalance null (UI can treat null as "no data" or hide)
-      availablePOBalance = null
+  // Workflow Handlers
+  const handleSubmitForApprovalConfirm = async (purchaseOrderId: string) => {
+    try {
+      await submitMutation.mutateAsync(purchaseOrderId)
+      toast.success('Purchase Order submitted for approval!')
+      setIsSubmitForApprovalOpen(false)
+      setSubmitForApprovalPurchaseOrderId(null)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to submit Purchase Order for approval.')
     }
   }
-  const poCountSummary = {
-    draft: MODE_ROWS.filter((p) => p.status === 'draft').length,
-    submitted: submittedPORows.length,
-    approved: MODE_ROWS.filter((p) => p.status === 'approved').length,
-    returned: MODE_ROWS.filter((p) => p.status === 'returned').length,
+
+  const handleApproveConfirm = async (signedDocument: File) => {
+    if (!selectedPurchaseOrderId) return
+    try {
+      if (signedDocument) {
+        await uploadPoDocument(signedDocument)
+      }
+      await approveMutation.mutateAsync(selectedPurchaseOrderId)
+      toast.success('Purchase Order approved successfully!')
+      setIsApproveOpen(false)
+      setSelectedPurchaseOrderId(null)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to approve Purchase Order.')
+    }
   }
 
-  // Determine grid columns for the inline status tabs
-  const modeLabel = mode === 'svp' ? 'SVP' : mode === 'direct-acquisition' ? 'Direct Acquisition' : 'Public Bidding'
+  const handleReturnConfirm = async (reason: string) => {
+    if (!selectedPurchaseOrderId) return
+    try {
+      await returnMutation.mutateAsync({
+        id: selectedPurchaseOrderId,
+        request: { returnReason: reason },
+      })
+      toast.success('Purchase Order returned to draft!')
+      setIsReturnOpen(false)
+      setSelectedPurchaseOrderId(null)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to return Purchase Order.')
+    }
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingPurchaseOrderId) return
+    try {
+      await deleteMutation.mutateAsync(deletingPurchaseOrderId)
+      toast.success('Purchase Order deleted successfully!')
+      setDeletingPurchaseOrderId(null)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete Purchase Order.')
+    }
+  }
 
   // If viewing DA PO details, show the full details page
   const viewingDaPo = useMemo(
@@ -153,7 +239,7 @@ export function PurchaseOrderWorkspace({
     [purchaseOrders, viewingDaPurchaseOrderId],
   )
 
-  if (viewingDaPo && viewingDaPo.source === 'direct-acquisition') {
+  if (viewingDaPo && (viewingDaPo.source === 'direct-acquisition' || viewingDaPo.procurementMode === 'DIRECT_ACQUISITION')) {
     return (
       <PODirectAcquisitionDetailsPage
         purchaseOrder={viewingDaPo}
@@ -164,7 +250,7 @@ export function PurchaseOrderWorkspace({
 
   return (
     <div className="w-full space-y-6 pb-10">
-      {/* Header Card — matches PR Management gradient header */}
+      {/* Header Card */}
       <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
         <CardHeader>
           <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -173,7 +259,8 @@ export function PurchaseOrderWorkspace({
               <CardDescription className="text-base">{description}</CardDescription>
             </div>
             <Badge variant="outline" className="h-fit px-3 py-1 font-semibold">
-              <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />{modeLabel}
+              <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
+              {modeLabel}
             </Badge>
           </div>
         </CardHeader>
@@ -186,30 +273,88 @@ export function PurchaseOrderWorkspace({
             <div>
               <CardTitle>PO Management Workspace</CardTitle>
               <CardDescription>
-                {mode === 'svp'
+                {effectiveMode === 'svp'
                   ? 'SVP purchase orders sourced from approved AOBs'
-                  : mode === 'direct-acquisition'
+                  : effectiveMode === 'direct-acquisition'
                     ? 'Direct acquisition purchase orders'
-                    : 'Public bidding purchase orders sourced from approved NOAs'}
+                    : effectiveMode === 'public-bidding'
+                      ? 'Public bidding purchase orders sourced from approved NOAs'
+                      : 'Unified view of all purchase orders across all procurement modes'}
               </CardDescription>
             </div>
             {mode !== 'manage' && (
-              <Button
-                size="sm"
-                className="gap-2"
-                onClick={() => {
-                  if (mode === 'svp') { setIsSvpCreateOpen(true); return }
-                  if (mode === 'direct-acquisition') { setIsDirectAcquisitionCreateOpen(true); return }
-                  setIsPublicBiddingCreateOpen(true)
-                }}
-              >
-                + {mode === 'svp' ? 'Create SVP PO' : mode === 'direct-acquisition' ? 'Create Direct Acquisition PO' : 'Create Public Bidding PO'}
-              </Button>
+              <>
+                {effectiveMode === 'all' ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm" className="gap-2">
+                        + Create Purchase Order
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => setIsSvpCreateOpen(true)}>
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        SVP / Shopping PO
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setIsPublicBiddingCreateOpen(true)}>
+                        <Layers className="h-4 w-4 mr-2" />
+                        Public Bidding PO
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setIsDirectAcquisitionCreateOpen(true)}>
+                        <Wallet className="h-4 w-4 mr-2" />
+                        Direct Acquisition PO
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => {
+                      if (effectiveMode === 'svp') {
+                        setIsSvpCreateOpen(true)
+                        return
+                      }
+                      if (effectiveMode === 'direct-acquisition') {
+                        setIsDirectAcquisitionCreateOpen(true)
+                        return
+                      }
+                      setIsPublicBiddingCreateOpen(true)
+                    }}
+                  >
+                    +{' '}
+                    {effectiveMode === 'svp'
+                      ? 'Create SVP PO'
+                      : effectiveMode === 'direct-acquisition'
+                        ? 'Create Direct Acquisition PO'
+                        : 'Create Public Bidding PO'}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {/* Mode Tabs for Unified Route */}
+          {mode === 'all' && (
+            <div className="border-b pb-4">
+              <Tabs
+                value={selectedModeTab}
+                onValueChange={(val) => handleTabChange(val as any)}
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 max-w-2xl">
+                  <TabsTrigger value="all">All Modes</TabsTrigger>
+                  <TabsTrigger value="svp">SVP / Shopping</TabsTrigger>
+                  <TabsTrigger value="public-bidding">Public Bidding</TabsTrigger>
+                  <TabsTrigger value="direct-acquisition">Direct Acquisition</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          )}
+
           {/* Summary widgets */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Total PO Amount */}
@@ -227,20 +372,20 @@ export function PurchaseOrderWorkspace({
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-indigo-700">
-                      ₱{(totalPOAmount || 0).toLocaleString()}
+                      ₱{(totalPOAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">Total amount across current source filter</p>
+                    <p className="text-xs text-muted-foreground mt-2">Total across current mode</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Total Submitted POs */}
+            {/* Total Approved POs */}
             <Card className="bg-sky-50 hover:shadow-md transition">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   <FileText className="h-4 w-4 text-muted-foreground" />
-                  Total Submitted POs
+                  Total Approved POs
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -250,20 +395,20 @@ export function PurchaseOrderWorkspace({
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-sky-700">
-                      ₱{(totalSubmittedPOAmount || 0).toLocaleString()}
+                      ₱{(totalApprovedPOAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">Amount in submitted / non-draft POs</p>
+                    <p className="text-xs text-muted-foreground mt-2">Amount in approved POs</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Available Balance */}
+            {/* Total Count */}
             <Card className="bg-emerald-50 hover:shadow-md transition">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  Available Balance
+                  Total Records
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -273,9 +418,9 @@ export function PurchaseOrderWorkspace({
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-emerald-600">
-                      ₱{(availablePOBalance || 0).toLocaleString()}
+                      {purchaseOrders.length}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">Remaining budget-like balance (derived)</p>
+                    <p className="text-xs text-muted-foreground mt-2">Total POs created</p>
                   </div>
                 </div>
               </CardContent>
@@ -311,6 +456,13 @@ export function PurchaseOrderWorkspace({
                   </div>
                   <span className="font-medium">{poCountSummary.approved}</span>
                 </div>
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-amber-500 inline-block" />
+                    <span className="text-muted-foreground">Returned:</span>
+                  </div>
+                  <span className="font-medium">{poCountSummary.returned}</span>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -322,29 +474,76 @@ export function PurchaseOrderWorkspace({
             statusFilter={activeFilter}
             onStatusFilterChange={(v) => setActiveFilter(v as PurchaseOrderListFilter)}
           />
-          <PurchaseOrderTable
-              rows={sourceFilteredRows}
+
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span>Loading purchase orders...</span>
+            </div>
+          ) : (
+            <PurchaseOrderTable
+              rows={filteredRows}
               role={role}
-              onPrint={(purchaseOrderId) => {
-                const result = printPurchaseOrder(purchaseOrderId)
-                if (result) downloadPurchaseOrderBlob(result)
+              mode={mode}
+              onPrint={async (purchaseOrderId) => {
+                const po = purchaseOrders.find((p) => p.id === purchaseOrderId)
+                if (po) {
+                  try {
+                    await downloadPurchaseOrderPdf(
+                      po.id,
+                      `${po.poNumber || 'PO'}_Purchase_Order.pdf`
+                    )
+                    toast.success('Official Purchase Order PDF downloaded.')
+                  } catch (err: any) {
+                    console.warn('Server PDF download failed, opening print preview:', err)
+                    printPurchaseOrder(po)
+                    toast.info('Opened document print preview.')
+                  }
+                }
               }}
               onSubmit={(purchaseOrderId) => {
                 setSubmitForApprovalPurchaseOrderId(purchaseOrderId)
                 setIsSubmitForApprovalOpen(true)
               }}
-              onLinkAob={(purchaseOrderId) => { setSelectedPurchaseOrderId(purchaseOrderId); setIsAobPickerOpen(true) }}
-              onLinkNoa={(purchaseOrderId) => { setSelectedPurchaseOrderId(purchaseOrderId); setIsNoaPickerOpen(true) }}
-              onReturn={(purchaseOrderId) => { setSelectedPurchaseOrderId(purchaseOrderId); setIsReturnOpen(true) }}
-              onApprove={(purchaseOrderId) => { setSelectedPurchaseOrderId(purchaseOrderId); setIsApproveOpen(true) }}
+              onReturn={(purchaseOrderId) => {
+                setSelectedPurchaseOrderId(purchaseOrderId)
+                setIsReturnOpen(true)
+              }}
+              onApprove={(purchaseOrderId) => {
+                setSelectedPurchaseOrderId(purchaseOrderId)
+                setIsApproveOpen(true)
+              }}
               onViewDetails={(purchaseOrderId) => setViewingDaPurchaseOrderId(purchaseOrderId)}
-          />
+              onEdit={(po) => setEditingPurchaseOrder(po)}
+              onDelete={(purchaseOrderId) => setDeletingPurchaseOrderId(purchaseOrderId)}
+            />
+          )}
         </CardContent>
       </Card>
 
       <CreateSvpPurchaseOrderDialog open={isSvpCreateOpen} onOpenChange={setIsSvpCreateOpen} />
       <CreatePublicBiddingPurchaseOrderDialog open={isPublicBiddingCreateOpen} onOpenChange={setIsPublicBiddingCreateOpen} />
       <CreateDirectAcquisitionPurchaseOrderDialog open={isDirectAcquisitionCreateOpen} onOpenChange={setIsDirectAcquisitionCreateOpen} />
+
+      <EditPurchaseOrderDialog
+        open={Boolean(editingPurchaseOrder)}
+        onOpenChange={(open) => {
+          if (!open) setEditingPurchaseOrder(null)
+        }}
+        purchaseOrder={editingPurchaseOrder}
+      />
+
+      <ConfirmAlertDialog
+        open={Boolean(deletingPurchaseOrderId)}
+        onOpenChange={(open) => {
+          if (!open) setDeletingPurchaseOrderId(null)
+        }}
+        title="Delete Purchase Order"
+        description={`Are you sure you want to delete purchase order "${deletingPurchaseOrder?.poNumber || ''}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        loading={deleteMutation.isPending}
+        onConfirm={handleDeleteConfirm}
+      />
 
       <SubmitForApprovalPurchaseOrderDialog
         open={isSubmitForApprovalOpen}
@@ -353,43 +552,29 @@ export function PurchaseOrderWorkspace({
           if (!open) setSubmitForApprovalPurchaseOrderId(null)
         }}
         purchaseOrder={submitForApprovalPurchaseOrder}
-        onConfirm={(purchaseOrderId) => {
-          submitForApproval({ purchaseOrderId })
-          setSubmitForApprovalPurchaseOrderId(null)
-        }}
-      />
-
-      <SelectAobDialog
-        open={isAobPickerOpen}
-        onOpenChange={(open) => { setIsAobPickerOpen(open); if (!open) setSelectedPurchaseOrderId(null) }}
-        selectedAobId={selectedPurchaseOrder?.sourceDocumentId}
-        onSelect={(aobId) => { if (selectedPurchaseOrderId) linkAob({ purchaseOrderId: selectedPurchaseOrderId, aobId }); setIsAobPickerOpen(false); setSelectedPurchaseOrderId(null) }}
-      />
-
-      <SelectNoaDialog
-        open={isNoaPickerOpen}
-        onOpenChange={(open) => { setIsNoaPickerOpen(open); if (!open) setSelectedPurchaseOrderId(null) }}
-        selectedNoaId={selectedPurchaseOrder?.sourceDocumentId}
-        onSelect={(noaId) => { if (selectedPurchaseOrderId) linkNoa({ purchaseOrderId: selectedPurchaseOrderId, noaId }); setIsNoaPickerOpen(false); setSelectedPurchaseOrderId(null) }}
-      />
-
-      <SelectDirectAcquisitionDialog
-        open={Boolean(selectedPurchaseOrderId && selectedPurchaseOrder?.source === 'direct-acquisition')}
-        onOpenChange={(open) => { if (!open) setSelectedPurchaseOrderId(null) }}
-        selectedDaId={selectedPurchaseOrder?.sourceDocumentId}
-        onSelect={(daId) => { if (selectedPurchaseOrderId) linkDirectAcquisition({ purchaseOrderId: selectedPurchaseOrderId, daId }); setIsDaPickerOpen(false); setSelectedPurchaseOrderId(null) }}
+        onConfirm={handleSubmitForApprovalConfirm}
+        isSubmitting={submitMutation.isPending}
       />
 
       <ReturnPurchaseOrderDialog
         open={isReturnOpen}
-        onOpenChange={(open) => { setIsReturnOpen(open); if (!open) setSelectedPurchaseOrderId(null) }}
-        onSubmit={(reason) => { if (selectedPurchaseOrderId) returnPurchaseOrder({ purchaseOrderId: selectedPurchaseOrderId, reason }); setIsReturnOpen(false); setSelectedPurchaseOrderId(null) }}
+        onOpenChange={(open) => {
+          setIsReturnOpen(open)
+          if (!open) setSelectedPurchaseOrderId(null)
+        }}
+        onSubmit={handleReturnConfirm}
+        isSubmitting={returnMutation.isPending}
       />
 
       <ApprovePurchaseOrderDialog
         open={isApproveOpen}
-        onOpenChange={(open) => { setIsApproveOpen(open); if (!open) setSelectedPurchaseOrderId(null) }}
-        onSubmit={(signedDocument) => { if (selectedPurchaseOrderId) approvePurchaseOrder({ purchaseOrderId: selectedPurchaseOrderId, signedDocument }); setIsApproveOpen(false); setSelectedPurchaseOrderId(null) }}
+        onOpenChange={(open) => {
+          setIsApproveOpen(open)
+          if (!open) setSelectedPurchaseOrderId(null)
+        }}
+        onSubmit={handleApproveConfirm}
+        isSubmitting={approveMutation.isPending}
+        poNumber={purchaseOrders.find((p) => p.id === selectedPurchaseOrderId)?.poNumber}
       />
     </div>
   )

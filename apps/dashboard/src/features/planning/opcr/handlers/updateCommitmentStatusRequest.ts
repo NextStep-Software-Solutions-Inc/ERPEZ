@@ -1,15 +1,15 @@
-﻿import type {
+import type {
   APIResponse,
   MutationBlueprintFromTemplate,
   QueryParams,
 } from 'erpez-shared-lib'
-import type { OPCR } from '../types/type.opcr'
+import type { CommitmentStatus, OPCR } from '../types/type.opcr'
 import api from '@/services/api'
 
 const endpoint = '/opcrs/:id/commitment-status'
 
 export type UpdateCommitmentStatusPayload = {
-  commitmentStatus: 'draft' | 'submitted' | 'approved' | 'rejected'
+  commitmentStatus: CommitmentStatus
 }
 
 export const updateCommitmentStatusRequest: MutationBlueprintFromTemplate<

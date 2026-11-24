@@ -2,6 +2,8 @@ import CommitmentsPage from '@/pages/planning/commitments/CommitmentsPage'
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { FunctionCategory } from '@/features/planning/master-kpi/types'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 export const commitmentSearchSchema = z.object({
   tab: z
@@ -9,7 +11,13 @@ export const commitmentSearchSchema = z.object({
     .default('strategicTarget'),
   fiscalYearId: z.string().optional(),
   strategicTargetTabView: z
-    .enum(['kpiAssigned', 'KeyPerformanceIndicator', 'kpiAssignment'])
+    .enum([
+      'kpiAssigned',
+      'KeyPerformanceIndicator',
+      'kpiAssignment',
+      'shoppable-kpis',
+    ])
+    .default('kpiAssigned')
     .optional(),
   opcrId: z.string().optional(),
   opcrActivityId: z.string().optional(),
@@ -43,5 +51,12 @@ export const Route = createFileRoute('/v2/commitments/')({
 })
 
 function RouteComponent() {
-  return <CommitmentsPage />
+  return (
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Planning.Opcr.View}
+      message="You do not have permission to view Commitments (OPCR)."
+    >
+      <CommitmentsPage />
+    </RoutePermissionGuard>
+  )
 }

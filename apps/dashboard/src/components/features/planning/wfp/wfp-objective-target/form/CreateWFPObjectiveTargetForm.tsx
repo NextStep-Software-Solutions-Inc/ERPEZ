@@ -1,10 +1,8 @@
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { Loader2 } from 'lucide-react'
-import { useAtom } from 'jotai'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { createFormDataAtom } from '../atoms'
 import {
   MONTH_ABBREVIATIONS,
   QUARTER_LABELS,
@@ -24,7 +22,7 @@ import { Button } from '@/components/ui/button'
 export const createWFPObjectiveTargetSchema = z.object({
   wfpObjectiveId: z.string().min(1),
   activityName: z.string().min(1),
-  indicator: z.string().min(1),
+  indicator: z.string().min(3, 'Indicator must be at least 3 characters long'),
   weight: z.number().min(0).max(100).optional(),
   dates: z.array(z.object({
     timelineType: z.enum(['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Annual']),
@@ -54,7 +52,6 @@ export default function CreateWFPObjectiveTargetForm({
   wfpData,
   initialValues = {}
 }: CreateWFPObjectiveTargetFormProps) {
-  const [formData, setFormData] = useAtom(createFormDataAtom)
   const initialTimelineType = initialValues.dates && initialValues.dates.length > 0
     ? initialValues.dates[0].timelineType
     : 'Monthly'
@@ -195,10 +192,10 @@ export default function CreateWFPObjectiveTargetForm({
   }, [selectedType, wfpData])
   const form = useForm({
     defaultValues: {
-      activityName: initialValues.activityName || formData.activityName || '',
-      indicator: initialValues.indicator || formData.indicator || '',
-      weight: initialValues.weight ?? formData.weight ?? 0,
-      dates: initialValues.dates || formData.dates || [],
+      activityName: initialValues.activityName || '',
+      indicator: initialValues.indicator || '',
+      weight: initialValues.weight ?? 0,
+      dates: initialValues.dates || [],
       wfpObjectiveId,
     } as CreateWFPObjectiveTargetValues,
     validators: {
@@ -229,21 +226,6 @@ export default function CreateWFPObjectiveTargetForm({
     const dates = buildDates()
     form.setFieldValue('dates', dates)
   }, [buildDates, form])
-
-  // Sync form state to Jotai atom for persistence
-  useEffect(() => {
-    const unsubscribe = form.store.subscribe(() => {
-      const values = form.state.values;
-      setFormData({
-        wfpObjectiveId: values.wfpObjectiveId,
-        activityName: values.activityName,
-        indicator: values.indicator,
-        weight: values.weight,
-        dates: values.dates,
-      });
-    });
-    return unsubscribe;
-  }, [form.store, setFormData])
 
   // Reset form when onCancel is called
   const handleCancel = () => {
@@ -287,13 +269,13 @@ export default function CreateWFPObjectiveTargetForm({
       <form.Field
         name="indicator"
         validators={{
-          onChange: z.string().min(1, 'Indicator is required'),
+          onChange: z.string().min(3, 'Indicator must be at least 3 characters long'),
         }}
         children={(indicatorField) => (
           <div>
-            <Label className="text-sm font-bold text-gray-700">Target Accomplishment <div className="text-red-500 inline">*</div></Label>
+            <Label className="text-sm font-bold text-gray-700">Target Accomplishment (Indicator) <div className="text-red-500 inline">*</div></Label>
             <Input
-              placeholder="Enter Target Accomplishment"
+              placeholder="e.g., 10 blueprints drafted and submitted"
               className="border-gray-200"
               value={indicatorField.state.value}
               onChange={(e) => indicatorField.handleChange(e.target.value)}
@@ -367,6 +349,7 @@ export default function CreateWFPObjectiveTargetForm({
         selectedType={selectedType}
         getPeriodDates={getPeriodDates}
         projectStart={wfpData?.projectStartDate}
+        onRemovePeriod={(period) => handleTargetChange(period, '')}
       />
       {/* Footer Buttons */}
       <div className="flex justify-end gap-3 pt-6 border-t">

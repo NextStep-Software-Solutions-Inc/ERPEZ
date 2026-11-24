@@ -9,7 +9,7 @@ const endpoint = "/tenants";
 
 type CreateTenantPayload = {
   name: string;
-  onPremise: boolean;
+  onPremise?: boolean;
   description?: string;
   billingContactEmail: string;
 };

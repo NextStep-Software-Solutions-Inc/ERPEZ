@@ -1,7 +1,7 @@
 /**
  * Market Scoping Details Page
  * Location: src/pages/planning/market-scoping/
- * 
+ *
  * Displays detailed view of a market scoping form with modular components
  * Complies with 200-line max for composite components
  */
@@ -10,7 +10,14 @@ import { useState } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useSetAtom } from 'jotai'
-import { ArrowLeft, Download, Send, Check, RotateCcw, Edit2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  Download,
+  Send,
+  Check,
+  RotateCcw,
+  Edit2,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/services/api'
 import { Button } from '@/components/ui/button'
@@ -36,20 +43,29 @@ interface MarketScopingDetailsPageProps {
   id?: string
 }
 
-export default function MarketScopingDetailsPage({ id: propId }: MarketScopingDetailsPageProps = {}) {
+export default function MarketScopingDetailsPage({
+  id: propId,
+}: MarketScopingDetailsPageProps = {}) {
   const routerParams = useParams({ strict: false }) as { id?: string }
   const id = propId || routerParams?.id || ''
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { data: queryData, isLoading, refetch } = useMarketScopingDetails({
+  const {
+    data: queryData,
+    isLoading,
+    refetch,
+  } = useMarketScopingDetails({
     pathParams: { id },
     queryParams: {},
   })
-  const { mutateAsync: generatePdf, isPending: isGeneratingPdf } = useGeneratePdf()
+  const { mutateAsync: generatePdf, isPending: isGeneratingPdf } =
+    useGeneratePdf()
 
   const form = queryData?.data as MarketScopingForm | undefined
   const [showApprovalDialog, setShowApprovalDialog] = useState(false)
-  const [approvalAction, setApprovalAction] = useState<'approve' | 'reject' | 'return' | null>(null)
+  const [approvalAction, setApprovalAction] = useState<
+    'approve' | 'reject' | 'return' | null
+  >(null)
   const [rejectionReason, setRejectionReason] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isActionPending, setIsActionPending] = useState(false)
@@ -58,30 +74,44 @@ export default function MarketScopingDetailsPage({ id: propId }: MarketScopingDe
   const setCreateDialogOpen = useSetAtom(createMarketScopingDialogOpenAtom)
   const setCurrentStep = useSetAtom(currentFormStepAtom)
 
-  const handleEditForm = () => {
+  const handleEditForm = async () => {
     if (form) {
-      setDraft(form)
+      try {
+        const refreshed = await refetch()
+        const effectiveForm = (refreshed.data?.data ||
+          form) as MarketScopingForm
+        setDraft(effectiveForm)
+      } catch {
+        setDraft(form)
+      }
       setCurrentStep(1)
       setCreateDialogOpen(true)
     }
   }
 
   const handleBack = () => {
-    navigate({ to: '/v2/market-scoping' })
+    if (window.history.length > 1) {
+      window.history.back()
+    } else {
+      navigate({ to: '/v2/market-scoping' })
+    }
   }
 
   const handleGeneratePdf = async () => {
     try {
       const apiRes = await generatePdf({ pathParams: { id } })
       const documentId = typeof apiRes === 'string' ? apiRes : apiRes?.data
-      
+
       if (!documentId) {
         throw new Error('No document ID returned from backend generator.')
       }
 
-      const response = await api.get(`/api/planning/documents/${documentId}/download`, {
-        responseType: 'blob',
-      })
+      const response = await api.get(
+        `/api/planning/documents/${documentId}/download`,
+        {
+          responseType: 'blob',
+        },
+      )
 
       const filename = `MarketScoping_${form?.projectName?.replace(/\s+/g, '_') || id}.pdf`
       const url = URL.createObjectURL(response.data)
@@ -94,11 +124,47 @@ export default function MarketScopingDetailsPage({ id: propId }: MarketScopingDe
       toast.success('Market Scoping PDF generated and downloaded successfully.')
     } catch (error) {
       console.error('Error generating PDF via API:', error)
-      toast.error('Failed to generate or download the Market Scoping PDF from backend API.')
+      toast.error(
+        'Failed to generate or download the Market Scoping PDF from backend API.',
+      )
     }
   }
 
   const handleSubmitForm = async () => {
+    const acts = form?.activities || form?.activitiesConducted || []
+    const params = form?.parameters || form?.parameterEvaluations || []
+    const hasActivities = acts.length > 0
+    const allActsHaveAttachments =
+      hasActivities && acts.every((a) => (a.attachments || []).length > 0)
+    const evaluatedParams = params.filter((p) => {
+      const rec = (
+        'recommendations' in p && typeof p.recommendations === 'string'
+          ? p.recommendations
+          : 'remarks' in p && typeof p.remarks === 'string'
+            ? p.remarks
+            : ''
+      ).trim()
+      const hasConsidered =
+        ('considered' in p &&
+          p.considered !== undefined &&
+          p.considered !== null) ||
+        ('isConsidered' in p &&
+          p.isConsidered !== undefined &&
+          p.isConsidered !== null)
+      return rec.length > 0 && hasConsidered
+    })
+    const hasAllParams =
+      params.length >= 6 && evaluatedParams.length === params.length
+
+    if (!hasActivities || !allActsHaveAttachments || !hasAllParams) {
+      toast.warning('Incomplete Market Scoping Form', {
+        description:
+          'To submit for approval, please edit the form and ensure at least one activity with supporting documents is provided and all 6 NGPA parameters are evaluated.',
+      })
+      handleEditForm()
+      return
+    }
+
     setIsSubmitting(true)
     try {
       await api.post(`/market-scopings/${id}/submit`)
@@ -120,19 +186,23 @@ export default function MarketScopingDetailsPage({ id: propId }: MarketScopingDe
       if (signedFile) {
         const formData = new FormData()
         formData.append('file', signedFile)
-        const uploadRes = await api.post<{ succeeded: boolean; data: string }>('/files/upload', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
+        const uploadRes = await api.post<{ succeeded: boolean; data: string }>(
+          '/files/upload',
+          formData,
+          {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          },
+        )
         fileId = uploadRes.data?.data
       }
 
       const res = await api.post<{ succeeded: boolean; message?: string }>(
         `/market-scopings/${id}/approve`,
-        { signedDocumentFileId: fileId }
+        { signedDocumentFileId: fileId },
       )
       if (!res.data?.succeeded) {
         toast.error(res.data?.message || 'Approval failed.')
-        return  // stop here — don't refetch, don't close dialog
+        return // stop here — don't refetch, don't close dialog
       }
       toast.success('Market Scoping form approved successfully.')
       setShowApprovalDialog(false)
@@ -189,8 +259,10 @@ export default function MarketScopingDetailsPage({ id: propId }: MarketScopingDe
   }
 
   const normalizedStatus = (form?.status || '').toLowerCase()
-  const isDraftOrReturned = normalizedStatus === 'draft' || normalizedStatus === 'returned'
-  const isSubmittedOrPending = normalizedStatus === 'submitted' || normalizedStatus === 'pendingapproval'
+  const isDraftOrReturned =
+    normalizedStatus === 'draft' || normalizedStatus === 'returned'
+  const isSubmittedOrPending =
+    normalizedStatus === 'submitted' || normalizedStatus === 'pendingapproval'
 
   if (isLoading) {
     return (
@@ -214,16 +286,28 @@ export default function MarketScopingDetailsPage({ id: propId }: MarketScopingDe
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div className="flex items-start gap-4 min-w-0 flex-1">
-          <Button variant="outline" size="icon" onClick={handleBack} className="rounded-full flex-shrink-0 mt-1">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleBack}
+            className="rounded-full flex-shrink-0 mt-1"
+          >
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 break-words">{form.projectName}</h1>
-            <p className="text-sm text-muted-foreground mt-1">Market Scoping Form Details</p>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 break-words">
+              {form.projectName}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Market Scoping Form Details
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap flex-shrink-0">
-          <Badge variant="outline" className={`px-3 py-1.5 text-sm font-semibold border ${getStatusByValue(form.status)?.color || 'bg-gray-100'}`}>
+          <Badge
+            variant="outline"
+            className={`px-3 py-1.5 text-sm font-semibold border ${getStatusByValue(form.status)?.color || 'bg-gray-100'}`}
+          >
             {getStatusByValue(form.status)?.label || form.status}
           </Badge>
 
@@ -295,8 +379,12 @@ export default function MarketScopingDetailsPage({ id: propId }: MarketScopingDe
 
           <Tabs defaultValue="activities" className="w-full space-y-4">
             <TabsList className="grid w-full grid-cols-2 max-w-md">
-              <TabsTrigger value="activities" className="font-medium">Activities Conducted</TabsTrigger>
-              <TabsTrigger value="parameters" className="font-medium">Parameter Evaluation</TabsTrigger>
+              <TabsTrigger value="activities" className="font-medium">
+                Activities Conducted
+              </TabsTrigger>
+              <TabsTrigger value="parameters" className="font-medium">
+                Parameter Evaluation
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="activities" className="space-y-4">
               <ActivitiesSection form={form} />
@@ -338,6 +426,7 @@ export default function MarketScopingDetailsPage({ id: propId }: MarketScopingDe
       <CreateMarketScopingDialog
         title="Edit Market Scoping Form"
         description="Update the details in the 4-step wizard to edit the draft form."
+        onSuccess={refetch}
       />
     </div>
   )

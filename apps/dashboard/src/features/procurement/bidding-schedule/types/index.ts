@@ -3,6 +3,12 @@
 /** Which RA 9184 interval table to apply. Distinct from `mop`. */
 export type ProcurementCategory = 'goods' | 'infrastructure' | 'consulting'
 
+export const PROCUREMENT_CATEGORY_LABELS: Record<ProcurementCategory, string> = {
+  goods: 'Goods',
+  infrastructure: 'Infrastructure',
+  consulting: 'Consulting Services',
+}
+
 /** Lifecycle states of a BiddingSchedule. */
 export type BiddingScheduleStatus = 'draft' | 'confirmed' | 'locked'
 
@@ -16,8 +22,13 @@ export type MilestoneExecutionStatus =
   | 'overdue'
   | 'completed'
 
-/** Backwards-compatible alias for internal audit status. */
-export type MilestoneStatus = MilestoneAuditStatus
+export type Holiday = {
+  date: string
+  name?: string
+  type?: 'regular' | 'special'
+}
+
+export const DEFAULT_OFFICER_NAME = 'Procurement Officer'
 
 // ─── Milestone types ──────────────────────────────────────────────────────────
 
@@ -73,96 +84,122 @@ export type BiddingSchedule = {
   lockedBy: string | null
 }
 
-// ─── Interval configuration types ────────────────────────────────────────────
+// ─── API Response wrapper ───────────────────────────────────────────────────
 
-/** One milestone's position in the timeline for a given category. */
-export type MilestoneIntervalConfig = {
-  id: string
-  milestoneKey: string
-  milestoneName: string
-  minDaysFromPrevious: number
-  maxDaysFromPrevious: number | null
-  order: number
-  isOptional: boolean
-}
-
-/** Full set of milestones for one procurement category. */
-export type IntervalConfig = {
-  category: ProcurementCategory
-  milestones: Array<MilestoneIntervalConfig>
-}
-
-/** A single declared non-working day. */
-export type Holiday = {
-  /** YYYY-MM-DD */
-  date: string
-  name: string
-  type: 'regular' | 'special'
-}
-
-// ─── Gate / UI types ──────────────────────────────────────────────────────────
-
-/** QA dev panel toggle state per resolution. */
-export type MockPrerequisiteGates = {
-  consolidatedPrLinked: boolean
-  bacResolutionApproved: boolean
-  bacResolutionPublicBidding: boolean
-  bacResolutionIssued: boolean
-  intervalConfigExists: boolean
-  holidaysTableExists: boolean
-  pbCprLinked?: boolean
-}
-
-/** Computed checklist state shown in the UI. */
-export type PrerequisiteGateResult = MockPrerequisiteGates & {
-  allPassed: boolean
-}
-
-/** One row in the prerequisite checklist. */
-export type GateCheckItem = {
-  key: keyof MockPrerequisiteGates
-  label: string
-  description: string
-  passed: boolean
-  completeNowHref: string | null
+export type ApiResponse<T> = {
+  succeeded: boolean
+  data: T
+  message: string | null
 }
 
 // ─── Payload types ────────────────────────────────────────────────────────────
 
-export type CreateSchedulePayload = {
+export type GenerateSchedulePayload = {
   bacResolutionId: string
-  /** Human-readable resolution number (e.g. "BAC-RES-2026-004"). */
-  bacResolutionNumber: string
+  bacResolutionNumber?: string
   ibPostingDate: string
   procurementCategory: ProcurementCategory
-  createdBy: string
+  createdBy?: string
 }
 
-/** Same shape as create; guarded to only apply when status === 'draft'. */
-export type RegenerateSchedulePayload = CreateSchedulePayload
+export type RegenerateSchedulePayload = {
+  bacResolutionId: string
+  ibPostingDate: string
+  procurementCategory: ProcurementCategory
+  createdBy?: string
+}
 
+/** Extended with `bacResolutionId` to enable precise cache invalidation */
 export type UpdateMilestonePayload = {
+  bacResolutionId: string
   scheduleId: string
   milestoneId: string
   overrideDate: string
   time: string | null
   reason: string
-  editedBy: string
-}
-
-export type ConfirmSchedulePayload = {
-  scheduleId: string
-  confirmedBy: string
-}
-
-export type LockSchedulePayload = {
-  scheduleId: string
-  lockedBy: string
+  editedBy?: string
 }
 
 export type SetMilestoneCompletionPayload = {
+  bacResolutionId: string
   scheduleId: string
   milestoneId: string
   completed: boolean
-  updatedBy: string
+  updatedBy?: string
+}
+
+export type ConfirmSchedulePayload = {
+  bacResolutionId: string
+  scheduleId: string
+  confirmedBy?: string
+}
+
+export type LockSchedulePayload = {
+  bacResolutionId: string
+  scheduleId: string
+  lockedBy?: string
+}
+
+// Legacy payload type aliases for backward compatibility where needed
+export type CreateSchedulePayload = GenerateSchedulePayload
+
+// ─── Calendar API types ─────────────────────────────────────────────────────
+
+export type ConflictType = 'venue' | 'quorum'
+
+export type ConflictDetail = {
+  date: string // YYYY-MM-DD
+  conflictType: ConflictType
+  venue: string
+  eventIds: string[]
+}
+
+export type CalendarEvent = {
+  id: string
+  projectId: string
+  projectTitle: string
+  procurementActivityTypeId: string
+  procurementActivityTypeName: string
+  startDate: string // ISO datetime
+  endDate: string // ISO datetime
+  venue: string
+  status: string
+  remarks: string | null
+  bacResolutionId: string | null
+  bacResolutionNumber: string | null
+  scheduleStatus: BiddingScheduleStatus
+  officeLabel: string
+  procurementCategory: ProcurementCategory
+  milestoneKey: string | null
+  fiscalYear: number | null
+  executionStatus?: string | null
+}
+
+export type CalendarSummary = {
+  activeSchedules: number
+  visibleMilestones: number
+  conflictDays: number
+  overloadedDays: number
+  dueSoon: number
+  overdue: number
+  venueConflicts: number
+  quorumConflicts: number
+  conflictDetails: ConflictDetail[]
+}
+
+export type CalendarEventsWithSummary = {
+  events: CalendarEvent[]
+  summary: CalendarSummary
+}
+
+export type GetCalendarEventsParams = {
+  filter?: string
+  search?: string
+  from?: string // ISO date
+  to?: string // ISO date
+  office?: string
+  category?: ProcurementCategory
+  scheduleStatus?: BiddingScheduleStatus
+  milestoneKey?: string
+  fiscalYear?: number
 }

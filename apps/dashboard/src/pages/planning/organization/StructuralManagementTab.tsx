@@ -19,15 +19,29 @@ import CreateOfficeDialog from '@/components/features/planning/organizational-st
 import UpdateOfficeDialog from '@/components/features/planning/organizational-structure/dialog/UpdateOfficeDialog'
 import DeleteOfficeDialog from '@/components/features/planning/organizational-structure/dialog/DeleteOfficeDialog'
 
-function StructuralManagementTab({ structuralSearch, selectedUnitId, onSelectUnit }: StructuralManagementTabProps) {
+function StructuralManagementTab({
+  structuralSearch,
+  selectedUnitId,
+  onSelectUnit,
+}: StructuralManagementTabProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isUpdateOpen, setIsUpdateOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set())
-  const { data: units, isLoading: isListLoading, error: listError } = useOrgUnits()
+  const {
+    data: units,
+    isLoading: isListLoading,
+    error: listError,
+  } = useOrgUnits()
   const normalizedUnitId = selectedUnitId ?? null
-  const { data: selectedUnit, isLoading: isUnitLoading, refetch: refetchUnit } = useOrgUnit(normalizedUnitId)
-  const { data: positions, isLoading: isPositionsLoading } = usePositions(normalizedUnitId ?? undefined)
+  const {
+    data: selectedUnit,
+    isLoading: isUnitLoading,
+    refetch: refetchUnit,
+  } = useOrgUnit(normalizedUnitId)
+  const { data: positions, isLoading: isPositionsLoading } = usePositions(
+    normalizedUnitId ?? undefined,
+  )
   const updateMutation = useUpdateOrgUnit()
   const deleteMutation = useDeleteOrgUnit()
 
@@ -46,16 +60,16 @@ function StructuralManagementTab({ structuralSearch, selectedUnitId, onSelectUni
   // Helper function to calculate aggregated position count for a unit
   const getAggregatedPositionCount = (unitId: string): number => {
     if (!units) return 0
-    const unit = units.find(u => u.id === unitId)
+    const unit = units.find((u) => u.id === unitId)
     if (!unit) return 0
-    
+
     const descendantIds = getAllDescendantIds(unitId)
     return [
       unit.positionCount ?? 0,
-      ...descendantIds.map(id => {
-        const descendant = units.find(u => u.id === id)
+      ...descendantIds.map((id) => {
+        const descendant = units.find((u) => u.id === id)
         return descendant?.positionCount ?? 0
-      })
+      }),
     ].reduce((sum, count) => sum + count, 0)
   }
 
@@ -129,7 +143,9 @@ function StructuralManagementTab({ structuralSearch, selectedUnitId, onSelectUni
           <CardContent className="p-12 flex justify-center items-center">
             <div className="flex flex-col items-center gap-2">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-              <p className="text-sm text-default-500 font-medium">Fetching unit details...</p>
+              <p className="text-sm text-default-500 font-medium">
+                Fetching unit details...
+              </p>
             </div>
           </CardContent>
         ) : selectedUnitId && selectedUnit ? (
@@ -148,17 +164,21 @@ function StructuralManagementTab({ structuralSearch, selectedUnitId, onSelectUni
               <UnitDetailsMetadata unit={selectedUnit} />
 
               {/* Position List Segment */}
-              <PositionsList 
+              <PositionsList
                 positions={positions}
                 isLoading={isPositionsLoading}
-                positionCount={selectedUnit ? getAggregatedPositionCount(selectedUnit.id) : 0}
+                positionCount={
+                  selectedUnit ? getAggregatedPositionCount(selectedUnit.id) : 0
+                }
               />
 
               {/* Administrative Footer */}
               <div className="bg-default-50/50 p-4 rounded-lg border border-dashed border-default-200">
                 <div className="flex items-center gap-2 mb-2">
                   <ShieldCheckIcon className="h-4 w-4 text-default-400" />
-                  <h3 className="font-semibold text-default-500 uppercase text-[10px] tracking-wider">Traceability</h3>
+                  <h3 className="font-semibold text-default-500 uppercase text-[10px] tracking-wider">
+                    Traceability
+                  </h3>
                 </div>
                 <p className="text-[11px] text-default-500 leading-relaxed font-medium">
                   {organizationConfig.policy.unitTraceability}
@@ -171,25 +191,27 @@ function StructuralManagementTab({ structuralSearch, selectedUnitId, onSelectUni
             <div className="bg-default-100 p-4 rounded-full mb-4">
               <Building2Icon className="h-10 w-10 text-default-400" />
             </div>
-            <CardTitle className="text-base font-semibold text-default-900 mb-2">No Organization Selected</CardTitle>
+            <CardTitle className="text-base font-semibold text-default-900 mb-2">
+              No Organization Selected
+            </CardTitle>
             <p className="text-sm text-default-500 max-w-xs font-medium">
-              Select an agency division, office, or regional cluster from the hierarchy tree to manage its identity and government metadata.
+              Select an agency division, office, or regional cluster from the
+              hierarchy tree to manage its identity and government metadata.
             </p>
           </CardContent>
         )}
       </Card>
 
-      <CreateOfficeDialog 
-        open={isCreateOpen} 
-        onOpenChange={setIsCreateOpen} 
-        parentUnits={units || []} 
+      <CreateOfficeDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        parentUnits={units || []}
       />
 
       <UpdateOfficeDialog
         open={isUpdateOpen}
         onOpenChange={setIsUpdateOpen}
         unit={selectedUnit || null}
-        parentUnits={units || []}
       />
 
       <DeleteOfficeDialog

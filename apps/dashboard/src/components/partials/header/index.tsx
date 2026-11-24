@@ -14,10 +14,12 @@ import FullScreen from "./full-screen";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useSidebar, useThemeStore } from "@/store";
 import { cn } from "@/lib/utils";
+import { WorkspaceSelector } from "@/components/workspace/WorkspaceSelector";
 
 const NavTools = ({ isDesktop, isMobile, sidebarType }: { isDesktop: boolean; isMobile: boolean; sidebarType: string }) => {
   return (
-    <div className="nav-tools flex items-center  gap-2">
+    <div className="nav-tools flex items-center gap-2">
+      <WorkspaceSelector />
       {isDesktop && <Language />}
       {isDesktop && <FullScreen />}
 

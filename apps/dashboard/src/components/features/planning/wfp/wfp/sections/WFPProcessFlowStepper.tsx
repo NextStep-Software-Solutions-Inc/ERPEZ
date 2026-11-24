@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import {
   CheckCircle2,
-  ArrowRight,
+  AlertCircle,
   FileText,
   Calendar,
   DollarSign,
@@ -9,6 +9,8 @@ import {
   Layers,
   ChevronDown,
   ChevronUp,
+  Lock,
+  ArrowRight,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -30,59 +32,86 @@ export const WFPProcessFlowStepper: React.FC<WFPProcessFlowStepperProps> = ({
   activityCount = 0,
   timelineCount = 0,
   expenditureCount = 0,
+  onGenerateDoc,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const isOPCRMode = mode === 'OPCR'
+
+  // Dynamic workflow completion evaluation
+  const hasActivities = activityCount > 0
+  const hasTimelines = timelineCount > 0
+  const hasExpenditures = expenditureCount > 0
+  const isWorkflowComplete = hasActivities && hasTimelines && hasExpenditures
 
   const steps = [
     {
       id: 1,
       title: 'Activity Binding',
       subtitle: isOPCRMode ? 'Linked from OPCR' : 'Standalone Objectives',
-      badgeText: `${activityCount} Activities`,
-      completed: activityCount > 0,
+      badgeText: hasActivities ? `✓ ${activityCount} Activities Linked` : `⚠ 0 Activities Linked`,
+      completed: hasActivities,
       icon: Target,
-      accentBg: 'bg-blue-50 text-blue-700 border-blue-200',
+      accentBg: hasActivities ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200',
     },
     {
       id: 2,
       title: 'Quarterly Timelines',
       subtitle: 'Q1–Q4 % Distribution',
-      badgeText: `${timelineCount} Timelines`,
-      completed: timelineCount > 0,
+      badgeText: hasTimelines ? `✓ ${timelineCount} Timelines` : `⚠ ${timelineCount} Configured`,
+      completed: hasTimelines,
       icon: Calendar,
-      accentBg: 'bg-purple-50 text-purple-700 border-purple-200',
+      accentBg: hasTimelines ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-amber-50 text-amber-700 border-amber-200',
     },
     {
       id: 3,
       title: 'PPMP Expenditures',
       subtitle: 'Manual Budget Items',
-      badgeText: `${expenditureCount} PPMP Items`,
-      completed: expenditureCount > 0,
+      badgeText: hasExpenditures ? `✓ ${expenditureCount} PPMP Items` : `⚠ 0 PPMP Items`,
+      completed: hasExpenditures,
       icon: DollarSign,
-      accentBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      accentBg: hasExpenditures ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200',
     },
     {
       id: 4,
       title: 'Document Generation',
       subtitle: 'PDF / Excel Output',
-      badgeText: 'Ready to Render',
-      completed: false,
+      badgeText: isWorkflowComplete ? '✓ Ready to Generate' : '🔒 Pending Setup',
+      completed: isWorkflowComplete,
       icon: FileText,
-      accentBg: 'bg-amber-50 text-amber-700 border-amber-200',
+      accentBg: isWorkflowComplete ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-50 text-slate-600 border-slate-200',
     },
   ]
+
+  const handleCTAClick = () => {
+    if (isWorkflowComplete) {
+      if (onGenerateDoc) onGenerateDoc('Pdf')
+      return
+    }
+
+    // Deterministic scroll / navigation to next uncompleted step
+    if (!hasActivities) {
+      const el = document.getElementById('objectives-registry-section')
+      el?.scrollIntoView({ behavior: 'smooth' })
+    } else if (!hasTimelines) {
+      const el = document.getElementById('objectives-registry-section')
+      el?.scrollIntoView({ behavior: 'smooth' })
+    } else if (!hasExpenditures) {
+      const el = document.getElementById('objectives-registry-section')
+      el?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
 
   return (
     <Card className="mb-3.5 overflow-hidden border border-slate-200/80 bg-white shadow-xs hover:shadow-sm transition-all duration-300">
       <CardContent className="p-3.5 sm:p-4">
-        {/* Top Header Row with Metrics & Collapse Toggle */}
+        {/* Top Header Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsCollapsed(!isCollapsed)}
+              aria-label={isCollapsed ? 'Expand workflow steps' : 'Collapse workflow steps'}
               className="h-7 w-7 p-0 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800"
             >
               {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
@@ -98,37 +127,40 @@ export const WFPProcessFlowStepper: React.FC<WFPProcessFlowStepperProps> = ({
             </div>
           </div>
 
-          {/* Metric Badges */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <Badge variant="secondary" className="bg-blue-50 text-blue-700 font-bold border border-blue-200 text-[10px] px-2 py-0.5">
-              {activityCount} Activities
-            </Badge>
-            <Badge variant="secondary" className="bg-purple-50 text-purple-700 font-bold border border-purple-200 text-[10px] px-2 py-0.5">
-              {timelineCount} Timelines
-            </Badge>
-            <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 font-bold border border-emerald-200 text-[10px] px-2 py-0.5">
-              {expenditureCount} PPMP Items
-            </Badge>
+          {/* Primary CTA Button */}
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={handleCTAClick}
+              className={`h-7 px-3 text-xs font-semibold gap-1.5 shadow-2xs ${
+                isWorkflowComplete
+                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }`}
+            >
+              {isWorkflowComplete ? (
+                <>
+                  <FileText className="w-3.5 h-3.5" /> Generate Documents
+                </>
+              ) : (
+                <>
+                  Continue Setup <ArrowRight className="w-3.5 h-3.5" />
+                </>
+              )}
+            </Button>
           </div>
         </div>
 
         {/* Collapsible Process Flow Stepper Grid */}
         {!isCollapsed && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 mt-3 border-t border-slate-100">
+          <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 mt-3 border-t border-slate-100 overflow-x-auto pb-1 sm:pb-0">
             {steps.map((step, idx) => {
               const Icon = step.icon
               return (
                 <div
                   key={step.id}
-                  className="relative group p-3 rounded-xl bg-slate-50/60 border border-slate-200/70 hover:border-indigo-300 hover:bg-white transition-all duration-200 flex flex-col justify-between"
+                  className="min-w-[220px] sm:min-w-0 flex-1 relative group p-3 rounded-xl bg-slate-50/60 border border-slate-200/70 hover:border-indigo-300 hover:bg-white transition-all duration-200 flex flex-col justify-between"
                 >
-                  {/* Desktop Flow Arrow */}
-                  {idx < steps.length - 1 && (
-                    <div className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 z-10 text-slate-300 group-hover:text-indigo-400 transition-colors">
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </div>
-                  )}
-
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
@@ -152,13 +184,25 @@ export const WFPProcessFlowStepper: React.FC<WFPProcessFlowStepperProps> = ({
                     </div>
                   </div>
 
-                  <div className="mt-2 pt-1.5 border-t border-slate-200/50 flex items-center justify-between text-[9px] text-slate-400 font-medium">
-                    <span>{step.completed ? 'Complete' : 'Ready'}</span>
-                    {step.completed ? (
-                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                    ) : (
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    )}
+                  <div className="mt-2 pt-1.5 border-t border-slate-200/50 flex items-center justify-between text-[9px] text-slate-500 font-medium">
+                    <span className="flex items-center gap-1">
+                      {step.completed ? (
+                        <>
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                          <span className="text-emerald-700 font-semibold">Configured</span>
+                        </>
+                      ) : idx === 3 ? (
+                        <>
+                          <Lock className="w-3 h-3 text-slate-400" />
+                          <span className="text-slate-500">Locked</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="w-3 h-3 text-amber-500" />
+                          <span className="text-amber-700 font-semibold">Needs setup</span>
+                        </>
+                      )}
+                    </span>
                   </div>
                 </div>
               )

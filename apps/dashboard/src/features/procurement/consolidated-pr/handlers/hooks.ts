@@ -24,13 +24,6 @@ import { approveConsolidatedPrRequest } from './approveConsolidatedPrRequest'
 import { returnConsolidatedPrRequest } from './returnConsolidatedPrRequest'
 import { getProcurementModesRequest } from '@/lib/fiscal-year-and-policies/requests/getProcurementModesRequest'
 
-// ─── Cache invalidation keys ──────────────────────────────────────────────────
-const CPR_QUERY_KEYS = [
-  ['/consolidated-prs'],
-  ['/consolidated-prs/:id'],
-  ['/consolidated-prs/:id/eligible-prs'],
-] as const
-
 type MutationResult<TData, TVariables> = UseMutationResult<
   TData,
   unknown,
@@ -46,11 +39,18 @@ function makeCPRMutationWithRefresh<TData, TVariables>(
     const mutation = baseHook()
 
     const invalidateCPRCaches = () => {
-      void Promise.all(
-        CPR_QUERY_KEYS.map((queryKey) =>
-          queryClient.invalidateQueries({ queryKey }),
-        ),
-      )
+      void queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey[0]
+          return typeof key === 'string' && key.startsWith('/consolidated-prs')
+        },
+      })
+      void queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey[0]
+          return typeof key === 'string' && key.startsWith('/purchase-requests')
+        },
+      })
     }
 
     return {

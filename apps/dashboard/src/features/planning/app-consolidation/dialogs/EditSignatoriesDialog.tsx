@@ -11,58 +11,8 @@ import { Badge } from '@/components/ui/badge'
 import { X, Plus, ChevronDown, ChevronUp } from 'lucide-react'
 import type { AppMaster, Signatory, SignatoryBlock } from '../types'
 import { signatoriesDialogOpenAtom, currentAppAtom, appListAtom } from '../atoms'
-
-// Mock signatories database with predefined details
-const MOCK_SIGNATORIES_DATABASE = [
-  {
-    id: 'sig-001',
-    name: 'Maria Santos',
-    position: 'Procurement Officer',
-    department: 'Supply & Logistics Division',
-  },
-  {
-    id: 'sig-002',
-    name: 'Juan Cruz',
-    position: 'Budget Officer',
-    department: 'Finance & Budget Division',
-  },
-  {
-    id: 'sig-003',
-    name: 'Ana Garcia',
-    position: 'Director',
-    department: 'Planning & Development Office',
-  },
-  {
-    id: 'sig-004',
-    name: 'Roberto Mendoza',
-    position: 'Administrative Officer',
-    department: 'Administrative Services Division',
-  },
-  {
-    id: 'sig-005',
-    name: 'Luisa Reyes',
-    position: 'Finance Manager',
-    department: 'Finance & Budget Division',
-  },
-  {
-    id: 'sig-006',
-    name: 'Carlos Fernandez',
-    position: 'Procurement Manager',
-    department: 'Supply & Logistics Division',
-  },
-  {
-    id: 'sig-007',
-    name: 'Teresa Bautista',
-    position: 'Deputy Director',
-    department: 'Planning & Development Office',
-  },
-  {
-    id: 'sig-008',
-    name: 'Miguel Castillo',
-    position: 'Senior Procurement Specialist',
-    department: 'Supply & Logistics Division',
-  },
-]
+import { useQueryClient } from '@tanstack/react-query'
+import api from '@/services/api'
 
 interface EditSignatoriesDialogProps {
   open?: boolean
@@ -75,6 +25,21 @@ interface SignatoryFormData {
   department: string
   signatureDate?: string
 }
+
+// User record fetched from /users API
+interface UserRecord {
+  id: string
+  name: string
+  position?: string
+  personnelPositionId?: string
+  department?: string
+  email?: string
+  firstName?: string
+  lastName?: string
+  fullName?: string
+  officeName?: string
+}
+
 
 interface EditingState {
   roleKey: string | null
@@ -123,6 +88,7 @@ export function EditSignatoriesDialog({
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(
     new Set(['preparedBy', 'reviewedBy', 'approvedBy', 'certifiedBy']),
   )
+  const [apiUsers, setApiUsers] = useState<UserRecord[]>([])
 
   const isOpen = controlledOpen !== undefined ? controlledOpen : dialogOpen
 
@@ -146,6 +112,39 @@ export function EditSignatoriesDialog({
     }
   }, [isOpen, currentApp])
 
+  // Fetch real users from /users API when dialog opens
+  useEffect(() => {
+    if (!isOpen) return
+    api.get('/users?Page=1&PageSize=200')
+      .then((res) => {
+        // Handle paginated shape: { data: { items: [...] } } or flat array
+        const raw = res.data?.data?.items ?? res.data?.data ?? res.data?.items ?? res.data ?? []
+        const items: any[] = Array.isArray(raw) ? raw : []
+        setApiUsers(items.map((u: any) => {
+          // UserResponse shape: firstName, lastName, fullName, officeName
+          const fullName =
+            u.fullName ||
+            [u.firstName, u.middleName, u.lastName, u.nameExtension]
+              .filter(Boolean)
+              .join(' ')
+              .trim() ||
+            u.username ||
+            ''
+          return {
+            id: u.id,
+            name: fullName,
+            position: u.positionTitle || u.position || u.personnelPosition?.name || u.personnelPositions?.[0]?.position?.title || '',
+            personnelPositionId: u.personnelPositionId || u.personnelPositions?.[0]?.id || undefined,
+            department: u.officeName || u.office?.name || u.officeCode || '',
+            email: u.email || '',
+          }
+        }))
+      })
+      .catch(() => {
+        // Silently ignore — user can still type name manually
+      })
+  }, [isOpen])
+
   const isDirty = useMemo(() => {
     if (!formData || !currentApp) return false
     return JSON.stringify(formData.signatories) !== JSON.stringify(currentApp.signatories)
@@ -153,11 +152,11 @@ export function EditSignatoriesDialog({
 
   const signatoryOptions = useMemo(
     () =>
-      MOCK_SIGNATORIES_DATABASE.map((sig) => ({
-        value: sig.id,
-        label: `${sig.name} - ${sig.position}`,
+      apiUsers.map((u) => ({
+        value: u.id,
+        label: u.position ? `${u.name} — ${u.position}` : u.name,
       })),
-    [],
+    [apiUsers],
   )
 
   const getTotalSignatoriesCount = useCallback(() => {
@@ -176,19 +175,19 @@ export function EditSignatoriesDialog({
   )
 
   /**
-   * Handle signatory name selection - auto-populate position and department
+   * Handle signatory name selection from API users - auto-populate position and department
    */
   const handleSignatoryNameSelect = useCallback((selectedId: string) => {
-    const selected = MOCK_SIGNATORIES_DATABASE.find((sig) => sig.id === selectedId)
+    const selected = apiUsers.find((u) => u.id === selectedId)
     if (selected) {
       setEditingForm({
         name: selected.name,
-        position: selected.position,
-        department: selected.department,
+        position: selected.position || '',
+        department: selected.department || '',
         signatureDate: editingForm.signatureDate || '',
       })
     }
-  }, [editingForm.signatureDate])
+  }, [apiUsers, editingForm.signatureDate])
 
   /**
    * Start editing a signatory or create new one
@@ -234,8 +233,11 @@ export function EditSignatoriesDialog({
     const { roleKey, signatoryIndex } = editingState
     if (!roleKey) return
 
+    const matchedUser = apiUsers.find((u) => u.name === editingForm.name)
     const newSignatory: Signatory = {
       id: `sig-${Date.now()}`,
+      userId: matchedUser?.id,
+      personnelPositionId: matchedUser?.personnelPositionId,
       name: editingForm.name,
       position: editingForm.position,
       department: editingForm.department,
@@ -286,6 +288,8 @@ export function EditSignatoriesDialog({
     [formData, getSignatoriesForRole],
   )
 
+  const queryClient = useQueryClient()
+
   /**
    * Handle saving all changes
    */
@@ -294,11 +298,51 @@ export function EditSignatoriesDialog({
 
     setIsSaving(true)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const payload = {
+        preparedBy: (formData.signatories?.preparedBy || []).map((s: any) => ({
+          userId: s.userId || null,
+          personnelPositionId: s.personnelPositionId || null,
+          name: s.name,
+          position: s.position,
+          department: s.department,
+          signatureDate: s.signatureDate || null,
+        })),
+        reviewedBy: (formData.signatories?.reviewedBy || []).map((s: any) => ({
+          userId: s.userId || null,
+          personnelPositionId: s.personnelPositionId || null,
+          name: s.name,
+          position: s.position,
+          department: s.department,
+          signatureDate: s.signatureDate || null,
+        })),
+        approvedBy: (formData.signatories?.approvedBy || []).map((s: any) => ({
+          userId: s.userId || null,
+          personnelPositionId: s.personnelPositionId || null,
+          name: s.name,
+          position: s.position,
+          department: s.department,
+          signatureDate: s.signatureDate || null,
+        })),
+        certifiedBy: (formData.signatories?.certifiedBy || []).map((s: any) => ({
+          userId: s.userId || null,
+          personnelPositionId: s.personnelPositionId || null,
+          name: s.name,
+          position: s.position,
+          department: s.department,
+          signatureDate: s.signatureDate || null,
+        })),
+      }
+
+      await api.put(`/apps/${formData.id}/signatories`, payload)
 
       setCurrentApp(formData)
       setAppList(appList.map((app) => (app.id === formData.id ? formData : app)))
+
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          (query.queryKey[0].startsWith('/apps') || query.queryKey[0].startsWith('/ppmps')),
+      })
 
       toast.success('Signatories updated successfully!')
       handleOpenChange(false)
@@ -308,7 +352,7 @@ export function EditSignatoriesDialog({
     } finally {
       setIsSaving(false)
     }
-  }, [formData, isSaving, setCurrentApp, setAppList, appList, handleOpenChange])
+  }, [formData, isSaving, setCurrentApp, setAppList, appList, handleOpenChange, queryClient])
 
   /**
    * Handle dialog close with unsaved changes check
@@ -399,7 +443,7 @@ export function EditSignatoriesDialog({
                         <div>
                           <Badge className={color + ' mr-2'}>{label}</Badge>
                           <span className="text-sm text-gray-600 font-medium">
-                            {signatories.length} signatory{signatories.length !== 1 ? 'ies' : ''} added
+                            {signatories.length} {signatories.length <= 1 ? 'signatory' : 'signatories'} added
                           </span>
                         </div>
                       </div>
@@ -503,8 +547,8 @@ export function EditSignatoriesDialog({
                                   </label>
                                   <Combobox
                                     options={signatoryOptions}
-                                    value={MOCK_SIGNATORIES_DATABASE.find(
-                                      (sig) => sig.name === editingForm.name,
+                                    value={apiUsers.find(
+                                      (u) => u.name === editingForm.name,
                                     )?.id || ''}
                                     onValueChange={handleSignatoryNameSelect}
                                     placeholder="Select a signatory..."

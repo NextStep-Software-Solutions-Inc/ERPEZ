@@ -1,6 +1,5 @@
-import { useAuth } from '@clerk/react-router';
-import { createContext, useContext, useEffect, useState } from 'react';
-import { setAuthToken } from '~/services/api';
+import { createContext, useContext } from 'react';
+import { useClerkAuth } from './ClerkAuthProvider';
 
 interface AuthContextType {
     isTokenReady: boolean;
@@ -9,28 +8,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const { getToken, isSignedIn } = useAuth();
-    const [isTokenReady, setIsTokenReady] = useState(false);
+    const { isInitialized, isAuthenticated, token } = useClerkAuth();
 
-    useEffect(() => {
-        const fetchToken = async () => {
-            try {
-                if (isSignedIn) {
-                    const token = await getToken();
-                    setAuthToken(token);
-                } else {
-                    setAuthToken(null);
-                }
-                setIsTokenReady(true);
-            } catch (error) {
-                console.error('Failed to get token:', error);
-                setAuthToken(null);
-                setIsTokenReady(true);
-            }
-        };
-
-        fetchToken();
-    }, [getToken, isSignedIn]);
+    // A token is ready when Clerk has fully initialized and, for authenticated users,
+    // the session bearer token is non-null and synced to Axios.
+    const isTokenReady = isInitialized && (!isAuthenticated || Boolean(token));
 
     return (
         <AuthContext.Provider value={{ isTokenReady }}>

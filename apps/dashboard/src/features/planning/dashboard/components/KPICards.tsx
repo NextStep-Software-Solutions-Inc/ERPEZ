@@ -1,8 +1,12 @@
 /**
- * KPI Summary Cards Component
+ * Executive Planning Snapshot — KPI Summary Cards
  *
- * Displays 4 key performance indicator cards with current values,
- * month-over-month changes, status indicators, and icons.
+ * Displays 4 key performance indicator cards with a left-border status color:
+ * - Green (#1baf7a) -> value meets or exceeds target
+ * - Amber (#eda100) -> partially complete / pending items exist
+ * - Red   (#d03b3b) -> critically below target / over ceiling
+ *
+ * Also includes a one-line status label below the value.
  *
  * @module features/planning/dashboard/components/KPICards
  */
@@ -25,31 +29,40 @@ interface KPICardsProps {
   isLoading?: boolean
 }
 
-/**
- * Color theme for each KPI card
- */
+type StatusTone = 'green' | 'amber' | 'red'
+
+function getStatusStyle(status: StatusTone) {
+  const map = {
+    green: {
+      borderLeftColor: '#1baf7a',
+      backgroundColor: 'color-mix(in srgb, #1baf7a 8%, transparent)',
+    },
+    amber: {
+      borderLeftColor: '#eda100',
+      backgroundColor: 'color-mix(in srgb, #eda100 8%, transparent)',
+    },
+    red: {
+      borderLeftColor: '#d03b3b',
+      backgroundColor: 'color-mix(in srgb, #d03b3b 8%, transparent)',
+    },
+  }
+  return map[status]
+}
+
 interface KPICardTheme {
-  /** Gradient background classes */
-  bg: string
-  /** Icon container classes */
   iconBg: string
-  /** Icon color */
   iconColor: string
-  /** Top accent border color */
-  accent: string
-  /** Value text color */
   valueColor: string
 }
 
-/**
- * Individual KPI Card Component
- */
 interface KPICardProps {
   title: string
   value: string | number
+  ratioLabel?: string
   subtitle: string
-  trend: 'up' | 'down' | 'neutral'
-  trendValue: string
+  statusTone: StatusTone
+  trend?: 'up' | 'down' | 'neutral'
+  trendValue?: string
   icon: React.ReactNode
   theme: KPICardTheme
 }
@@ -57,7 +70,9 @@ interface KPICardProps {
 function KPICard({
   title,
   value,
+  ratioLabel,
   subtitle,
+  statusTone,
   trend,
   trendValue,
   icon,
@@ -75,126 +90,112 @@ function KPICard({
 
   return (
     <Card
-      className={`relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-all duration-200 ${theme.bg}`}
+      className="relative overflow-hidden border border-gray-100 border-l-4 shadow-sm hover:shadow transition-all duration-150"
+      style={getStatusStyle(statusTone)}
     >
-      {/* Top accent bar */}
-      <div className={`absolute top-0 left-0 right-0 h-1 ${theme.accent}`} />
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pt-5 pb-2">
-        <CardTitle className="text-sm font-semibold text-gray-600">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pt-4 pb-2">
+        <CardTitle className="text-xs font-medium uppercase tracking-wider text-gray-500">
           {title}
         </CardTitle>
         <div
-          className={`flex h-9 w-9 items-center justify-center rounded-xl ${theme.iconBg}`}
+          className={`flex h-8 w-8 items-center justify-center rounded-lg ${theme.iconBg}`}
         >
           <span className={theme.iconColor}>{icon}</span>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0 pb-4">
         <div className="flex flex-col gap-1">
-          <div className={`text-3xl font-bold ${theme.valueColor}`}>{value}</div>
-          <div className="text-xs text-gray-500">{subtitle}</div>
-          <div className="flex items-center gap-1 mt-2">
-            <TrendIcon className={`h-3 w-3 ${trendColorClass}`} />
-            <span className={`text-xs font-semibold ${trendColorClass}`}>
-              {trendValue}
+          <div className="flex items-baseline gap-2">
+            <span className={`text-2xl font-bold tracking-tight ${theme.valueColor}`}>
+              {value}
             </span>
-            <span className="text-xs text-gray-400">vs last month</span>
+            {ratioLabel && (
+              <span className="text-xs font-normal text-gray-600 bg-white/90 px-1.5 py-0.5 rounded border border-gray-200/60">
+                {ratioLabel}
+              </span>
+            )}
           </div>
+
+          <div className="text-xs text-gray-500 font-normal truncate" title={subtitle}>
+            {subtitle}
+          </div>
+
+          {trendValue && (
+            <div className="flex items-center gap-1 mt-1 pt-1.5 border-t border-gray-100/70">
+              <TrendIcon className={`h-3 w-3 ${trendColorClass}`} />
+              <span className={`text-[11px] font-medium ${trendColorClass}`}>
+                {trendValue}
+              </span>
+              <span className="text-[11px] text-gray-400 font-normal">vs last month</span>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
   )
 }
 
-/**
- * Loading Skeleton for KPI Cards
- */
 function KPICardSkeleton() {
   return (
-    <Card className="animate-pulse">
+    <Card className="animate-pulse border border-gray-100 border-l-4 border-l-gray-300 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="h-4 w-24 bg-gray-200 rounded" />
-        <div className="h-4 w-4 bg-gray-200 rounded-full" />
+        <div className="h-3 w-24 bg-gray-200 rounded" />
+        <div className="h-7 w-7 bg-gray-200 rounded-lg" />
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-2">
-          <div className="h-8 w-32 bg-gray-200 rounded" />
-          <div className="h-3 w-40 bg-gray-200 rounded" />
-          <div className="h-3 w-28 bg-gray-200 rounded mt-2" />
+          <div className="h-7 w-28 bg-gray-200 rounded" />
+          <div className="h-3 w-36 bg-gray-200 rounded" />
         </div>
       </CardContent>
     </Card>
   )
 }
 
-/**
- * Determine trend based on change value and metric type
- */
 function getTrend(
   change: number,
   isPositiveGood = true,
 ): 'up' | 'down' | 'neutral' {
   if (Math.abs(change) < 0.5) return 'neutral'
-  if (isPositiveGood) {
-    return change > 0 ? 'up' : 'down'
-  } else {
-    return change > 0 ? 'down' : 'up'
-  }
+  return isPositiveGood ? (change > 0 ? 'up' : 'down') : (change > 0 ? 'down' : 'up')
 }
 
-/**
- * Format trend value with sign and unit
- */
 function formatTrendValue(change: number, unit = ''): string {
   const sign = change > 0 ? '+' : ''
   return `${sign}${change.toFixed(1)}${unit}`
 }
 
-/**
- * Define color themes for each KPI card
- */
 const kpiThemes: KPICardTheme[] = [
   {
     // Total KPIs - Blue
-    bg: 'bg-gradient-to-br from-blue-50 to-white',
-    iconBg: 'bg-blue-100',
+    iconBg: 'bg-blue-50',
     iconColor: 'text-blue-600',
-    accent: 'bg-blue-500',
-    valueColor: 'text-blue-700',
+    valueColor: 'text-gray-900',
   },
   {
     // OPCR - Emerald green
-    bg: 'bg-gradient-to-br from-emerald-50 to-white',
-    iconBg: 'bg-emerald-100',
+    iconBg: 'bg-emerald-50',
     iconColor: 'text-emerald-600',
-    accent: 'bg-emerald-500',
-    valueColor: 'text-emerald-700',
+    valueColor: 'text-gray-900',
   },
   {
     // Budget - Amber/Orange
-    bg: 'bg-gradient-to-br from-amber-50 to-white',
-    iconBg: 'bg-amber-100',
+    iconBg: 'bg-amber-50',
     iconColor: 'text-amber-600',
-    accent: 'bg-amber-500',
-    valueColor: 'text-amber-700',
+    valueColor: 'text-gray-900',
   },
   {
     // PPMP - Violet
-    bg: 'bg-gradient-to-br from-violet-50 to-white',
-    iconBg: 'bg-violet-100',
+    iconBg: 'bg-violet-50',
     iconColor: 'text-violet-600',
-    accent: 'bg-violet-500',
-    valueColor: 'text-violet-700',
+    valueColor: 'text-gray-900',
   },
 ]
 
-/**
- * Main KPI Cards Component
- */
 export function KPICards({ summary, isLoading }: KPICardsProps) {
   if (isLoading || !summary) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KPICardSkeleton />
         <KPICardSkeleton />
         <KPICardSkeleton />
@@ -203,43 +204,117 @@ export function KPICards({ summary, isLoading }: KPICardsProps) {
     )
   }
 
+  // 1. Total KPIs
+  const kpiCount = summary.totalKPIsEncoded
+  const kpiSubtitle = summary.encodedThisMonth > 0
+    ? `${summary.encodedThisMonth} encoded this month`
+    : 'Active performance indicators'
+  const kpiStatusTone: StatusTone = summary.totalKPIsEncoded > 0 ? 'green' : 'amber'
+
+  // 2. OPCR Submission
+  const opcrValue = summary.totalOPCRs > 0
+    ? `${summary.submittedOPCRs} / ${summary.totalOPCRs}`
+    : `${summary.submittedOPCRs} Submitted`
+  const opcrRatio = summary.totalOPCRs > 0
+    ? `${summary.opcrSubmittedPercent.toFixed(0)}%`
+    : undefined
+  const opcrSubtitle = summary.totalOPCRs === 0
+    ? 'No OPCRs configured'
+    : summary.pendingOPCRs > 0
+      ? `${summary.pendingOPCRs} pending review`
+      : 'On track — All submitted'
+  const opcrStatusTone: StatusTone = summary.totalOPCRs > 0 && summary.pendingOPCRs === 0
+    ? 'green'
+    : summary.submittedOPCRs > 0
+      ? 'amber'
+      : summary.totalOPCRs === 0
+        ? 'amber'
+        : 'red'
+
+  // 3. Budget Programmed
+  const budgetValue = formatCurrencyAbbr(summary.budgetUtilized)
+  const budgetRatio = summary.budgetPlanned > 0
+    ? `${summary.budgetUtilizationPercent.toFixed(0)}%`
+    : undefined
+  const budgetSubtitle = summary.budgetPlanned > 0
+    ? summary.budgetUtilizationPercent > 100
+      ? `Over ceiling (of ${formatCurrencyAbbr(summary.budgetPlanned)})`
+      : summary.budgetUtilizationPercent >= 85
+        ? `On track (of ${formatCurrencyAbbr(summary.budgetPlanned)})`
+        : summary.budgetUtilizationPercent >= 50
+          ? `Partially programmed (of ${formatCurrencyAbbr(summary.budgetPlanned)})`
+          : `Below target (of ${formatCurrencyAbbr(summary.budgetPlanned)})`
+    : 'Programmed line-item budget'
+  const budgetStatusTone: StatusTone = summary.budgetUtilizationPercent > 100
+    ? 'red'
+    : summary.budgetUtilizationPercent >= 85
+      ? 'green'
+      : summary.budgetUtilizationPercent >= 50
+        ? 'amber'
+        : 'red'
+
+  // 4. PPMP Consolidation
+  const ppmpValue = summary.totalPPMPs > 0
+    ? `${summary.consolidatedPPMPs} / ${summary.totalPPMPs}`
+    : `${summary.consolidatedPPMPs} Consolidated`
+  const ppmpRatio = summary.totalPPMPs > 0
+    ? `${summary.ppmpConsolidationPercent.toFixed(0)}%`
+    : undefined
+  const ppmpSubtitle = summary.totalPPMPs === 0
+    ? 'No PPMPs submitted'
+    : summary.pendingPPMPs > 0
+      ? `${summary.pendingPPMPs} pending consolidation`
+      : summary.inProgressPPMPs > 0
+        ? `${summary.inProgressPPMPs} in progress`
+        : 'On track — All consolidated'
+  const ppmpStatusTone: StatusTone = summary.totalPPMPs > 0 && summary.pendingPPMPs === 0
+    ? 'green'
+    : summary.consolidatedPPMPs > 0
+      ? 'amber'
+      : summary.totalPPMPs === 0
+        ? 'amber'
+        : 'red'
+
   const cards: Omit<KPICardProps, 'theme'>[] = [
     {
       title: 'Total KPIs Encoded',
-      value: summary.totalKPIsEncoded.toLocaleString('en-PH'),
-      subtitle: 'Active performance indicators',
+      value: `${kpiCount} KPIs`,
+      subtitle: kpiSubtitle,
+      statusTone: kpiStatusTone,
       trend: getTrend(summary.kpiChangeFromLastMonth),
-      trendValue: formatTrendValue(summary.kpiChangeFromLastMonth, ' KPIs'),
-      icon: <Target className="h-5 w-5" />,
+      trendValue: summary.kpiChangeFromLastMonth !== 0
+        ? formatTrendValue(summary.kpiChangeFromLastMonth, ' KPIs')
+        : undefined,
+      icon: <Target className="h-4 w-4" />,
     },
     {
-      title: 'OPCR Submitted',
-      value: `${summary.opcrSubmittedPercent.toFixed(1)}%`,
-      subtitle: 'Office commitments reviewed',
-      trend: getTrend(summary.opcrChangeFromLastMonth),
-      trendValue: formatTrendValue(summary.opcrChangeFromLastMonth, '%'),
-      icon: <FileCheck className="h-5 w-5" />,
+      title: 'OPCR Submission',
+      value: opcrValue,
+      ratioLabel: opcrRatio,
+      subtitle: opcrSubtitle,
+      statusTone: opcrStatusTone,
+      icon: <FileCheck className="h-4 w-4" />,
     },
     {
-      title: 'Budget Utilized',
-      value: formatCurrencyAbbr(summary.budgetUtilized),
-      subtitle: 'Current fiscal year spending',
-      trend: getTrend(summary.budgetChangeFromLastMonth, false),
-      trendValue: formatTrendValue(summary.budgetChangeFromLastMonth, '%'),
-      icon: <DollarSign className="h-5 w-5" />,
+      title: 'Budget Programmed',
+      value: budgetValue,
+      ratioLabel: budgetRatio,
+      subtitle: budgetSubtitle,
+      statusTone: budgetStatusTone,
+      icon: <DollarSign className="h-4 w-4" />,
     },
     {
       title: 'PPMP Consolidation',
-      value: `${summary.ppmpConsolidationPercent.toFixed(1)}%`,
-      subtitle: 'Procurement plans rolled up',
-      trend: getTrend(summary.ppmpChangeFromLastMonth),
-      trendValue: formatTrendValue(summary.ppmpChangeFromLastMonth, '%'),
-      icon: <Package className="h-5 w-5" />,
+      value: ppmpValue,
+      ratioLabel: ppmpRatio,
+      subtitle: ppmpSubtitle,
+      statusTone: ppmpStatusTone,
+      icon: <Package className="h-4 w-4" />,
     },
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       {cards.map((card, i) => (
         <KPICard key={card.title} {...card} theme={kpiThemes[i]} />
       ))}

@@ -41,6 +41,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useDynamicColumns } from '@/components/features/planning/annual-performance-planning/kpi-activation/table/KPISelectionColumn'
 import { KPISelectionToolbar } from '@/components/features/planning/annual-performance-planning/kpi-activation/table/KPISelectionToolbar'
 import { getKpiRequest } from '@/components/features/planning/kpi/handlers/getKpiRequest'
+import { getKpisRequest } from '@/components/features/planning/kpi/handlers/getKpisRequest'
 import { activateBulkKpisRequest } from '@/components/features/planning/annual-performance-planning/kpi-activation/handlers/activateBulkKpisRequest'
 import { getFYActiveKPIsRequest, type FYActiveKPI } from '@/components/features/planning/annual-performance-planning/kpi-activation/handlers/getFYActiveKPIsRequest'
 import { useFiscalYears, formatFiscalYearForDisplay } from '@/features/planning/annual-performance-planning/hooks/useAPPQueries'
@@ -48,6 +49,7 @@ import type { MasterKPI } from '@/components/features/planning/annual-performanc
 import { toast } from 'sonner'
 
 const useGetKpiDetails = createQueryHookFromTemplate(getKpiRequest)
+const useGetKpis = createQueryHookFromTemplate(getKpisRequest)
 const useActivateBulkKpis = createMutationHookFromTemplate(activateBulkKpisRequest)
 const useGetFYActiveKPIs = createQueryHookFromTemplate(getFYActiveKPIsRequest)
 
@@ -84,6 +86,14 @@ export function KPISelectionDialog({
     queryParams: { pageNumber: 1, pageSize: 100 },
   })
   const fiscalYears = fyResponse?.data?.map(fy => formatFiscalYearForDisplay(fy)) || []
+
+  // Fetch Master KPIs from KPI library
+  const masterKPIsQueryResult = useGetKpis({
+    pathParams: {},
+    queryParams: { PageNumber: 1, PageSize: 1000 },
+    enabled: isOpen,
+  })
+  const masterKPIsResponse = masterKPIsQueryResult.data
   
   // Fetch FY Active KPIs when the dialog is open with fiscal year filter
   const fyActiveKPIsQueryResult = useGetFYActiveKPIs({
@@ -110,8 +120,37 @@ export function KPISelectionDialog({
 
   // Transform API response to MasterKPI format
   const allMasterKPIs: MasterKPI[] = useMemo(() => {
-    if (!fyActiveKPIsResponse?.data) return []
-    const mapped = fyActiveKPIsResponse.data.map((kpi: FYActiveKPI) => {
+    const rawMasterList = masterKPIsResponse?.data || []
+    const rawFyActiveList = fyActiveKPIsResponse?.data || []
+
+    const masterItems: MasterKPI[] = rawMasterList.map((kpi: any) => ({
+      id: kpi.id,
+      name: kpi.name,
+      code: kpi.code,
+      description: kpi.description || '',
+      functionType: (kpi.functionCategory || 'CoreFunction') as 'CoreFunction' | 'StrategicPriority' | 'MandatorySupport',
+      defaultAggregation: (kpi.distributionBehavior || 'Sum') as MasterKPI['defaultAggregation'],
+      unitOfMeasure: kpi.measurementUnit,
+      monitoringFrequency: kpi.monitoringFrequency,
+      isOptInAvailable: kpi.isOptInAvailable,
+      isGAD: kpi.isGAD,
+      status: kpi.status || 'Active',
+      isLocked: false,
+      isAvailableForShopping: true,
+      targetDirection: 'Increase',
+      ownerOffice: '',
+      ratingScale: [],
+      baselineValue: 0,
+      createdBy: kpi.createdBy || 'System',
+      createdDate: kpi.createdAt || new Date().toISOString(),
+      lastModifiedBy: kpi.createdBy || 'System',
+      lastModifiedDate: kpi.createdAt || new Date().toISOString(),
+      version: 1,
+      fiscalYearId: selectedDialogFiscalYearId,
+      fiscalYear: '',
+    }))
+
+    const fyActiveItems: MasterKPI[] = rawFyActiveList.map((kpi: FYActiveKPI) => {
       const matchedFy = fyResponse?.data?.find(fy => fy.id === kpi.fiscalYearId)
       const matchedFyCode = (matchedFy as { code?: string })?.code
       const yearDisplay = matchedFy
@@ -144,12 +183,21 @@ export function KPISelectionDialog({
         fiscalYear: yearDisplay,
       }
     })
+
+    const kpiMap = new Map<string, MasterKPI>()
+    for (const item of [...masterItems, ...fyActiveItems]) {
+      if (!kpiMap.has(item.id)) {
+        kpiMap.set(item.id, item)
+      }
+    }
+
+    const mapped = Array.from(kpiMap.values())
     return mapped.sort((a, b) => {
       const dateA = new Date(a.lastModifiedDate || a.createdDate || 0).getTime()
       const dateB = new Date(b.lastModifiedDate || b.createdDate || 0).getTime()
       return dateB - dateA
     })
-  }, [fyActiveKPIsResponse, fyResponse?.data])
+  }, [masterKPIsResponse, fyActiveKPIsResponse, fyResponse?.data, selectedDialogFiscalYearId])
 
 
   // Fetch detailed KPI information when details dialog opens
@@ -200,7 +248,14 @@ export function KPISelectionDialog({
       onAddToActive([detailsKPI])
       
       // Invalidate and refetch active KPIs
-      queryClient.invalidateQueries({ queryKey: ['active-kpis'] })
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (key) =>
+              typeof key === 'string' &&
+              (key.includes('fy-active-kpis') || key.includes('active-kpis') || key.includes('/kpis')),
+          ),
+      })
       
       setDetailsKPI(null)
     } catch (error: unknown) {
@@ -340,11 +395,15 @@ export function KPISelectionDialog({
       // Call parent callback for additional handling and table refresh
       onAddToActive(pendingKPIs)
       
-      // Refetch queries to ensure table updates immediately
-      await Promise.all([
-        queryClient.refetchQueries({ queryKey: ['active-kpis'] }),
-        queryClient.refetchQueries({ queryKey: ['fy-active-kpis'] }),
-      ])
+      // Invalidate and refetch active KPIs immediately
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (key) =>
+              typeof key === 'string' &&
+              (key.includes('fy-active-kpis') || key.includes('active-kpis') || key.includes('/kpis')),
+          ),
+      })
       
       // Reset table selection to allow selecting more KPIs
       tableInstance?.resetRowSelection()

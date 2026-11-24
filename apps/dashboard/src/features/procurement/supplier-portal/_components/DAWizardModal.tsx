@@ -61,7 +61,7 @@ import type { ConsolidatedPRItem } from '@/features/procurement/consolidated-pr/
 import { useItemMaster } from '@/hooks/useItemMaster'
 import { ItemBidSpecModal } from './ItemBidSpecModal'
 import { formatCurrencyPHP } from '@/utils/formatters'
-import type { DirectContractingItem, QuotationItemBid } from '../types/daItemTypes'
+import type { DirectContractingItem, QuotationItemBid } from '../types/direct-contracting-item-type'
 
 // ─── Step metadata ────────────────────────────────────────────────────────────
 const STEPS = [
@@ -179,7 +179,7 @@ export function DAWizardModal({ open, onOpenChange, item, onSave }: DAWizardModa
       setSoleDistFileName(item.soleDistCertFileName)
       setProposalNotes(item.proposalNotes || '')
     } else {
-      blobUrls.current.forEach((u) => { try { URL.revokeObjectURL(u) } catch {} })
+      blobUrls.current.forEach((u) => { try { URL.revokeObjectURL(u) } catch { } })
       blobUrls.current = []
     }
   }, [open, item])
@@ -305,10 +305,10 @@ export function DAWizardModal({ open, onOpenChange, item, onSave }: DAWizardModa
     quotationStatus: status,
     ...(status === 'submitted'
       ? {
-          daRequirementsSubmittedAt: new Date().toISOString(),
-          quotationSubmittedAt: new Date().toISOString(),
-          status: 'for_review' as const,
-        }
+        daRequirementsSubmittedAt: new Date().toISOString(),
+        quotationSubmittedAt: new Date().toISOString(),
+        status: 'for_review' as const,
+      }
       : {}),
   })
 
@@ -369,7 +369,7 @@ export function DAWizardModal({ open, onOpenChange, item, onSave }: DAWizardModa
     borderClass: string
     bgClass: string
     iconClass: string
-    inputRef: React.RefObject<HTMLInputElement | null>
+    inputRef: React.RefObject<HTMLInputElement>
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   }) => (
     <div className="space-y-2">
@@ -379,9 +379,8 @@ export function DAWizardModal({ open, onOpenChange, item, onSave }: DAWizardModa
       </div>
       <p className="text-xs text-muted-foreground">{hint}</p>
       <div
-        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-          fileName ? 'border-emerald-400 bg-emerald-50/60' : `${borderClass} ${bgClass} hover:opacity-80`
-        }`}
+        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${fileName ? 'border-emerald-400 bg-emerald-50/60' : `${borderClass} ${bgClass} hover:opacity-80`
+          }`}
         onClick={() => inputRef.current?.click()}
         role="button"
         tabIndex={0}
@@ -389,22 +388,22 @@ export function DAWizardModal({ open, onOpenChange, item, onSave }: DAWizardModa
           // Support both Enter and Space to match native button behavior.
           // Space can be reported as ' ', 'Spacebar' (older browsers) or 'Space' (modern).
           if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar' || e.key === 'Space') {
-        e.preventDefault() // prevent page scroll on Space
-        inputRef.current?.click()
+            e.preventDefault() // prevent page scroll on Space
+            inputRef.current?.click()
           }
         }}
       >
         {fileName ? (
           <div className="flex flex-col items-center gap-2">
-        <FileCheck className="h-10 w-10 text-emerald-600" />
-        <p className="text-sm font-semibold text-emerald-700">{fileName}</p>
-        <p className="text-xs text-muted-foreground">Click to replace file</p>
+            <FileCheck className="h-10 w-10 text-emerald-600" />
+            <p className="text-sm font-semibold text-emerald-700">{fileName}</p>
+            <p className="text-xs text-muted-foreground">Click to replace file</p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
-        <FileText className={`h-10 w-10 ${iconClass}`} />
-        <p className={`text-sm font-semibold ${iconClass}`}>Click or drag &amp; drop to upload</p>
-        <p className="text-xs text-muted-foreground">PDF only · Max 10 MB</p>
+            <FileText className={`h-10 w-10 ${iconClass}`} />
+            <p className={`text-sm font-semibold ${iconClass}`}>Click or drag &amp; drop to upload</p>
+            <p className="text-xs text-muted-foreground">PDF only · Max 10 MB</p>
           </div>
         )}
       </div>
@@ -504,7 +503,7 @@ export function DAWizardModal({ open, onOpenChange, item, onSave }: DAWizardModa
       <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
-              <TableRow className="bg-slate-50">
+            <TableRow className="bg-slate-50">
               <TableHead className="whitespace-nowrap">Item Name</TableHead>
               {hasPRItems && <TableHead>Office</TableHead>}
               {hasPRItems && <TableHead>Category</TableHead>}
@@ -606,50 +605,50 @@ export function DAWizardModal({ open, onOpenChange, item, onSave }: DAWizardModa
                   </TableCell>
 
                   {/* Brochure */}
-                    <TableCell className="min-w-[130px]">
-                      {r.brochureFileName ? (
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => openPreview(r.brochureUrl, r.brochureFileName)}
-                            className="flex items-center gap-1 text-xs text-primary hover:underline truncate max-w-[90px]"
-                            title={r.brochureFileName}
-                          >
-                            <FileText className="h-3 w-3 flex-shrink-0" />
-                            <span className="truncate max-w-[80px]">{r.brochureFileName}</span>
-                          </button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-5 w-5 p-0 text-destructive"
-                            onClick={() => updateRow(key, { brochureUrl: undefined, brochureFileName: undefined })}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <>
-                          <input
-                            type="file"
-                            ref={(el) => { fileInputRefs.current[key] = el }}
-                            className="hidden"
-                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                            onChange={(e) => {
-                              const f = e.target.files?.[0]
-                              if (f) handleBrochure(key, f)
-                            }}
-                          />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-1 text-xs"
-                            onClick={() => fileInputRefs.current[key]?.click()}
-                          >
-                            <Upload className="h-3 w-3" /> Upload
-                          </Button>
-                        </>
-                      )}
-                    </TableCell>
+                  <TableCell className="min-w-[130px]">
+                    {r.brochureFileName ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openPreview(r.brochureUrl, r.brochureFileName)}
+                          className="flex items-center gap-1 text-xs text-primary hover:underline truncate max-w-[90px]"
+                          title={r.brochureFileName}
+                        >
+                          <FileText className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate max-w-[80px]">{r.brochureFileName}</span>
+                        </button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 p-0 text-destructive"
+                          onClick={() => updateRow(key, { brochureUrl: undefined, brochureFileName: undefined })}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="file"
+                          ref={(el) => { fileInputRefs.current[key] = el }}
+                          className="hidden"
+                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0]
+                            if (f) handleBrochure(key, f)
+                          }}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-xs"
+                          onClick={() => fileInputRefs.current[key]?.click()}
+                        >
+                          <Upload className="h-3 w-3" /> Upload
+                        </Button>
+                      </>
+                    )}
+                  </TableCell>
 
                   {/* Specs button */}
                   <TableCell>
@@ -754,16 +753,16 @@ export function DAWizardModal({ open, onOpenChange, item, onSave }: DAWizardModa
           <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
-                  <TableRow className="bg-slate-50">
-                    <TableHead>Item Name</TableHead>
-                    <TableHead>Qty</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Model / Brand</TableHead>
-                    <TableHead>Brochure</TableHead>
-                    <TableHead className="whitespace-nowrap">Unit Bid (₱)</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Total Bid (₱)</TableHead>
-                  </TableRow>
-                </TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead>Item Name</TableHead>
+                  <TableHead>Qty</TableHead>
+                  <TableHead>Unit</TableHead>
+                  <TableHead>Model / Brand</TableHead>
+                  <TableHead>Brochure</TableHead>
+                  <TableHead className="whitespace-nowrap">Unit Bid (₱)</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Total Bid (₱)</TableHead>
+                </TableRow>
+              </TableHeader>
               <TableBody>
                 {quotItems.map((qi) => (
                   <TableRow key={qi.prItemId}>
@@ -872,7 +871,7 @@ export function DAWizardModal({ open, onOpenChange, item, onSave }: DAWizardModa
                   const el = firstInvalidKey ? unitInputRefs.current[firstInvalidKey] : null
                   if (el) {
                     el.focus()
-                    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }) } catch {}
+                    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }) } catch { }
                   }
                   return
                 }
@@ -885,8 +884,8 @@ export function DAWizardModal({ open, onOpenChange, item, onSave }: DAWizardModa
               step === 1 && !step1Valid
                 ? 'Please attach both required documents to proceed'
                 : step === 2 && !step2Valid
-                ? 'Please enter unit bid for every item to proceed'
-                : undefined
+                  ? 'Please enter unit bid for every item to proceed'
+                  : undefined
             }
           >
             Next <ChevronRight className="h-4 w-4 ml-2" />
@@ -982,13 +981,12 @@ export function DAWizardModal({ open, onOpenChange, item, onSave }: DAWizardModa
               return (
                 <div key={s.id} className="z-10 flex flex-col items-center gap-1 flex-1">
                   <div
-                    className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-colors ${
-                      isDone
+                    className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-colors ${isDone
                         ? 'bg-emerald-500 border-emerald-500 text-white'
                         : isActive
                           ? 'bg-primary border-primary text-white'
                           : 'bg-background border-border text-muted-foreground'
-                    }`}
+                      }`}
                   >
                     {isDone ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                   </div>

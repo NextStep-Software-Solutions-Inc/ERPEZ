@@ -54,8 +54,8 @@ export default function UACSLayout({ children }: UACSLayoutProps) {
       </Card>
 
       {/* Main Tab Navigation */}
-      <Tabs value={tab} onValueChange={setActiveTab} className="w-full border-b mb-4">
-        <TabsList className="flex relative top-4 w-[600px] mb-5">
+      <Tabs value={tab} onValueChange={setActiveTab} className="w-full border-b mb-4 min-w-0">
+        <TabsList className="flex relative top-4 w-full max-w-[600px] mb-5 overflow-x-auto">
           <TabsTrigger value="code-segments">Code Segments</TabsTrigger>
           <TabsTrigger value="rules">Rules & Validation</TabsTrigger>
           <TabsTrigger value="data-management">Data Management</TabsTrigger>

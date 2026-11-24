@@ -94,7 +94,7 @@ export function ViewConsolidatedPrDetailsDialog({
             </div>
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Amount</p>
-              <p className="font-semibold text-foreground mt-0.5">₱{formatCurrencyPHP(totalAmount)}</p>
+              <p className="font-semibold text-foreground mt-0.5">{formatCurrencyPHP(totalAmount)}</p>
             </div>
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</p>
@@ -140,7 +140,7 @@ export function ViewConsolidatedPrDetailsDialog({
                               {items[0]?.prType === 'out-of-stock' ? 'Out of Stock' : 'Non-CSE'}
                             </Badge>
                             <Badge variant="outline" color="secondary">
-                              ₱{formatCurrencyPHP(sourceTotal)}
+                              {formatCurrencyPHP(sourceTotal)}
                             </Badge>
                           </div>
                         </div>
@@ -165,10 +165,10 @@ export function ViewConsolidatedPrDetailsDialog({
                                     {item.qty} {item.unit}
                                   </TableCell>
                                   <TableCell className="text-right">
-                                    ₱{formatCurrencyPHP(item.unitPrice)}
+                                    {formatCurrencyPHP(item.unitPrice)}
                                   </TableCell>
                                   <TableCell className="text-right font-medium">
-                                    ₱{formatCurrencyPHP(item.totalAmount)}
+                                    {formatCurrencyPHP(item.totalAmount)}
                                   </TableCell>
                                 </TableRow>
                               ))}

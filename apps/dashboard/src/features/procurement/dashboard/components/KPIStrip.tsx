@@ -1,16 +1,16 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  FileText,
-  GitMerge,
   BarChart2,
-  Gavel,
-  ShoppingCart,
   FileCheck,
-  TrendingUp,
-  TrendingDown,
+  FileText,
+  Gavel,
+  GitMerge,
   Minus,
+  ShoppingCart,
+  TrendingDown,
+  TrendingUp,
 } from 'lucide-react'
 import type { ProcurementKPISummary } from '../types'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrencyAbbr } from '@/utils/formatters'
 
 interface Props {
@@ -26,7 +26,7 @@ interface KPICardTheme {
   valueColor: string
 }
 
-const themes: KPICardTheme[] = [
+const themes: Array<KPICardTheme> = [
   { bg: 'bg-gradient-to-br from-blue-50 to-white',    iconBg: 'bg-blue-100',    iconColor: 'text-blue-600',   accent: 'bg-blue-500',    valueColor: 'text-blue-700' },
   { bg: 'bg-gradient-to-br from-emerald-50 to-white', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600',accent: 'bg-emerald-500', valueColor: 'text-emerald-700' },
   { bg: 'bg-gradient-to-br from-violet-50 to-white',  iconBg: 'bg-violet-100',  iconColor: 'text-violet-600', accent: 'bg-violet-500',  valueColor: 'text-violet-700' },
@@ -114,7 +114,7 @@ export function KPIStrip({ summary, isLoading }: Props) {
     )
   }
 
-  const cards: KPICardProps[] = [
+  const cards: Array<KPICardProps> = [
     {
       title: 'Total Active PRs',
       value: summary.totalActivePRs,

@@ -13,7 +13,7 @@ import { autoTagExpenseClass } from '../../rules/utils/autoTaggingRules'
 
 const objectCodeSchema = z.object({
   code: z.string().length(10, 'Code must be 10 digits'),
-  name: z.string().min(2, 'Name is required'),
+  name: z.string().min(3, 'Name must be at least 3 characters'),
   expenseClass: z.enum(['PS', 'MOOE', 'CO', 'FE']).optional(),
   isActive: z.boolean(),
 })

@@ -7,15 +7,15 @@ import NestedSubMenu from "../common/nested-menus";
 import SingleMenuItem from "./single-menu-item";
 import SubMenuHandler from "./sub-menu-handler";
 import { cn, getDynamicPath, isLocationMatch } from "@/lib/utils";
-import { menusConfig } from "@/config/menus";
 import { useSidebar, useThemeStore } from "@/store";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useFilteredNavMenus } from "@/hooks/useFilteredNavMenus";
 
 const PopoverSidebar = () => {
   const { collapsed, sidebarBg } = useSidebar();
   const { layout, isRtl } = useThemeStore();
-  const menus = menusConfig?.sidebarNav?.classic || [];
+  const { classic: menus } = useFilteredNavMenus();
   const [activeSubmenu, setActiveSubmenu] = useState<number | null>(null);
   const [activeMultiMenu, setMultiMenu] = useState<number | null>(null);
 

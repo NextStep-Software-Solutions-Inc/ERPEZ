@@ -17,6 +17,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/use-toast'
+import { FundSourceCombobox } from '@/components/features/planning/fund-source/components/FundSourceCombobox'
 import type { AgencyMasterBudget, OfficeCeiling } from '@/lib/fiscal-year-and-policies/types'
 
 /** Shape of the form data submitted by AddCeilingDialog */
@@ -46,6 +47,7 @@ interface AddCeilingDialogProps {
   editingCeilingId?: string
   fiscalYears?: any[]
   agencyMasterBudgets?: AgencyMasterBudget[]
+  isMasterBudgetsLoading?: boolean
   /** All existing office ceilings — used to compute the net remaining available per fund cluster */
   existingCeilings?: OfficeCeiling[]
   isSubmitting?: boolean
@@ -76,6 +78,7 @@ export function AddCeilingDialog({
   editingCeilingId,
   fiscalYears = [],
   agencyMasterBudgets = [],
+  isMasterBudgetsLoading = false,
   existingCeilings = [],
   isSubmitting = false,
 }: AddCeilingDialogProps): JSX.Element {
@@ -96,10 +99,20 @@ export function AddCeilingDialog({
   // ── Derive fund clusters available for the selected fiscal year from real API data ──
   // agencyMasterBudgets where fiscalYear.year === selected year → their fundSource codes
   const fundClustersForSelectedYear = useMemo(() => {
-    if (!allocation.fiscalYear) return []
+    if (!allocation.fiscalYear && !allocation.fiscalYearId) return []
     return agencyMasterBudgets
-      .filter(mb => String(mb.fiscalYear?.year) === allocation.fiscalYear)
-      .map(mb => ({
+      .filter((mb) => {
+        const matchesYear =
+          allocation.fiscalYear &&
+          (String(mb.fiscalYear?.year) === String(allocation.fiscalYear) ||
+            mb.fiscalYear?.id === allocation.fiscalYear)
+        const matchesId =
+          allocation.fiscalYearId &&
+          (mb.fiscalYearId === allocation.fiscalYearId ||
+            mb.fiscalYear?.id === allocation.fiscalYearId)
+        return matchesYear || matchesId
+      })
+      .map((mb) => ({
         code: mb.fundSource?.code ?? '',
         name: mb.fundSource?.name ?? mb.fundSource?.code ?? '',
         ps: mb.psAmount,
@@ -107,8 +120,8 @@ export function AddCeilingDialog({
         co: mb.coAmount,
         agencyMasterBudgetId: mb.id,
       }))
-      .filter(fc => fc.code)
-  }, [agencyMasterBudgets, allocation.fiscalYear])
+      .filter((fc) => fc.code)
+  }, [agencyMasterBudgets, allocation.fiscalYear, allocation.fiscalYearId])
 
   // ── Available budget for the selected fund cluster (from real data) ──
   // Subtracts amounts already allocated to other ceilings sharing the same agencyMasterBudgetId.
@@ -414,36 +427,47 @@ export function AddCeilingDialog({
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <Select
+            <FundSourceCombobox
+              options={getAvailableFundClusters().map((fc) => ({
+                id: fc.code,
+                code: fc.code,
+                name: fc.name,
+              }))}
               value={allocation.fundCluster}
+              valueKey="code"
               onValueChange={(v) => {
                 setAllocation({ ...allocation, fundCluster: v })
                 setErrors({}) // Clear validation errors when fund cluster changes
               }}
-              disabled={!allocation.fiscalYear}
-            >
-              <SelectTrigger className={`h-10 border-gray-200 ${!allocation.fiscalYear ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                <SelectValue placeholder={!allocation.fiscalYear ? "Select Fiscal Year first" : "Select Fund Source"} />
-              </SelectTrigger>
-              <SelectContent>
-                {getAvailableFundClusters().length === 0 ? (
-                  <SelectItem value="_none" disabled>
-                    No fund sources for this fiscal year
-                  </SelectItem>
-                ) : (
-                  getAvailableFundClusters().map((fc) => (
-                    <SelectItem key={fc.code} value={fc.code}>
-                      {fc.code} - {fc.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+              placeholder={
+                !allocation.fiscalYear
+                  ? 'Select Fiscal Year first'
+                  : isMasterBudgetsLoading
+                    ? 'Loading fund sources...'
+                    : 'Select Fund Source'
+              }
+              searchPlaceholder="Search by code, name, authorization..."
+              emptyMessage={
+                !allocation.fiscalYear
+                  ? 'Please select a Fiscal Year first.'
+                  : isMasterBudgetsLoading
+                    ? 'Loading agency master budgets...'
+                    : `No approved Agency Master Budgets found for ${allocation.fiscalYear}. Ceilings must be allocated from an established Master Budget. Please create one in Step 1 (Fund Source tab) first.`
+              }
+              isLoading={isMasterBudgetsLoading}
+              disabled={!allocation.fiscalYear || isMasterBudgetsLoading}
+            />
             {!allocation.fiscalYear && (
               <p className="text-xs text-amber-600">Please select a Fiscal Year first to see available fund sources</p>
             )}
-            {allocation.fiscalYear && getAvailableFundClusters().length === 0 && (
-              <p className="text-xs text-amber-600">No agency master budgets found for this fiscal year. Please create one in the Fund Source tab first.</p>
+            {allocation.fiscalYear && !isMasterBudgetsLoading && getAvailableFundClusters().length === 0 && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-800 space-y-1">
+                <p className="font-semibold">No approved Agency Master Budgets found for {allocation.fiscalYear}.</p>
+                <p>
+                  Ceilings must be allocated from an established Agency Master Budget (Step 1). Please switch to the{' '}
+                  <span className="font-bold underline">Fund Source</span> tab to set up an Agency Master Budget for this year first.
+                </p>
+              </div>
             )}
           </div>
         </div>

@@ -4,7 +4,10 @@
  * Location: src/features/planning/market-scoping/handlers/
  */
 
-import type { MutationBlueprintFromTemplate, APIResponse } from 'erpez-shared-lib'
+import type {
+  MutationBlueprintFromTemplate,
+  APIResponse,
+} from 'erpez-shared-lib'
 import type { ActivityTypeDefinition } from '../types/managementTypes'
 import api from '@/services/api'
 
@@ -26,7 +29,10 @@ export const createActivityTypeRequest: MutationBlueprintFromTemplate<
 > = {
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    const response = await api.post<APIResponse<ActivityTypeDefinition>>(finalUrl, payload)
+    const response = await api.post<APIResponse<ActivityTypeDefinition>>(
+      finalUrl,
+      payload,
+    )
     return response.data
   },
 }

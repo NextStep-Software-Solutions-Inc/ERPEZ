@@ -1,6 +1,6 @@
 /**
  * Return Contract Modal
- * Dialog for returning a contract with remarks
+ * Dialog for returning a contract with mandatory remarks (min 10 characters).
  */
 
 import { useState } from 'react'
@@ -36,16 +36,15 @@ interface ReturnContractModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onReturn: (remarks: string) => void
+  isLoading?: boolean
 }
 
-export function ReturnContractModal({ open, onOpenChange, onReturn }: ReturnContractModalProps) {
+export function ReturnContractModal({ open, onOpenChange, onReturn, isLoading }: ReturnContractModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<ReturnContractFormData>({
     resolver: zodResolver(returnContractSchema),
-    defaultValues: {
-      remarks: '',
-    },
+    defaultValues: { remarks: '' },
   })
 
   const onSubmit = async (data: ReturnContractFormData) => {
@@ -58,6 +57,8 @@ export function ReturnContractModal({ open, onOpenChange, onReturn }: ReturnCont
       setIsSubmitting(false)
     }
   }
+
+  const busy = isLoading || isSubmitting
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -98,19 +99,15 @@ export function ReturnContractModal({ open, onOpenChange, onReturn }: ReturnCont
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  onOpenChange(false)
                   form.reset()
+                  onOpenChange(false)
                 }}
-                disabled={isSubmitting}
+                disabled={busy}
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                variant="destructive"
-              >
-                {isSubmitting ? 'Returning...' : 'RETURN CONTRACT'}
+              <Button type="submit" variant="destructive" disabled={busy}>
+                {busy ? 'Returning...' : 'Return Contract'}
               </Button>
             </div>
           </form>

@@ -11,7 +11,7 @@ export const getAgencyMasterBudgetsRequest: QueryBlueprintFromTemplate<
   QueryKey
 > = {
   endpoint,
-  key: ({ url }) => [url],
+  key: ({ url, queryParams }) => [url, queryParams],
   fetcher: async ({ finalUrl, signal }) => {
     const response = await api.get<APIResponse<AgencyMasterBudget[]>>(finalUrl, {
       signal,

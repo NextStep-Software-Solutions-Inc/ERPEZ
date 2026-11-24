@@ -2,6 +2,7 @@
 export type ProcurementActivityType = {
   id: string
   name: string | null
+  activityCode: string | null
   description: string | null
   minDays: number | null
   maxDays: number | null
@@ -13,6 +14,7 @@ export type ProcurementActivityType = {
 // Payload types for API requests
 export type CreateProcurementActivityTypePayload = {
   name: string | null
+  activityCode: string
   description: string | null
   minDays: number | null
   maxDays: number | null
@@ -20,6 +22,7 @@ export type CreateProcurementActivityTypePayload = {
 
 export type UpdateProcurementActivityTypePayload = {
   name?: string | null
+  activityCode?: string | null
   description?: string | null
   minDays?: number | null
   maxDays?: number | null

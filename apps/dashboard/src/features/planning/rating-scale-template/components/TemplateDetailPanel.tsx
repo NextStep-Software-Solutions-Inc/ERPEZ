@@ -13,7 +13,15 @@ import { useAtom } from 'jotai'
 //   CardContent,
 // } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Copy, Edit2, Trash2, User, Calendar, Clock, Activity } from 'lucide-react'
+import {
+  Copy,
+  Edit2,
+  Trash2,
+  User,
+  Calendar,
+  Clock,
+  Activity,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import {
@@ -49,12 +57,14 @@ interface TemplateDetailPanelProps {
   template: RatingScaleTemplate | null
   isLoading?: boolean
   onTemplateUpdated?: () => void
+  hideActions?: boolean
 }
 
 export function TemplateDetailPanel({
   template,
   isLoading = false,
   onTemplateUpdated,
+  hideActions = false,
 }: TemplateDetailPanelProps) {
   const prefersReducedMotion = useReducedMotion()
   const [, setSelectedTemplateForEdit] = useAtom(selectedTemplateForEditAtom)
@@ -74,7 +84,6 @@ export function TemplateDetailPanel({
     })
 
   const activeTemplate = detailedTemplateResponse?.data ?? template
-
 
   const handleEdit = () => {
     if (!activeTemplate) return
@@ -180,7 +189,9 @@ export function TemplateDetailPanel({
                 animate="show"
               >
                 <Badge
-                  color={activeTemplate.scaleType === 'Fixed' ? 'info' : 'warning'}
+                  color={
+                    activeTemplate.scaleType === 'Fixed' ? 'info' : 'warning'
+                  }
                   variant="soft"
                 >
                   {activeTemplate.scaleType}
@@ -216,48 +227,50 @@ export function TemplateDetailPanel({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2">
-            {activeTemplate.isReadOnly ? (
-              <motion.div {...buttonMotionProps}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCloneTemplate}
-                  disabled={isLoading}
-                  title="Clone this preset template to create a custom copy"
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Clone
-                </Button>
-              </motion.div>
-            ) : (
-              <>
+          {!hideActions && (
+            <div className="flex gap-2">
+              {activeTemplate.isReadOnly ? (
                 <motion.div {...buttonMotionProps}>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleEdit}
+                    onClick={handleCloneTemplate}
                     disabled={isLoading}
+                    title="Clone this preset template to create a custom copy"
                   >
-                    <Edit2 className="h-4 w-4 mr-2" />
-                    Edit
+                    <Copy className="h-4 w-4 mr-2" />
+                    Clone
                   </Button>
                 </motion.div>
-                <motion.div {...buttonMotionProps}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    color="destructive"
-                    onClick={handleDelete}
-                    disabled={isLoading}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </Button>
-                </motion.div>
-              </>
-            )}
-          </div>
+              ) : (
+                <>
+                  <motion.div {...buttonMotionProps}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEdit}
+                      disabled={isLoading}
+                    >
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                  </motion.div>
+                  <motion.div {...buttonMotionProps}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      color="destructive"
+                      onClick={handleDelete}
+                      disabled={isLoading}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  </motion.div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Description */}
@@ -274,11 +287,13 @@ export function TemplateDetailPanel({
           prefersReducedMotion
             ? undefined
             : {
-                ...templateAnimations.detailPanelSection,
+                hidden: { opacity: 0, y: 8 },
                 show: {
-                  ...templateAnimations.detailPanelSection.show,
+                  opacity: 1,
+                  y: 0,
                   transition: {
-                    ...templateAnimations.detailPanelSection.show,
+                    duration: animationTimings.entrance.normal,
+                    ease: 'easeOut',
                     delay: 0.1,
                   },
                 },
@@ -378,11 +393,13 @@ export function TemplateDetailPanel({
           prefersReducedMotion
             ? undefined
             : {
-                ...templateAnimations.detailPanelSection,
+                hidden: { opacity: 0, y: 8 },
                 show: {
-                  ...templateAnimations.detailPanelSection.show,
+                  opacity: 1,
+                  y: 0,
                   transition: {
-                    ...templateAnimations.detailPanelSection.show,
+                    duration: animationTimings.entrance.normal,
+                    ease: 'easeOut',
                     delay: 0.2,
                   },
                 },

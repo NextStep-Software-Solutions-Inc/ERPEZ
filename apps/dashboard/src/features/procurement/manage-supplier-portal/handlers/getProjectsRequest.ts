@@ -7,7 +7,7 @@ import type {
 import api from '@/services/api'
 import type { ProcurementProjectResponse } from '../types'
 
-const endpoint = '/procurement-projects'
+const endpoint = '/bac/projects'
 
 export const getProjectsRequest: QueryBlueprintFromTemplate<
   typeof endpoint,

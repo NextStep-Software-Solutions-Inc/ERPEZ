@@ -1,13 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { format, parseISO } from 'date-fns'
-import { CalendarIcon } from 'lucide-react'
+import { format, parseISO, isBefore, isWeekend } from 'date-fns'
+import { CalendarIcon, History } from 'lucide-react'
 import { z } from 'zod'
-import {
-  MOCK_HOLIDAYS_2026,
-  MOCK_INTERVAL_CONFIGS,
-} from '../data/mockBiddingScheduleData'
-import { buildDisabledMatcher } from '../utils/dateHelpers'
-import { getAllowedWindow } from '../utils/milestonePresentation'
 import type {
   BiddingMilestone,
   BiddingSchedule,
@@ -32,7 +26,7 @@ export const editMilestoneSchema = z.object({
   time: z.string().nullable(),
   reason: z
     .string()
-    .min(10, 'Reason must be at least 10 characters.')
+    .min(5, 'Reason must be at least 5 characters.')
     .max(500, 'Reason must be 500 characters or fewer.'),
 })
 
@@ -82,7 +76,7 @@ export function EditMilestoneForm({
   >({})
   const [submitted, setSubmitted] = useState(false)
 
-  // Compute dirty state: form is dirty when any field differs from initial values
+  // Compute dirty state
   const dateString = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''
   const isDirty =
     dateString !== initialDate ||
@@ -93,36 +87,18 @@ export function EditMilestoneForm({
     onDirtyChange?.(isDirty)
   }, [isDirty, onDirtyChange])
 
-  if (milestone.order <= 0) {
-    throw new Error(
-      'Milestone overrides are only supported for milestones after IB Posting.',
-    )
+  // Determine minimum allowable date from previous milestone if available
+  const previousMilestone =
+    milestone.order > 0 ? schedule.milestones[milestone.order - 1] : undefined
+  const minDate = previousMilestone
+    ? parseISO(previousMilestone.overrideDate ?? previousMilestone.computedDate)
+    : undefined
+
+  const isDateDisabled = (date: Date) => {
+    if (isWeekend(date)) return true
+    if (minDate && isBefore(date, minDate)) return true
+    return false
   }
-
-  // Minimum allowable date: derived from the previous milestone's effective date
-  const config = MOCK_INTERVAL_CONFIGS[schedule.procurementCategory]
-  const intervalEntry = config.milestones[milestone.order]
-  const previousMilestone = schedule.milestones[milestone.order - 1]
-
-  if (!intervalEntry || !previousMilestone) {
-    throw new Error(
-      `Milestone configuration is out of sync for order ${milestone.order}.`,
-    )
-  }
-
-  const allowedWindow = getAllowedWindow({
-    previousEffectiveDate:
-      previousMilestone.overrideDate ?? previousMilestone.computedDate,
-    minDaysFromPrevious: intervalEntry.minDaysFromPrevious,
-    maxDaysFromPrevious: intervalEntry.maxDaysFromPrevious,
-    holidays: MOCK_HOLIDAYS_2026,
-  })
-
-  const isDateDisabled = buildDisabledMatcher(
-    allowedWindow.start,
-    MOCK_HOLIDAYS_2026,
-    allowedWindow.end,
-  )
 
   // Validate and collect errors
   function validate(): boolean {
@@ -158,6 +134,7 @@ export function EditMilestoneForm({
     if (!validate()) return
 
     const payload: UpdateMilestonePayload = {
+      bacResolutionId: schedule.bacResolutionId,
       scheduleId: schedule.id,
       milestoneId: milestone.id,
       overrideDate: dateString,
@@ -231,7 +208,7 @@ export function EditMilestoneForm({
                 setCalendarOpen(false)
               }}
               disabled={isDateDisabled}
-              defaultMonth={selectedDate ?? allowedWindow.start}
+              defaultMonth={selectedDate ?? minDate ?? new Date()}
             />
           </PopoverContent>
         </Popover>
@@ -239,15 +216,7 @@ export function EditMilestoneForm({
           <p className="text-xs text-destructive">{errors.overrideDate}</p>
         )}
         <p className="text-xs text-muted-foreground">
-          Allowed window:{' '}
-          <span className="font-mono">
-            {format(allowedWindow.start, 'MMM d, yyyy')}
-          </span>
-          {' - '}
-          <span className="font-mono">
-            {format(allowedWindow.end, 'MMM d, yyyy')}
-          </span>
-          . Weekends and holidays are disabled.
+          Dates on weekends are disabled. Downstream milestones will cascade automatically.
         </p>
       </div>
 
@@ -274,7 +243,7 @@ export function EditMilestoneForm({
         </Label>
         <Textarea
           id={`${formId}-reason`}
-          placeholder="Describe why this date is being overridden (minimum 10 characters)…"
+          placeholder="Describe why this date is being overridden (minimum 5 characters)…"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           rows={3}
@@ -290,6 +259,25 @@ export function EditMilestoneForm({
           <p className="text-xs text-muted-foreground">{reason.length}/500</p>
         </div>
       </div>
+
+      {/* Edit History (Audit Log) */}
+      {milestone.editHistory.length > 0 && (
+        <div className="rounded-md border border-default-200 bg-muted/30 p-3 text-xs space-y-2">
+          <div className="flex items-center gap-1.5 font-medium text-default-700">
+            <History className="h-3.5 w-3.5" />
+            <span>Edit History ({milestone.editHistory.length})</span>
+          </div>
+          <div className="space-y-1.5 max-h-32 overflow-y-auto">
+            {milestone.editHistory.map((entry, idx) => (
+              <div key={idx} className="border-b border-default-100 pb-1 last:border-0">
+                <span className="font-semibold">{entry.editedBy || 'User'}</span> changed from{' '}
+                <span className="font-mono">{entry.originalDate}</span> to{' '}
+                <span className="font-mono">{entry.newDate}</span>: &ldquo;{entry.reason}&rdquo;
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </form>
   )
 }

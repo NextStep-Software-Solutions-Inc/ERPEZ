@@ -1,7 +1,7 @@
 import { ArrowLeft, Target, Award } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { SubKPI } from '../CommitmentsOPCRAccordion'
+import type { SubKPI } from '../types'
 
 interface SubKPIDetailPageProps {
   subKpi: SubKPI | null

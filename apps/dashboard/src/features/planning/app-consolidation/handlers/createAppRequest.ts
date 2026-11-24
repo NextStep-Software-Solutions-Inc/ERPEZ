@@ -10,8 +10,9 @@ interface CreateAPPPayload {
   appNumber: string
   name: string
   fiscalYearId: string
-  officeId: string
-  isFinal?: string
+  appType: string
+  batch: string
+  quarter: string
   remarks?: string
   description?: string
 }
@@ -27,7 +28,7 @@ interface CreateAPPPayload {
  * ```tsx
  * const useCreateApp = createMutationHookFromTemplate(createAppRequest)
  * const { mutate } = useCreateApp()
- * mutate({ ppmpIds: [...], fiscalYear: 2024, appName: "...", appCode: "...", appType: "Indicative", officeId: "...", fiscalYearId: "..." })
+ * mutate({ fiscalYear: 2024, appName: "...", appCode: "...", appType: "Indicative", batch: "Batch 1", quarter: "Q1", fiscalYearId: "..." })
  * ```
  */
 interface CreateAPPResponse {
@@ -51,9 +52,11 @@ export const createAppRequest: MutationBlueprintFromTemplate<
     const apiPayload: CreateAPPPayload = {
       appNumber: p.appCode || '',
       name: p.appName || '',
-      fiscalYearId: p.fiscalYearId || 'default-fiscal-year-id',
-      officeId: p.officeId || 'default-office-id',
-      isFinal: 'false',
+      fiscalYearId: p.fiscalYearId || '',
+      appType: p.appType || 'Indicative',
+      batch: p.batch || 'Batch 1',
+      quarter: p.quarter || 'Q1',
+      // isFinal is derived by the backend from APPType + Status; do not supply it here
       description: `${p.appType || 'Indicative'} APP for FY ${p.fiscalYear}`,
       remarks: '',
     }

@@ -1,16 +1,16 @@
-export type BacResolutionStatus =
-  | 'draft'
-  | 'for-approval'
-  | 'returned'
-  | 'approved'
+import { APPItem } from "@/features/planning/annual-performance-planning/types/appItem.type"
+import type { FiscalYear } from "@/features/planning/fiscal-year-and-policies/fiscal-year-management/types/types"
+import { ConsolidatedPR } from "../../consolidated-pr/store/consolidatedPRStore"
 
-export type BacResolutionRole = 'procurement-staff' | 'bac-chairperson'
+export type BacResolutionStatus =
+  'draft' | 'for-approval' | 'returned' | 'approved'
+
+export type BacResolutionRole = 'procurement-staff' | 'bac-chairperson' | 'all'
 
 export type BacResolutionWorkspaceScope = 'all' | 'public-bidding'
 
 export type BacResolutionListRoutePath =
-  | '/v2/bac-resolutions'
-  | '/v2/bac-resolutions-public-bidding'
+  '/v2/bac-resolutions' | '/v2/bac-resolutions-public-bidding'
 
 export type BacResolutionScheduleRoutePath =
   | '/v2/bac-resolutions/$resolutionId/bidding-schedule'
@@ -19,8 +19,7 @@ export type BacResolutionScheduleRoutePath =
 export type BacResolutionInboxFilter = BacResolutionStatus | 'all'
 
 export type BacResolutionType =
-  | 'award-recommendation'
-  | 'procurement-mode-recommendation'
+  'award-recommendation' | 'procurement-mode-recommendation'
 
 export type BacResolutionAwardRecommendation = {
   winningSupplierName: string
@@ -29,21 +28,8 @@ export type BacResolutionAwardRecommendation = {
   postQualificationDate?: string | null
 }
 
-export type BacResolutionClause = {
-  id?: string | null
-  name: string
-  body: string
-}
 
-export type BacResolutionProvisionalMemberRole = 'End-user Rep' | 'Tech Rep'
 
-export type BacResolutionProvisionalMember = {
-  id: string
-  role: BacResolutionProvisionalMemberRole
-  name: string
-  position: string
-  userId?: string | null
-}
 
 export type BacResolutionSignatoryOverride = {
   chairperson?: string
@@ -63,6 +49,79 @@ export type ConsolidatedPrLink = {
   status: ConsolidatedPrStatus
 }
 
+export type ProcurementSourceType = 'AppItem' | 'ConsolidatedPr'
+
+export type AppRecord = {
+  id: string
+  appNumber: string
+  title: string
+  fiscalYear: string
+  implementingUnit: string
+  totalBudget: number
+  itemCount: number
+  status: 'approved' | 'draft'
+}
+
+export type AppItemLink = {
+  id: string
+  appNumber: string
+  itemNumber: string
+  description: string
+  officeName: string
+  modeOfProcurement: string
+  sourceOfFund: string
+  abc: number
+  status: 'eligible' | 'linked'
+}
+
+export type EligibleAppItem = {
+  id: string
+  itemNumber: string
+  description: string
+  ppmpItemName?: string
+  remarks?: string
+  officeName: string
+  procurementModeId: string | null
+  procurementModeName: string
+  fundSourceId: string | null
+  fundSourceName: string
+  effectiveABC: number
+  papCode?: string
+  appId?: string
+  appNumber?: string
+  app?: {
+    id: string
+    appNumber: string
+    name: string
+    fiscalYearId?: string
+    fiscalYearName?: string
+    fiscalYear?: FiscalYear | null
+    FiscalYear?: FiscalYear | null
+  }
+}
+
+export type EligibleAppForProcurement = {
+  id: string
+  appNumber: string
+  name: string
+  fiscalYearId?: string
+  fiscalYearName?: string
+  fiscalYear?: FiscalYear | null
+  FiscalYear?: FiscalYear | null
+  eligibleItems: EligibleAppItem[]
+}
+
+export type EligibleConsolidatedPR = {
+  id: string
+  prNumber: string
+  description: string
+  endUser: string
+  projectName: string
+  totalAmount: number
+  modeOfProcurementName: string
+  procurementModeId: string | null
+}
+
 export type BacResolutionLogEntry = {
   id: string
   action: string
@@ -71,60 +130,132 @@ export type BacResolutionLogEntry = {
   note?: string | null
 }
 
+
+export type ResolutionClauseType = 'Whereas' | 'NowTherefore' | 'Resolved'
+
+export type ResolutionClause = {
+  id: string
+  name: string
+  body: string
+  clauseType: ResolutionClauseType
+}
+
+export type WhereasClauseTemplate = ResolutionClause
+
+export type BacResolutionClauseLink = {
+  id: string
+  resolutionClauseId: string
+  name: string
+  body: string
+  clauseType: ResolutionClauseType
+  order: number
+}
+
+export type AppItemLinkItem = {
+  id: string
+  appItemId: string
+  itemNumber: string
+  description: string
+  officeName: string
+  effectiveABC: number
+  order: number
+  appNumber: string
+  appName: string
+  papCode?: string
+  procurementModeName?: string
+}
+
+export type WhereasClauses = {
+  whereasClauseId: string
+  order: number
+}
+
+export type BacProject = {
+  id: string
+  sourceType: "APPItem" | "ConsolidatedPR"
+  appItemId?: string
+  consolidatedPRId?: string
+  appItem?: APPItem
+  consolidatedPR?: ConsolidatedPR
+  title?: string
+  abc: number
+  appItemCount?: number
+  sumABC?: number
+  status?: BacResolutionStatus
+  resolutionType?: string
+  resolutionNumber?: string
+  dateResolved?: string
+  resolvedLocation?: string
+  whereasClauses?: WhereasClauses[]
+  endUserRepresentativeId?: string
+  techRepresentativeId?: string
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
+  updatedBy?: string
+  approvedBy?: string
+  approvedAt?: string
+}
+
+export type BacProjectApprovalEvent = {
+  id: string
+  procurementProjectId: string
+  action: string
+  actorId?: string | null
+  actorName?: string | null
+  role?: string | null
+  remarks?: string | null
+  attachmentFileId?: string | null
+  timestamp: string
+}
+
+export type BacProjectDetails = BacProject & {
+  appItemLinks?: AppItemLinkItem[]
+  bacResolutions?: BacResolution[]
+  biddingActivitySchedules?: {}[]
+  endUserRepresentativeId?: string
+  endUserRepresentative?: { id: string, firstName: string, lastName: string, email: string }
+  techRepresentativeId?: string
+  techRepresentative?: { id: string, firstName: string, lastName: string, email: string }
+  approvalAttachmentFileId?: string
+  approvalEvents?: BacProjectApprovalEvent[]
+}
+
 export type BacResolution = {
   id: string
-  bacResolutionNumber: string
-  resolutionType?: BacResolutionType | null
-  resolutionDate: string
-  description: string
-  resolvedDateText: string
-  resolvedLocationText: string
-  whereasClauses: BacResolutionClause[]
-  provisionalMembers: BacResolutionProvisionalMember[]
-  signatoryOverrides?: BacResolutionSignatoryOverride
-  status: BacResolutionStatus
-  createdBy: string
-  createdAt: string
-  updatedAt: string
-  totalAmount: number
-  awardRecommendation?: BacResolutionAwardRecommendation | null
-  linkedConsolidatedPrs: ConsolidatedPrLink[]
-  activityLog: BacResolutionLogEntry[]
-  returnReason?: string | null
-  approvedBy?: string | null
-  approvedAt?: string | null
-  signedDocumentFileName?: string | null
-  printFileName?: string | null
-  workspaceOrigin?: 'public-bidding' | 'standard' | null
-}
-
-export type BacResolutionListItem = BacResolution
-
-export type CreateBacResolutionPayload = {
-  title?: string
-  abc?: number
+  procurementProjectId: string
   resolutionType?: string
-  bacResolutionNumber: string
-  resolutionDate: string
-  description: string
-  resolvedDateText: string
-  resolvedLocationText: string
-  whereasClauses: BacResolutionClause[]
-  provisionalMembers: BacResolutionProvisionalMember[]
-  signatoryOverrides?: BacResolutionSignatoryOverride
-  workspaceOrigin?: 'public-bidding' | 'standard' | null
-  endUserRepresentativeId?: string | null
-  techRepresentativeId?: string | null
+  resolutionNumber?: string
+  bacResolutionNumber?: string
+  description?: string
+  dateResolved: string
+  resolvedLocation?: string
+  status: string
+  whereasClauses: BacResolutionWhereasClause[]
+  clauseLinks?: BacResolutionClauseLink[]
+  biddingActivitySchedules: {}[]
+  linkedConsolidatedPrs?: ConsolidatedPrLink[]
+  workspaceOrigin?: BacResolutionWorkspaceScope
+  endUserRepresentativeId?: string
+  endUserRepresentative: { id: string, firstName: string, lastName: string, email: string } | null
+  techRepresentativeId?: string
+  techRepresentative: { id: string, firstName: string, lastName: string, email: string } | null
 }
 
+export type BacResolutionWhereasClause = {
+  id: string
+  body?: string
+  name?: string
+}
 export type LinkConsolidatedPrsPayload = {
   bacResolutionId: string
   consolidatedPRId: string
 }
 
 export type SubmitBacResolutionPayload = {
-  bacResolutionId: string
+  status: string
 }
+
 
 export type ReturnBacResolutionPayload = {
   bacResolutionId: string
@@ -132,22 +263,13 @@ export type ReturnBacResolutionPayload = {
 }
 
 export type ApproveBacResolutionPayload = {
-  bacResolutionId: string
-  signedDocument: File
+  attachmentFileId?: string
+  signedDocument?: File
+  bacResolutionId?: string
 }
 
-export type WhereasClauseTemplate = {
-  id: string
-  name: string
-  body: string
-  createdAt: string
-  updatedAt: string
-}
 
-export type WhereasClauseTemplatePayload = {
-  name: string
-  body: string
-}
+
 
 export type PrintBacResolutionResult = {
   fileName: string

@@ -17,7 +17,7 @@ const tenantsData = [
     status: "Active",
     users: 5,
     revenue: 99,
-    modules: ["AMS", "Planning", "PMS", "SAMS"],
+    modules: ["AMS", "PBMS", "PMS", "SAMS"],
   },
   {
     id: 3,

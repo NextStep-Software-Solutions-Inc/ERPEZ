@@ -9,8 +9,12 @@ export type NONCSEItem = {
     itemRequestId?: string
     productCode?: string
     currentPrice?: number
+    imageURL?: string
+    imageUrl?: string
+    availableStock?: number
+    stockOnHand?: number
     remarks?: string
-    isActive: boolean
+    type?: string
     createdAt: string
     createdBy?: string
 }

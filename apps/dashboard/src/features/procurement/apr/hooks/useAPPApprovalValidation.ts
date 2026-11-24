@@ -16,7 +16,7 @@ interface UseAPPApprovalValidationOptions {
   totalLineItemCount: number
 }
 
-interface UseAPPApprovalValidationResult {
+export interface UseAPPApprovalValidationResult {
   appValidationError: APPValidationError | null
   lineItemsValidationError: APPValidationError | null
   isValid: boolean

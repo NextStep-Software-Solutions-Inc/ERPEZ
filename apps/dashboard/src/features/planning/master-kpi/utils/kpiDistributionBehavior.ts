@@ -1,8 +1,16 @@
-﻿import { TargetDistributionBehavior } from '../types'
+import { TargetDistributionBehavior } from '../types'
+
+export const SELECTABLE_DISTRIBUTION_BEHAVIORS: TargetDistributionBehavior[] = [
+  TargetDistributionBehavior.SUMMATION,
+  TargetDistributionBehavior.UNIFORM_AVERAGE,
+  TargetDistributionBehavior.MILESTONE_NON_DIVISIBLE,
+  TargetDistributionBehavior.MAXIMUM,
+  TargetDistributionBehavior.MINIMUM,
+]
 
 const distributionBehaviorLabelMap: Record<TargetDistributionBehavior, string> =
   {
-    [TargetDistributionBehavior.DIVISIBLE_SUMMATIVE]: 'Divisible',
+    [TargetDistributionBehavior.DIVISIBLE_SUMMATIVE]: 'Summation',
     [TargetDistributionBehavior.UNIFORM_AVERAGE]: 'Uniform',
     [TargetDistributionBehavior.MILESTONE_NON_DIVISIBLE]: 'Milestone',
     [TargetDistributionBehavior.SUMMATION]: 'Summation',
@@ -11,7 +19,11 @@ const distributionBehaviorLabelMap: Record<TargetDistributionBehavior, string> =
   }
 
 export function getDistributionBehaviorLabel(
-  behavior: TargetDistributionBehavior | null | undefined,
+  behavior: TargetDistributionBehavior | string | null | undefined,
 ): string {
-  return behavior ? distributionBehaviorLabelMap[behavior] : ''
+  return behavior
+    ? distributionBehaviorLabelMap[behavior as TargetDistributionBehavior] ||
+        String(behavior)
+    : ''
 }
+

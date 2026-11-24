@@ -11,6 +11,8 @@
 
 import { createFileRoute } from '@tanstack/react-router'
 import MarketScopingDetailsPage from '@/pages/planning/market-scoping/MarketScopingDetailsPage'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 export const Route = createFileRoute(
   '/v2/(planning)/market-scoping/$id'
@@ -20,5 +22,12 @@ export const Route = createFileRoute(
 
 function RouteComponent() {
   const { id } = Route.useParams()
-  return <MarketScopingDetailsPage id={id} />
+  return (
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Planning.MarketScoping.View}
+      message="You do not have permission to view this Market Scoping form."
+    >
+      <MarketScopingDetailsPage id={id} />
+    </RoutePermissionGuard>
+  )
 }

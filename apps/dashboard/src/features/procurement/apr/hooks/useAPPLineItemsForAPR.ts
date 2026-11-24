@@ -6,16 +6,12 @@
  */
 
 import { useMemo } from 'react'
-import { createQueryHookFromTemplate } from 'erpez-shared-lib'
-import { getApprovedAPPsRequest } from '../handlers/getApprovedAPPsRequest'
+import { useApprovedAPPs } from '../handlers/hooks'
 import {
   convertAppLineItemsToAPRItems,
   calculateTotalVariance,
 } from '../utils/convertAppItemsToAPR'
 import type { ConsolidatedAPRItem } from '../types'
-import type { AppMaster, BACLineItem } from '@/features/planning/app-consolidation/types'
-
-const useApprovedAPPs = createQueryHookFromTemplate(getApprovedAPPsRequest)
 
 interface UseAPPLineItemsForAPROptions {
   appId?: string
@@ -25,8 +21,8 @@ interface UseAPPLineItemsForAPROptions {
 }
 
 interface UseAPPLineItemsForAPRResult {
-  app: AppMaster | null
-  selectedLineItems: BACLineItem[]
+  app: any | null
+  selectedLineItems: any[]
   aprItems: ConsolidatedAPRItem[]
   totalBudget: number
   totalApprovedBudget: number
@@ -48,31 +44,40 @@ export function useAPPLineItemsForAPR({
 }: UseAPPLineItemsForAPROptions): UseAPPLineItemsForAPRResult {
   // Fetch available APPs when an APP id is provided
   const { data: appsResponse, isLoading, error } = useApprovedAPPs({
-    queryParams: { fiscalYear },
-    enabled: enabled && !!appId, // Only fetch when enabled and appId is provided
-  })
+    queryParams: {
+      PageSize: 100,
+      fiscalYear,
+    },
+    enabled: enabled && !!appId,
+  } as any)
 
   // Find selected APP from response
   const app = useMemo(() => {
-    if (!appId || !appsResponse?.data) return null
-    return appsResponse.data.find((a) => a.id === appId) || null
+    if (!appId || !appsResponse) return null
+    const list = Array.isArray(appsResponse)
+      ? appsResponse
+      : (appsResponse as any).data || (appsResponse as any).items || []
+    return list.find((a: any) => a.id === appId) || null
   }, [appId, appsResponse])
+
+  const rawLineItems: any[] = useMemo(() => {
+    if (!app) return []
+    return app.appItems || app.bac?.lineItems || []
+  }, [app])
 
   // Extract selected line items from APP
   const selectedLineItems = useMemo(() => {
     if (!app || selectedLineItemIds.length === 0) return []
-    
-    return app.bac.lineItems.filter((item) => selectedLineItemIds.includes(item.id))
-  }, [app, selectedLineItemIds])
+    return rawLineItems.filter((item: any) => selectedLineItemIds.includes(item.id))
+  }, [app, rawLineItems, selectedLineItemIds])
 
   // Convert APP items to APR format
   const aprItems = useMemo(() => {
     if (!app || selectedLineItems.length === 0) return []
-    
     return convertAppLineItemsToAPRItems(
       selectedLineItems,
       app.id,
-      app.bac.id
+      app.bac?.id || ''
     )
   }, [app, selectedLineItems])
 

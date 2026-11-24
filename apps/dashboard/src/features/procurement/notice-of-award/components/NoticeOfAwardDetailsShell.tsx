@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,12 +15,15 @@ import {
   Calendar,
   CalendarClock,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   FileCheck2,
   FileDown,
   FileSignature,
   FileText,
   RotateCcw,
   Send,
+  ShieldAlert,
   ShieldCheck,
   Upload,
   Building2,
@@ -33,6 +37,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -57,6 +62,7 @@ type NoticeOfAwardDetailsShellProps = {
   onSubmit?: () => void | Promise<void>
   onReturn?: () => void
   onApprove?: () => void
+  onOpenLogConforme?: () => void
   onLogMilestone?: (
     milestone: NoticeOfAwardMilestone,
     file: File,
@@ -78,6 +84,7 @@ export function NoticeOfAwardDetailsShell({
   onSubmit,
   onReturn,
   onApprove,
+  onOpenLogConforme,
   onLogMilestone,
   onLogJustification,
   onTriggerCascade,
@@ -88,6 +95,48 @@ export function NoticeOfAwardDetailsShell({
   const isReturned = noticeOfAward.status === 'returned'
   const isForApproval = noticeOfAward.status === 'for-approval'
   const canLogContractExecution = noticeOfAward.status === 'approved'
+
+  const totalLineItemsAmount = noticeOfAward.lineItems.reduce(
+    (sum, item) => sum + (item.amount || 0),
+    0,
+  )
+
+  const hasAnyLongDescription = noticeOfAward.lineItems.some(
+    (item) => (item.description?.trim().length ?? 0) > 90,
+  )
+
+  const [expandedItemIds, setExpandedItemIds] = useState<Set<string>>(new Set())
+
+  const isAllExpanded =
+    hasAnyLongDescription &&
+    noticeOfAward.lineItems
+      .filter((item) => (item.description?.trim().length ?? 0) > 90)
+      .every((item) => expandedItemIds.has(item.id))
+
+  const toggleItemExpanded = (id: string) => {
+    setExpandedItemIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const toggleExpandAll = () => {
+    if (isAllExpanded) {
+      setExpandedItemIds(new Set())
+    } else {
+      const allIds = new Set(
+        noticeOfAward.lineItems
+          .filter((item) => (item.description?.trim().length ?? 0) > 90)
+          .map((item) => item.id),
+      )
+      setExpandedItemIds(allIds)
+    }
+  }
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
@@ -116,12 +165,13 @@ export function NoticeOfAwardDetailsShell({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 h-9 font-medium shadow-sm hover:bg-default-50 transition-all duration-200"
+                  className="gap-1.5 h-9 font-semibold border-primary/30 text-primary hover:bg-primary/5 shadow-sm transition-all duration-200"
                   onClick={onPrint}
                   disabled={isLoading}
+                  title="Generate official NGPA-compliant Notice of Award PDF"
                 >
-                  <FileDown className="h-4 w-4" />
-                  Print NOA
+                  <FileText className="h-4 w-4" />
+                  Generate NOA
                 </Button>
               ) : null}
 
@@ -139,34 +189,56 @@ export function NoticeOfAwardDetailsShell({
                 </Button>
               ) : null}
 
-              {role === 'hope' && isForApproval && onReturn ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 h-9 font-bold border-rose-250 text-rose-600 hover:bg-rose-50 shadow-sm transition-all duration-200"
-                  onClick={onReturn}
-                  disabled={isLoading}
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Return
-                </Button>
-              ) : null}
-
-              {role === 'hope' && isForApproval && onApprove ? (
-                <Button
-                  size="sm"
-                  className="gap-1.5 h-9 font-bold bg-success text-white hover:bg-success/90 shadow-md transition-all duration-200"
-                  onClick={onApprove}
-                  disabled={isLoading}
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  Approve / Issue
-                </Button>
-              ) : null}
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
+          {/* Executive Approval Callout Banner for HoPE */}
+          {role === 'hope' && isForApproval && (
+            <div className="rounded-xl border border-amber-200/90 dark:border-amber-900/60 bg-gradient-to-r from-amber-50/90 via-amber-50/50 to-orange-50/30 dark:from-amber-950/30 dark:to-orange-950/20 p-4 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 shrink-0 mt-0.5">
+                    <ShieldAlert className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <h4 className="text-sm font-bold text-amber-950 dark:text-amber-200">
+                      Pending Executive Decision & Award Issuance
+                    </h4>
+                    <p className="text-xs text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+                      This Notice of Award has been submitted by the BAC Secretariat. Review the winning supplier, financial bid, and line items, then approve with the signed NOA document or return for revisions.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                  {onReturn && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 font-semibold border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 shadow-2xs"
+                      onClick={onReturn}
+                      disabled={isLoading}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Return
+                    </Button>
+                  )}
+                  {onApprove && (
+                    <Button
+                      size="sm"
+                      className="gap-1.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                      onClick={onApprove}
+                      disabled={isLoading}
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      Approve & Issue NOA
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Details Sections Panel */}
           <div className="grid gap-4 md:grid-cols-3">
             
@@ -260,63 +332,157 @@ export function NoticeOfAwardDetailsShell({
           </div>
 
           <div className="rounded-2xl border border-default-200 bg-background shadow-sm overflow-hidden mt-6">
-            <div className="px-5 py-4 border-b border-default-100 bg-default-50/50 flex items-center justify-between">
-              <div className="text-sm font-bold text-default-900">
-                Awarded Line Items
+            <div className="px-5 py-4 border-b border-default-100 bg-default-50/50 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-sm font-bold text-default-900">
+                  Awarded Line Items
+                </span>
+                <Badge variant="outline" className="font-semibold text-[11px] border-primary/20 text-primary bg-primary/5">
+                  {noticeOfAward.lineItems.length} {noticeOfAward.lineItems.length === 1 ? 'item' : 'items'}
+                </Badge>
               </div>
-              <Badge variant="outline" className="font-semibold text-[11px] border-primary/20 text-primary bg-primary/5">
-                {noticeOfAward.lineItems.length} items
-              </Badge>
+
+              {hasAnyLongDescription && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleExpandAll}
+                  className="h-7 text-xs text-default-600 hover:text-default-900 gap-1 px-2.5 hover:bg-default-100"
+                >
+                  {isAllExpanded ? (
+                    <>
+                      <ChevronUp className="h-3.5 w-3.5" />
+                      <span>Collapse All Specs</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-3.5 w-3.5" />
+                      <span>Expand All Specs</span>
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-default-50/70">
-                  <TableRow>
-                    <TableHead className="font-bold text-default-900 py-3">Category</TableHead>
-                    <TableHead className="font-bold text-default-900 py-3">Item Name</TableHead>
-                    <TableHead className="font-bold text-default-900 py-3">Description</TableHead>
-                    <TableHead className="font-bold text-default-900 py-3">Qty</TableHead>
-                    <TableHead className="font-bold text-default-900 py-3">Unit</TableHead>
-                    <TableHead className="font-bold text-default-900 py-3">Unit Price</TableHead>
-                    <TableHead className="font-bold text-default-900 py-3 text-right">Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {noticeOfAward.lineItems.length ? (
-                    noticeOfAward.lineItems.map((lineItem) => (
-                      <TableRow key={lineItem.id} className="transition-colors duration-150 hover:bg-default-50/50">
-                        <TableCell className="font-medium text-default-800">{lineItem.category}</TableCell>
-                        <TableCell className="font-semibold text-default-950">{lineItem.itemName}</TableCell>
-                        <TableCell className="text-default-600">{lineItem.description}</TableCell>
-                        <TableCell className="font-semibold text-default-900">{lineItem.quantity}</TableCell>
-                        <TableCell className="text-default-500">{lineItem.unit}</TableCell>
-                        <TableCell className="font-mono text-default-700">
-                          {lineItem.unitPrice.toLocaleString('en-PH', {
+
+            <Table>
+              <TableHeader className="bg-default-50/70 border-b border-default-200">
+                <TableRow>
+                  <TableHead className="font-bold text-default-900 py-3 pl-4">
+                    Item Details & Specifications
+                  </TableHead>
+                  <TableHead className="font-bold text-default-900 py-3 px-3 w-28">
+                    Qty & Unit
+                  </TableHead>
+                  <TableHead className="font-bold text-default-900 py-3 px-3 text-right w-32">
+                    Unit Price
+                  </TableHead>
+                  <TableHead className="font-bold text-default-900 py-3 pr-4 text-right w-36">
+                    Total Amount
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {noticeOfAward.lineItems.length ? (
+                  noticeOfAward.lineItems.map((lineItem, index) => {
+                    const isExpanded = expandedItemIds.has(lineItem.id)
+                    return (
+                      <TableRow
+                        key={lineItem.id}
+                        className="transition-colors duration-150 hover:bg-default-50/50"
+                      >
+                        {/* Column 1: Item Details & Specifications */}
+                        <TableCell className="align-top py-3.5 pl-4 pr-3">
+                          <div className="flex items-start gap-2.5">
+                            <span className="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full bg-default-100 text-[11px] font-semibold text-default-600 mt-0.5 select-none">
+                              {index + 1}
+                            </span>
+                            <div className="space-y-1.5 flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-default-950 text-sm leading-snug break-words">
+                                  {lineItem.itemName}
+                                </span>
+                                {lineItem.category && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] font-medium text-default-600 bg-default-50 border-default-200 px-1.5 py-0 h-4.5 shrink-0"
+                                  >
+                                    {lineItem.category}
+                                  </Badge>
+                                )}
+                              </div>
+                              <ExpandableItemDescription
+                                description={lineItem.description}
+                                isExpanded={isExpanded}
+                                onToggle={() => toggleItemExpanded(lineItem.id)}
+                              />
+                            </div>
+                          </div>
+                        </TableCell>
+
+                        {/* Column 2: Qty & Unit */}
+                        <TableCell className="align-top py-3.5 px-3 whitespace-nowrap">
+                          <div className="font-semibold text-default-900 text-sm">
+                            {lineItem.quantity.toLocaleString()}
+                          </div>
+                          <div className="text-xs text-default-500 font-normal">
+                            {lineItem.unit}
+                          </div>
+                        </TableCell>
+
+                        {/* Column 3: Unit Price */}
+                        <TableCell className="align-top py-3.5 px-3 text-right tabular-nums whitespace-nowrap text-default-700 text-sm">
+                          ₱{lineItem.unitPrice.toLocaleString('en-PH', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
                         </TableCell>
-                        <TableCell className="font-mono font-bold text-default-900 text-right">
-                          {lineItem.amount.toLocaleString('en-PH', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+
+                        {/* Column 4: Total Amount */}
+                        <TableCell className="align-top py-3.5 pl-3 pr-4 text-right tabular-nums whitespace-nowrap">
+                          <span className="font-bold text-default-950 text-sm">
+                            ₱{lineItem.amount.toLocaleString('en-PH', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="py-10 text-center text-sm text-default-500"
-                      >
-                        No Consolidated PR line items are available yet.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    )
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="py-10 text-center text-sm text-default-500"
+                    >
+                      No awarded line items are available yet.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+              {noticeOfAward.lineItems.length > 0 && (
+                <TableFooter className="bg-default-50/60 border-t border-default-200">
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="py-3 pl-4 text-right text-xs font-bold text-default-600 uppercase tracking-wider"
+                    >
+                      Total Awarded Amount ({noticeOfAward.lineItems.length}{' '}
+                      {noticeOfAward.lineItems.length === 1 ? 'item' : 'items'}):
+                    </TableCell>
+                    <TableCell className="py-3 pr-4 text-right tabular-nums whitespace-nowrap">
+                      <span className="font-extrabold text-default-950 text-sm text-primary">
+                        ₱{totalLineItemsAmount.toLocaleString('en-PH', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                </TableFooter>
+              )}
+            </Table>
           </div>
         </CardContent>
       </Card>
@@ -375,6 +541,7 @@ export function NoticeOfAwardDetailsShell({
             noticeOfAward={noticeOfAward}
             canLogMilestones={role === 'procurement-staff' && canLogContractExecution}
             isLoading={isLoading}
+            onOpenLogConforme={onOpenLogConforme}
             onLogMilestone={onLogMilestone}
             onLogJustification={onLogJustification}
             onTriggerCascade={onTriggerCascade}
@@ -468,6 +635,7 @@ function ContractExecutionSlaCard({
   noticeOfAward,
   canLogMilestones,
   isLoading,
+  onOpenLogConforme,
   onLogMilestone,
   onLogJustification,
   onTriggerCascade,
@@ -476,6 +644,7 @@ function ContractExecutionSlaCard({
   noticeOfAward: NoticeOfAward
   canLogMilestones: boolean
   isLoading: boolean
+  onOpenLogConforme?: () => void
   onLogMilestone?: (
     milestone: NoticeOfAwardMilestone,
     file: File,
@@ -497,7 +666,9 @@ function ContractExecutionSlaCard({
             <CardTitle className="text-base">Contract Execution SLA</CardTitle>
             <CardDescription>
               {slaState.isIssued
-                ? `Issued ${formatNoaSlaDate(slaState.issuedDate)} - Due ${formatNoaSlaDate(slaState.deadlineDate)}`
+                ? (slaState.receivedDate
+                    ? '10-day statutory countdown active from NOA receipt'
+                    : `Issued ${formatNoaSlaDate(slaState.issuedDate)} — Awaiting Conforme / Receipt`)
                 : 'Starts after HoPE approval / issuance.'}
             </CardDescription>
           </div>
@@ -505,6 +676,27 @@ function ContractExecutionSlaCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-4 pt-0">
+        {slaState.isIssued && (
+          <div className="grid grid-cols-3 gap-2 py-2 px-3 bg-default-50 rounded-lg border border-default-150 text-xs">
+            <div>
+              <span className="text-default-400 block text-[10px] uppercase font-bold tracking-wider">Issued</span>
+              <span className="font-semibold text-default-700">{formatNoaSlaDate(slaState.issuedDate)}</span>
+            </div>
+            <div>
+              <span className="text-default-400 block text-[10px] uppercase font-bold tracking-wider">Actual Receipt</span>
+              <span className="font-semibold text-default-700">
+                {slaState.receivedDate ? formatNoaSlaDate(slaState.receivedDate) : 'Awaiting Conforme'}
+              </span>
+            </div>
+            <div>
+              <span className="text-default-400 block text-[10px] uppercase font-bold tracking-wider">Execution Due</span>
+              <span className="font-semibold text-default-700">
+                {slaState.deadlineDate ? formatNoaSlaDate(slaState.deadlineDate) : '10d from receipt'}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2">
           <Progress
             value={slaState.progressPercent}
@@ -600,10 +792,12 @@ function ContractExecutionSlaCard({
                     <div className="mt-1 space-y-1 text-xs text-default-500">
                       {isLogged && milestoneDate ? (
                         <div className="font-semibold text-emerald-700">
-                          Logged on {formatNoaSlaDate(milestoneDate)}
+                          {milestone.key === 'conforme_received_date' ? 'Received' : 'Logged'} on {formatNoaSlaDate(milestoneDate)}
                         </div>
                       ) : (
-                        <div className="text-default-400 font-medium">Pending upload</div>
+                        <div className="text-default-400 font-medium">
+                          {milestone.key === 'conforme_received_date' ? 'Awaiting Conforme / Receipt' : 'Pending upload'}
+                        </div>
                       )}
                       
                       {milestoneFileName ? (
@@ -622,7 +816,7 @@ function ContractExecutionSlaCard({
                   </div>
                   
                   <div>
-                    {!isLogged ? (
+                    {!isLogged && milestone.key !== 'conforme_received_date' ? (
                       <Input
                         id={inputId}
                         type="file"
@@ -654,19 +848,33 @@ function ContractExecutionSlaCard({
                         Logged
                       </Button>
                     ) : canUploadMilestone ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        color="primary"
-                        size="sm"
-                        className="gap-1.5 h-8 font-bold hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer shadow-sm animate-in fade-in"
-                        asChild
-                      >
-                        <label htmlFor={inputId} className="cursor-pointer">
+                      milestone.key === 'conforme_received_date' ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          color="primary"
+                          size="sm"
+                          className="gap-1.5 h-8 font-bold hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer shadow-sm animate-in fade-in"
+                          onClick={() => onOpenLogConforme?.()}
+                        >
                           <Upload className="h-3.5 w-3.5" />
-                          Log {toMilestoneActionLabel(milestone.label)}
-                        </label>
-                      </Button>
+                          Log Conforme Received
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          color="primary"
+                          size="sm"
+                          className="gap-1.5 h-8 font-bold hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer shadow-sm animate-in fade-in"
+                          asChild
+                        >
+                          <label htmlFor={inputId} className="cursor-pointer">
+                            <Upload className="h-3.5 w-3.5" />
+                            Log {toMilestoneActionLabel(milestone.label)}
+                          </label>
+                        </Button>
+                      )
                     ) : (
                       <Button
                         type="button"
@@ -830,6 +1038,106 @@ function InfoBlock({
           {value}
         </div>
       </div>
+    </div>
+  )
+}
+
+function parseDescriptionSections(description: string) {
+  const specMatch = /(?:technical\s+)?specifications?\s*:/i.exec(description)
+  const justMatch = /justification\s*:/i.exec(description)
+
+  if (specMatch && justMatch && specMatch.index < justMatch.index) {
+    const specStart = specMatch.index + specMatch[0].length
+    const specs = description.slice(specStart, justMatch.index).trim()
+    const justification = description.slice(justMatch.index + justMatch[0].length).trim()
+    return { specs, justification }
+  }
+
+  return null
+}
+
+type ExpandableItemDescriptionProps = {
+  description?: string | null
+  isExpanded?: boolean
+  onToggle?: () => void
+}
+
+function ExpandableItemDescription({
+  description,
+  isExpanded: controlledExpanded,
+  onToggle,
+}: ExpandableItemDescriptionProps) {
+  const [internalExpanded, setInternalExpanded] = useState(false)
+  const isExpanded =
+    controlledExpanded !== undefined ? controlledExpanded : internalExpanded
+
+  const handleToggle = () => {
+    if (onToggle) {
+      onToggle()
+    } else {
+      setInternalExpanded((prev) => !prev)
+    }
+  }
+
+  if (!description || !description.trim()) {
+    return <span className="text-default-400 text-xs italic">-</span>
+  }
+
+  const trimmed = description.trim()
+  const isLong = trimmed.length > 90
+  const parsed = isExpanded ? parseDescriptionSections(trimmed) : null
+
+  if (!isLong) {
+    return (
+      <p className="text-xs text-default-600 leading-relaxed break-words">
+        {trimmed}
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {isExpanded ? (
+        parsed ? (
+          <div className="space-y-2 text-xs leading-relaxed mt-1.5">
+            <div className="rounded-lg bg-default-50/80 p-2.5 border border-default-200/60 shadow-xs">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-default-600 mb-1">
+                Specifications
+              </div>
+              <p className="text-default-800 break-words leading-relaxed">{parsed.specs}</p>
+            </div>
+            <div className="rounded-lg bg-default-50/80 p-2.5 border border-default-200/60 shadow-xs">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-default-600 mb-1">
+                Justification
+              </div>
+              <p className="text-default-800 break-words leading-relaxed">{parsed.justification}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-lg bg-default-50/60 p-2.5 border border-default-200/50 mt-1.5">
+            <p className="text-xs text-default-700 whitespace-pre-line leading-relaxed break-words">
+              {trimmed}
+            </p>
+          </div>
+        )
+      ) : (
+        <p className="text-xs text-default-600 line-clamp-2 leading-relaxed break-words">
+          {trimmed}
+        </p>
+      )}
+
+      <button
+        type="button"
+        onClick={handleToggle}
+        className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary-600 hover:underline transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded cursor-pointer"
+      >
+        <span>{isExpanded ? 'Show less' : 'Show more'}</span>
+        {isExpanded ? (
+          <ChevronUp className="h-3 w-3" />
+        ) : (
+          <ChevronDown className="h-3 w-3" />
+        )}
+      </button>
     </div>
   )
 }

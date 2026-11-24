@@ -1,12 +1,13 @@
+import { AlertTriangle, Clock } from 'lucide-react'
+import type { ConsolidationProgress, TatDataPoint } from '../types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Clock, AlertTriangle } from 'lucide-react'
-import type { ConsolidationProgress, TatDataPoint } from '../types'
+import { CardInfoTooltip } from './CardInfoTooltip'
 import { cn } from '@/lib/utils'
 
 interface Props {
   consolidation: ConsolidationProgress | null
-  tatData: TatDataPoint[]
+  tatData: Array<TatDataPoint>
   fiscalYear: number
   isLoading?: boolean
 }
@@ -222,7 +223,7 @@ function StatCard({
 
 /** Insight callout */
 function InsightCallout({ aboveThreshold, stalledPct }: {
-  aboveThreshold: TatDataPoint[]
+  aboveThreshold: Array<TatDataPoint>
   stalledPct: number
 }) {
   if (aboveThreshold.length === 0) return null
@@ -286,112 +287,163 @@ function Skeleton() {
 // ── Main component ─────────────────────────────────────────────────────────
 
 export function PrConsolidationAndTatTracker({ consolidation, tatData, fiscalYear, isLoading }: Props) {
-  if (isLoading || !consolidation || tatData.length === 0) return <Skeleton />
+  if (isLoading) return <Skeleton />
 
-  const { total, consolidated, inProgress, stalledPRs } = consolidation
+  const hasConsolidation = Boolean(consolidation && consolidation.total > 0)
+  const hasTatData = tatData && tatData.length > 0
 
-  const consolidatedPct = Math.round((consolidated / total) * 100)
-  const inProgressPct   = Math.round((inProgress / total) * 100)
-  const pendingPct      = 100 - consolidatedPct - inProgressPct
+  if (!hasConsolidation && !hasTatData) {
+    return (
+      <Card className="shadow-xs border border-border">
+        <CardHeader className="pb-3 border-b border-border/50">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold tracking-wide flex items-center gap-1.5">
+                <span>PR Consolidation &amp; TAT Tracker</span>
+                <CardInfoTooltip infoKey="panel-pr-tat-tracker" />
+              </CardTitle>
+            </div>
+            <Badge variant="outline" className="text-[11px] font-mono">
+              FY {fiscalYear}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-8 text-center text-xs text-muted-foreground">
+          <Clock className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+          <p className="font-semibold text-foreground text-sm">No Consolidation or TAT Data Available</p>
+          <p className="mt-1 text-muted-foreground">Requisitions and division turnaround milestones will appear here as PRs are created and routed.</p>
+        </CardContent>
+      </Card>
+    )
+  }
 
-  const avgTat = (
-    tatData.reduce((s, d) => s + d.avgDays, 0) / tatData.length
-  ).toFixed(1)
+  const total = consolidation?.total ?? 0
+  const consolidated = consolidation?.consolidated ?? 0
+  const inProgress = consolidation?.inProgress ?? 0
+  const stalledPRs = consolidation?.stalledPRs ?? 0
 
-  const aboveThreshold = [...tatData]
-    .filter((d) => d.avgDays > THRESHOLD_DAYS)
-    .sort((a, b) => b.avgDays - a.avgDays)
+  const consolidatedPct = total > 0 ? Math.round((consolidated / total) * 100) : 0
+  const inProgressPct   = total > 0 ? Math.round((inProgress / total) * 100) : 0
+  const pendingPct      = total > 0 ? Math.max(0, 100 - consolidatedPct - inProgressPct) : 0
+
+  const avgTat = hasTatData
+    ? (tatData.reduce((s, d) => s + d.avgDays, 0) / tatData.length).toFixed(1)
+    : '—'
+
+  const aboveThreshold = hasTatData
+    ? [...tatData]
+        .filter((d) => d.avgDays > THRESHOLD_DAYS)
+        .sort((a, b) => b.avgDays - a.avgDays)
+    : []
 
   const stalledPct = aboveThreshold.reduce((s, d) => s + (d.stalledWeight ?? 0), 0)
-
   const quarter = getCurrentQuarter()
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="pb-3">
+    <Card className="shadow-xs border border-border">
+      <CardHeader className="pb-3 border-b border-border/50">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-gray-500" />
-            <CardTitle className="text-base">PR Consolidation &amp; TAT Tracker</CardTitle>
+            <Clock className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-sm font-semibold tracking-wide flex items-center gap-1.5">
+              <span>PR Consolidation &amp; TAT Tracker</span>
+              <CardInfoTooltip infoKey="panel-pr-tat-tracker" />
+            </CardTitle>
           </div>
           <Badge
             variant="outline"
-            className="text-xs font-semibold text-amber-700 border-amber-300 bg-amber-50"
+            className="text-xs font-semibold text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-950/20"
           >
             {quarter} {fiscalYear}
           </Badge>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-5">
-
+      <CardContent className="p-4 space-y-5">
         {/* ── Segmented progress bar ─────────────────────────────────── */}
         <div className="space-y-2">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             PR consolidation rate &mdash;&nbsp;
-            <span className="font-bold text-gray-800">{consolidated} of {total} consolidated</span>
+            {total > 0 ? (
+              <span className="font-bold text-foreground">{consolidated} of {total} consolidated</span>
+            ) : (
+              <span className="italic text-muted-foreground">No pending PRs requiring consolidation</span>
+            )}
           </p>
-          <div className="flex h-3 w-full overflow-hidden rounded-full bg-gray-100">
-            <div className="bg-blue-600 transition-all" style={{ width: `${consolidatedPct}%` }} />
-            <div className="bg-amber-400 transition-all" style={{ width: `${inProgressPct}%` }} />
-            <div className="bg-gray-300 transition-all"  style={{ width: `${pendingPct}%` }} />
-          </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <BarLegend color="bg-blue-600"  label={`Consolidated ${consolidatedPct}%`} />
-            <BarLegend color="bg-amber-400" label={`In-review ${inProgressPct}%`} />
-            <BarLegend color="bg-gray-300"  label={`Pending ${pendingPct}%`} />
-          </div>
+          {total > 0 ? (
+            <>
+              <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted/60">
+                <div className="bg-blue-600 transition-all" style={{ width: `${consolidatedPct}%` }} />
+                <div className="bg-amber-400 transition-all" style={{ width: `${inProgressPct}%` }} />
+                <div className="bg-muted-foreground/30 transition-all" style={{ width: `${pendingPct}%` }} />
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <BarLegend color="bg-blue-600" label={`Consolidated ${consolidatedPct}%`} />
+                <BarLegend color="bg-amber-400" label={`In-review ${inProgressPct}%`} />
+                <BarLegend color="bg-muted-foreground/40" label={`Pending ${pendingPct}%`} />
+              </div>
+            </>
+          ) : (
+            <div className="py-2 text-xs text-muted-foreground">All submitted Purchase Requests are consolidated.</div>
+          )}
         </div>
 
         {/* ── TAT Section ────────────────────────────────────────────── */}
-        <div className="space-y-0">
-          {/* Header: label + legend */}
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <p className="text-xs text-gray-500">
-              Avg Turnaround Time: PR&nbsp;&rarr;&nbsp;PO&nbsp;(days)
-              &nbsp;&middot;&nbsp;
-              <span className="font-semibold text-blue-600">target: {THRESHOLD_DAYS} days</span>
-            </p>
-            <div className="flex items-center gap-4">
-              <LegendDot hex={STATUS_MAP['on-target'].barHex}     label="On target" />
-              <LegendDot hex={STATUS_MAP['above-target'].barHex}  label="Above target" />
-              <LegendDot hex={STATUS_MAP['critical'].barHex}      label="Critical" />
+        {hasTatData ? (
+          <div className="space-y-0">
+            {/* Header: label + legend */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <p className="text-xs text-muted-foreground">
+                Avg Turnaround Time: PR&nbsp;&rarr;&nbsp;PO&nbsp;(days)
+                &nbsp;&middot;&nbsp;
+                <span className="font-semibold text-blue-600 dark:text-blue-400">target: {THRESHOLD_DAYS} days</span>
+              </p>
+              <div className="flex items-center gap-4">
+                <LegendDot hex={STATUS_MAP['on-target'].barHex} label="On target" />
+                <LegendDot hex={STATUS_MAP['above-target'].barHex} label="Above target" />
+                <LegendDot hex={STATUS_MAP['critical'].barHex} label="Critical" />
+              </div>
+            </div>
+
+            {/* Scale axis */}
+            <ScaleAxis />
+
+            {/* Department rows */}
+            <div className="mt-2">
+              {tatData.map((entry) => (
+                <TatRow key={entry.stage} entry={entry} />
+              ))}
             </div>
           </div>
-
-          {/* Scale axis */}
-          <ScaleAxis />
-
-          {/* Department rows */}
-          <div className="mt-2">
-            {tatData.map((entry) => (
-              <TatRow key={entry.stage} entry={entry} />
-            ))}
+        ) : (
+          <div className="p-4 rounded-xl bg-muted/20 border border-dashed border-border text-center text-xs text-muted-foreground">
+            No division turnaround time logged for this period.
           </div>
-        </div>
+        )}
 
         {/* ── Bottom stats ──────────────────────────────────────────── */}
         <div className="grid grid-cols-3 gap-3">
           <StatCard
             value={avgTat}
-            unit="d"
+            unit={hasTatData ? 'd' : ''}
             label="Avg TAT (days)"
-            className="bg-blue-50 text-blue-700"
+            className="bg-blue-50/50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400"
           />
           <StatCard
             value={consolidated}
             label="Consolidated PRs"
-            className="bg-emerald-50 text-emerald-700"
+            className="bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400"
           />
           <StatCard
             value={stalledPRs}
             label="Stalled PRs"
-            className="bg-red-50 text-red-600"
+            className="bg-red-50/50 dark:bg-red-950/20 text-red-600 dark:text-red-400"
           />
         </div>
 
         {/* ── Insight callout ───────────────────────────────────────── */}
-        <InsightCallout aboveThreshold={aboveThreshold} stalledPct={stalledPct} />
+        {hasTatData && <InsightCallout aboveThreshold={aboveThreshold} stalledPct={stalledPct} />}
 
       </CardContent>
     </Card>
@@ -400,7 +452,7 @@ export function PrConsolidationAndTatTracker({ consolidation, tatData, fiscalYea
 
 interface Props {
   consolidation: ConsolidationProgress | null
-  tatData: TatDataPoint[]
+  tatData: Array<TatDataPoint>
   fiscalYear: number
   isLoading?: boolean
 }

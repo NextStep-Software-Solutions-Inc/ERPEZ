@@ -10,6 +10,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
@@ -117,10 +118,10 @@ export function FiscalYearTable({
         <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="flex justify-between items-center">
-                <TableCell className="flex-1">Fiscal Year</TableCell>
-                <TableCell className="shrink-0 w-40">Status</TableCell>
-                <TableCell className="shrink-0 w-48">Actions</TableCell>
+              <TableRow>
+                <TableHead>Fiscal Year</TableHead>
+                <TableHead className="w-[180px]">Status</TableHead>
+                <TableHead className="w-[220px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

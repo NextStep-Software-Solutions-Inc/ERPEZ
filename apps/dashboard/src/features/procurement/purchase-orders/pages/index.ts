@@ -1,5 +1,6 @@
-﻿export * from './ManagePurchaseOrdersPage'
+export * from './ManagePurchaseOrdersPage'
 export * from './PurchaseOrderDetailsPage'
 export * from './PurchaseOrdersDirectAcquisitionPage'
 export * from './PurchaseOrdersPublicBiddingPage'
 export * from './PurchaseOrdersSvpPage'
+export * from './PurchaseOrdersUnifiedPage'

@@ -49,7 +49,7 @@ export function ConsolidatedPPMPsCard({
     ppmpColumnHelper.accessor((row) => row.PPMP?.ppmpNumber || row.ppmpNumber || '', {
       id: 'ppmpNumber',
       header: 'PPMP Number',
-      cell: ({ getValue }) => <span className="font-mono text-sm font-bold text-gray-900">{getValue() || '—'}</span>,
+      cell: ({ getValue }) => <span className="text-sm font-bold text-gray-900">{getValue() || '—'}</span>,
       size: 180,
     }),
     ppmpColumnHelper.accessor((row) => row.PPMP?.officeName || row.officeName || '', {

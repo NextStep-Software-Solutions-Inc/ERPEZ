@@ -18,7 +18,7 @@ export interface TransformedUserProfile {
  * Transforms PersonnelPosition data to UserProfile format
  */
 export function transformPersonnelToUserProfile(
-  personnel: PersonnelPosition
+  personnel: PersonnelPosition,
 ): TransformedUserProfile {
   return {
     userId: personnel.userId,

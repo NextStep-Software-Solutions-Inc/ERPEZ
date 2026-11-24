@@ -25,6 +25,7 @@ import {
 import { PurchaseOrderStatusBadge } from './PurchaseOrderStatusBadge'
 import { useConsolidatedPRStore } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
 import type { ConsolidatedPRItem } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
+import { useGetPurchaseOrderItems } from '../handlers'
 import type { PurchaseOrder } from '../types'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -49,6 +50,12 @@ interface Props {
 
 export function PODirectAcquisitionDetailsPage({ purchaseOrder, onBack }: Props) {
   const [activeTab, setActiveTab] = useState<'by-office' | 'summary'>('by-office')
+
+  const { data: apiItems = [] } = useGetPurchaseOrderItems(purchaseOrder.id)
+  const poLineItems = useMemo(() => {
+    if (apiItems && apiItems.length > 0) return apiItems
+    return purchaseOrder.lineItems ?? purchaseOrder.items ?? []
+  }, [apiItems, purchaseOrder.lineItems, purchaseOrder.items])
 
   const consolidatedPRs = useConsolidatedPRStore((s) => s.consolidatedPRs)
   const sourcePR = useMemo(
@@ -239,16 +246,48 @@ export function PODirectAcquisitionDetailsPage({ purchaseOrder, onBack }: Props)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!sourcePR ? (
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
-              <ListChecks className="h-8 w-8 opacity-30" />
-              <p className="text-sm">No PR linked to this PO yet.</p>
-            </div>
-          ) : daItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
-              <ListChecks className="h-8 w-8 opacity-30" />
-              <p className="text-sm">No Direct Acquisition items found in the linked PR.</p>
-            </div>
+          {daItems.length === 0 ? (
+            poLineItems.length > 0 ? (
+              <div className="overflow-x-auto rounded-lg border border-default-200">
+                <Table>
+                  <TableHeader className="bg-muted/50">
+                    <TableRow>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Qty</TableHead>
+                      <TableHead>Unit</TableHead>
+                      <TableHead className="text-right">Unit Price</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {poLineItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.description}</TableCell>
+                        <TableCell>{item.quantity}</TableCell>
+                        <TableCell>{item.unit}</TableCell>
+                        <TableCell className="text-right">
+                          ₱{item.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          ₱{item.amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="bg-muted/30 font-semibold">
+                      <TableCell colSpan={4} className="text-right">Total</TableCell>
+                      <TableCell className="text-right font-bold text-primary">
+                        ₱{purchaseOrder.totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
+                <ListChecks className="h-8 w-8 opacity-30" />
+                <p className="text-sm">No items linked to this purchase order.</p>
+              </div>
+            )
           ) : (
             <>
               {/* Tab bar */}

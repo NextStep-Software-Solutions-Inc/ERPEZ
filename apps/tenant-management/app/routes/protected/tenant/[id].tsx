@@ -1,15 +1,15 @@
-import { useParams, useNavigate } from "react-router";
-
+import { useParams } from "react-router";
 import { createQueryHookFromTemplate } from "erpez-shared-lib";
-import { getTenantsRequest } from "~/features/tenant/handlers/getTenantsRequest";
-import { type Tenant } from "~/features/tenant/type/Tenant"; 
+import { getTenantRequest } from "~/features/tenant/handlers/getTenantRequest";
 import TenantProfile from "~/pages/protected/super-admin/TenantProfile";
 
-const useTenants = createQueryHookFromTemplate(getTenantsRequest);
+const useTenant = createQueryHookFromTemplate(getTenantRequest);
 
 export default function TenantProfilePage() {
-    const params = useParams(); 
-    const { data: tenants, isLoading } = useTenants({ pathParams: {}, queryParams: { pageSize: 50, pageNumber: 1 } });
+    const params = useParams();
+    const tenantId = params.id ?? "";
+    const { data: tenantResponse, isLoading, refetch } = useTenant({ pathParams: { id: tenantId }, queryParams: {} });
+
     if (isLoading) {
         return (
             <div className="p-8">
@@ -18,12 +18,7 @@ export default function TenantProfilePage() {
         );
     }
 
-    const tenantId = params.id;
-    const tenant = tenants?.data?.find((t: Tenant) => String(t.id) === String(tenantId));
-
-    if (process.env.NODE_ENV === "development") {
-        console.log({ tenant });
-    }
+    const tenant = tenantResponse?.data;
     if (!tenant) {
         return (
             <div className="p-8">
@@ -31,7 +26,8 @@ export default function TenantProfilePage() {
             </div>
         );
     }
+
     return (
-        <TenantProfile tenant={tenant} />
+        <TenantProfile tenant={tenant} onTenantUpdated={refetch} />
     );
 }

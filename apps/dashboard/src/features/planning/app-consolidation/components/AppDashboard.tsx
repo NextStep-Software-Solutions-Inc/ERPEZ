@@ -154,7 +154,7 @@ export function AppDashboard({
           ) : (
             apps.map((app) => (
               <TableRow key={app.id} className="hover:bg-gray-50 transition-colors">
-                <TableCell className="font-mono text-sm font-medium">{app.appCode}</TableCell>
+                <TableCell className="text-sm font-medium">{app.appCode}</TableCell>
                 <TableCell className="font-medium">{app.appName}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{app.appType}</Badge>
@@ -166,7 +166,7 @@ export function AppDashboard({
                 <TableCell className="text-center">
                   {app.bac?.lineItems?.length || 0}
                 </TableCell>
-                <TableCell className="text-right font-mono">
+                <TableCell className="text-right font-medium">
                   ₱{(app.bac?.totalBudget || 0).toLocaleString('en-PH', { maximumFractionDigits: 0 })}
                 </TableCell>
                 <TableCell className="text-sm text-gray-600">{app.createdBy || '—'}</TableCell>

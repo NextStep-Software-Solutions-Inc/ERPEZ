@@ -19,7 +19,7 @@ export const createPPMPColumns = ({
   columnHelper.accessor('code', {
     header: PPMPFieldMetadata.code.header,
     cell: ({ row }) => (
-      <span className="font-mono text-sm font-semibold">{row.getValue('code')}</span>
+      <span className="text-sm font-semibold">{row.getValue('code')}</span>
     ),
     size: 120,
   }),

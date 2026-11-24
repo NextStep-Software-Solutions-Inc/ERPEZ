@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { RatingScaleTemplate } from '../types'
+import { RatingScaleTemplate, ScaleType } from '../types'
 
 interface TemplatePreviewProps {
   template: RatingScaleTemplate
@@ -54,6 +54,9 @@ export function TemplatePreview({
     template.rating1,
   ]
 
+  const showRangeColumn =
+    template.scaleType === ScaleType.NON_FIXED
+
   if (compact) {
     return (
       <div className="space-y-2">
@@ -67,10 +70,10 @@ export function TemplatePreview({
               {level.rating}
             </Badge>
             <span className="text-sm">{level.description}</span>
-            {level.minRange !== undefined && (
+            {showRangeColumn && (
               <span className="text-xs text-muted-foreground ml-auto">
-                {level.minRange}
-                {level.maxRange !== undefined ? ` - ${level.maxRange}` : '+'}
+                {level.minRange !== undefined ? level.minRange : '-'}
+                {level.maxRange !== undefined ? ` - ${level.maxRange}` : level.minRange !== undefined ? '+' : ''}
               </span>
             )}
           </div>
@@ -115,7 +118,7 @@ export function TemplatePreview({
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="w-16 font-semibold">Rating</TableHead>
               <TableHead className="font-semibold">Description</TableHead>
-              {ratingLevels.some((r) => r.minRange !== undefined) && (
+              {showRangeColumn && (
                 <TableHead className="w-32 text-right font-semibold">
                   Range
                 </TableHead>
@@ -131,14 +134,14 @@ export function TemplatePreview({
                   </Badge>
                 </TableCell>
                 <TableCell className="text-sm">{level.description}</TableCell>
-                {ratingLevels.some((r) => r.minRange !== undefined) && (
+                {showRangeColumn && (
                   <TableCell className="text-sm text-right text-muted-foreground">
-                    {level.minRange !== undefined ? (
+                    {level.minRange !== undefined || level.maxRange !== undefined ? (
                       <>
-                        {level.minRange}
+                        {level.minRange !== undefined ? level.minRange : ''}
                         {level.maxRange !== undefined
                           ? ` - ${level.maxRange}`
-                          : '+'}
+                          : level.minRange !== undefined ? '+' : ''}
                       </>
                     ) : (
                       '-'

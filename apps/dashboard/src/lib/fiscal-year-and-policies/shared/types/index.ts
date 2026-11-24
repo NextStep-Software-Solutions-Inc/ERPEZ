@@ -169,57 +169,24 @@ export type UpdateRatingScalePayload = Partial<
   Omit<CreateRatingScalePayload, 'fiscalYearId'>
 >
 
-// ============================================
-// RESPONSE TYPES: API responses
-// ============================================
-
-export interface PaginationMeta {
-  totalItems: number
-  totalPages: number
-  currentPage: number
-  pageSize: number
-  hasNextPage: boolean
-  hasPreviousPage: boolean
-}
-
-export interface PaginatedResponse<T> {
-  data: T[]
-  meta: PaginationMeta
-}
-
-export interface ApiResponse<T> {
-  data: T
-  message?: string
-  timestamp?: string
-}
+import type { QueryParams } from 'erpez-shared-lib'
 
 // ============================================
 // QUERY PARAM TYPES: Filtering & Pagination
 // ============================================
 
-export interface PaginationParams {
-  page?: number
-  pageSize?: number
-}
-
-export interface SortParams {
-  sortBy?: string
-  sortOrder?: 'asc' | 'desc'
-}
-
-export interface FiscalYearFilters extends PaginationParams, SortParams {
+export interface FiscalYearFilters extends QueryParams {
   status?: FiscalYearStatus
   searchTerm?: string
 }
 
-export interface BudgetCallFilters extends PaginationParams, SortParams {
+export interface BudgetCallFilters extends QueryParams {
   fiscalYearId?: string
   status?: BudgetCallStatus
 }
 
-export interface ProcurementThresholdFilters
-  extends PaginationParams,
-    SortParams {
+export interface ProcurementThresholdFilters extends QueryParams {
   fiscalYearId?: string
   method?: ProcurementMethodType
 }
+

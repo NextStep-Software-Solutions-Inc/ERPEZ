@@ -180,6 +180,7 @@ export function BACBidSubmitModal({
                       href={doc.downloadUrl ?? '#'}
                       target="_blank"
                       rel="noopener noreferrer"
+                      download
                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0"
                       onClick={(e) => e.stopPropagation()}
                     >

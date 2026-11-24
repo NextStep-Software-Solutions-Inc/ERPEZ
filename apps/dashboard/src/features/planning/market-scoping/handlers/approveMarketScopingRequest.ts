@@ -4,15 +4,18 @@
  * Mutation handler - for department/agency heads
  */
 
-import type { MutationBlueprintFromTemplate, APIResponse } from "erpez-shared-lib";
-import api from "@/services/api";
-import type { MarketScopingForm } from "../types/marketScopingTypes";
+import type {
+  MutationBlueprintFromTemplate,
+  APIResponse,
+} from 'erpez-shared-lib'
+import api from '@/services/api'
+import type { MarketScopingForm } from '../types/marketScopingTypes'
 
-const endpoint = "/market-scopings/:id/approve" as const;
+const endpoint = '/market-scopings/:id/approve' as const
 
 export interface ApproveMarketScopingPayload {
-  signedDocumentFileId?: string;
-  actionComments?: string;
+  signedDocumentFileId?: string
+  actionComments?: string
 }
 
 export const approveMarketScopingRequest: MutationBlueprintFromTemplate<
@@ -23,7 +26,10 @@ export const approveMarketScopingRequest: MutationBlueprintFromTemplate<
 > = {
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    const response = await api.post<APIResponse<MarketScopingForm>>(finalUrl, payload);
-    return response.data;
+    const response = await api.post<APIResponse<MarketScopingForm>>(
+      finalUrl,
+      payload,
+    )
+    return response.data
   },
-};
+}

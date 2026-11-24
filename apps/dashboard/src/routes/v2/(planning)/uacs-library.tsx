@@ -1,4 +1,6 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 /**
  * UACS Library Parent Route
@@ -9,5 +11,12 @@ export const Route = createFileRoute('/v2/(planning)/uacs-library')({
 })
 
 function RouteComponent() {
-  return <Outlet />
+  return (
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Finance.Uacs.View}
+      message="You do not have permission to access the UACS Library."
+    >
+      <Outlet />
+    </RoutePermissionGuard>
+  )
 }

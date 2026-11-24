@@ -1,138 +1,199 @@
-import { useState } from 'react';
-import { RefreshCw, CheckCircle2, ChevronRight, AlertTriangle, FileCheck2, FileText, Sparkles } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useBidEvaluationStore } from '../store/bidEvaluationStore';
-import { getSortedSuppliers, BIDDER_SLA_DAYS, RA_9184_BAC_DAYS, RA_12009_BAC_DAYS } from '../data/mockProjects';
-import { SlaTimerBadge } from '../components/SlaTimerBadge';
-import { AuditLogTooltip } from '../components/AuditLogTooltip';
-import { BacResolutionModal } from '../components/BacResolutionModal';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useSearch, useNavigate } from '@tanstack/react-router'
+import api from '@/services/api'
+import {
+  AlertTriangle,
+  Award,
+  Calculator,
+  FileCheck2,
+  FolderOpen,
+  RefreshCw,
+  Sparkles,
+} from 'lucide-react'
+import { AwardRecommendationTab } from '../components/AwardRecommendationTab'
+import { BacResolutionModal } from '../components/BacResolutionModal'
+import { BidEvaluationTab } from '../components/BidEvaluationTab'
+import { BidOpeningTab } from '../components/BidOpeningTab'
+import { PostQualificationTab } from '../components/PostQualificationTab'
+import {
+  BIDDER_SLA_DAYS,
+  RA_12009_BAC_DAYS,
+} from '../data/mockProjects'
+import { useProjectBidEvaluation } from '../hooks/useBidEvaluationApi'
+import { useBidEvaluationStore } from '../store/bidEvaluationStore'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import type { PublicBiddingProject, SupplierBid } from '../types'
+
+interface ApiProjectItem {
+  id: string
+  title?: string
+  abc?: number
+  contractNo?: string
+  status?: string
+  bidEvaluationCriteria?: string
+  appItem?: {
+    bidEvaluationCriteria?: string
+  }
+}
 
 export function BidEvaluationPage() {
+  const search = useSearch({ strict: false }) as { projectId?: string }
+  const navigate = useNavigate()
+
   const {
     projects,
     selectedProjectId,
     selectProject,
-    sendNoticeOfLcb,
-    logDocsReceived,
-    setPostQualResult,
-    recommendForAward,
     resetProject,
-  } = useBidEvaluationStore();
+  } = useBidEvaluationStore()
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { data: realProjects = [] } = useQuery<PublicBiddingProject[]>({
+    queryKey: ['bac-projects-for-evaluation'],
+    queryFn: async () => {
+      const res = await api.get<{ data?: { items?: ApiProjectItem[] } | ApiProjectItem[] }>('/bac/projects?pageSize=50')
+      const rawData = res.data?.data
+      const items: ApiProjectItem[] = Array.isArray(rawData)
+        ? rawData
+        : (rawData?.items ?? [])
 
-  const activeProject = projects.find((p) => p.id === selectedProjectId) ?? projects[0];
+      return items.map((p): PublicBiddingProject => ({
+        id: p.id,
+        projectName: p.title || 'Untitled Project',
+        abc: Number(p.abc || 0),
+        resolutionNumber: p.contractNo || (p.id ? p.id.substring(0, 8) : 'BAC-PROJ'),
+        governingLaw: 'RA_12009',
+        awardCriterion: p.appItem?.bidEvaluationCriteria || p.bidEvaluationCriteria || undefined,
+        projectStatus: p.status === 'Approved' ? 'Approved' : 'Active',
+        suppliers: [],
+      }))
+    },
+    staleTime: 60_000,
+  })
+
+  // Combine real projects with mock projects (real projects first)
+  const combinedProjects: Array<PublicBiddingProject> = useMemo(() => {
+    if (realProjects.length > 0) return realProjects
+    return projects
+  }, [realProjects, projects])
+
+  const selectedId = useMemo(() => {
+    if (search.projectId && combinedProjects.some((p) => p.id === search.projectId)) {
+      return search.projectId
+    }
+    if (selectedProjectId && combinedProjects.some((p) => p.id === selectedProjectId)) {
+      return selectedProjectId
+    }
+    return combinedProjects[0]?.id || ''
+  }, [search.projectId, selectedProjectId, combinedProjects])
+
+  const activeProject = combinedProjects.find((p) => p.id === selectedId) ?? combinedProjects[0]
+
+  const { data: projectEvaluation } = useProjectBidEvaluation(activeProject?.id)
+  const effectiveAwardCriterion = projectEvaluation?.awardCriterion || activeProject?.awardCriterion
+  const effectiveTechnicalWeight = projectEvaluation?.technicalWeight ?? activeProject?.technicalWeight
+  const effectiveFinancialWeight = projectEvaluation?.financialWeight ?? activeProject?.financialWeight
+
+  const handleSelectProject = (newId: string) => {
+    selectProject(newId)
+    void navigate({
+      to: '/v2/bid-evaluation',
+      search: { projectId: newId },
+    })
+  }
+
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('opening')
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
       currency: 'PHP',
-    }).format(val);
-  };
+    }).format(val)
+  }
+
+  // Check for overdue SLA timers in mock data (retained for backward compatibility during phased migration)
+  const checkOverdueTimers = () => {
+    if (!activeProject) return []
+    const nowMs = Date.now()
+    const overdueList: Array<{ supplierName: string; type: 'Bidder' | 'BAC'; days: number }> = []
+
+    ;(activeProject.suppliers || []).forEach((sup: SupplierBid) => {
+      if (sup.status === 'LCB_Notified' && sup.lcbNoticeSentDate) {
+        const startMs = new Date(sup.lcbNoticeSentDate).getTime()
+        const limitMs = BIDDER_SLA_DAYS * 24 * 60 * 60 * 1000
+        if (nowMs > startMs + limitMs) {
+          overdueList.push({ supplierName: sup.supplierName, type: 'Bidder', days: BIDDER_SLA_DAYS })
+        }
+      } else if (sup.status === 'Under_PostQual' && sup.postQualDocsReceivedDate) {
+        const limitDays = RA_12009_BAC_DAYS
+        const startMs = new Date(sup.postQualDocsReceivedDate).getTime()
+        const limitMs = limitDays * 24 * 60 * 60 * 1000
+        if (nowMs > startMs + limitMs) {
+          overdueList.push({ supplierName: sup.supplierName, type: 'BAC', days: limitDays })
+        }
+      }
+    })
+
+    return overdueList
+  }
+
+  const overdueTimers = checkOverdueTimers()
 
   if (!activeProject) {
     return (
-      <div className="w-full h-[400px] flex items-center justify-center">
-        <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+      <div className="w-full h-64 flex flex-col items-center justify-center gap-3">
+        <RefreshCw className="h-7 w-7 animate-spin text-primary" />
+        <p className="text-xs text-muted-foreground">Loading public bidding projects...</p>
       </div>
-    );
+    )
   }
-
-  // 1. Sort suppliers based on LCRB (lowest financial bid) or MEARB (weighted Quality-Price scores)
-  const sortedSuppliers = getSortedSuppliers(
-    activeProject.suppliers,
-    activeProject.awardCriterion,
-    activeProject.technicalWeight,
-    activeProject.financialWeight
-  );
-
-  // 2. Cascade Locking Logic
-  // Actions are unlocked only for the highest-ranked supplier who is not disqualified.
-  // Lower rows are locked to prevent out-of-order evaluations.
-  const activeIndex = sortedSuppliers.findIndex((s) => s.status !== 'Disqualified');
-
-  // 3. Check for overdue SLA timers to render non-dismissable warnings
-  const checkOverdueTimers = () => {
-    const nowMs = Date.now();
-    const overdueList: { supplierName: string; type: 'Bidder' | 'BAC'; days: number }[] = [];
-
-    activeProject.suppliers.forEach((sup) => {
-      if (sup.status === 'LCB_Notified' && sup.lcbNoticeSentDate) {
-        const startMs = new Date(sup.lcbNoticeSentDate).getTime();
-        const limitMs = BIDDER_SLA_DAYS * 24 * 60 * 60 * 1000;
-        if (nowMs > startMs + limitMs) {
-          overdueList.push({ supplierName: sup.supplierName, type: 'Bidder', days: BIDDER_SLA_DAYS });
-        }
-      } else if (sup.status === 'Under_PostQual' && sup.postQualDocsReceivedDate) {
-        const limitDays = activeProject.governingLaw === 'RA_9184' ? RA_9184_BAC_DAYS : RA_12009_BAC_DAYS;
-        const startMs = new Date(sup.postQualDocsReceivedDate).getTime();
-        const limitMs = limitDays * 24 * 60 * 60 * 1000;
-        if (nowMs > startMs + limitMs) {
-          overdueList.push({ supplierName: sup.supplierName, type: 'BAC', days: limitDays });
-        }
-      }
-    });
-
-    return overdueList;
-  };
-
-  const overdueTimers = checkOverdueTimers();
-
-  const handleRecommend = () => {
-    recommendForAward(activeProject.id);
-    setIsModalOpen(true);
-  };
-
-  const hasPassedSupplier = activeProject.suppliers.some((s) => s.status === 'LCRB');
-  const showRecommendButton = hasPassedSupplier && activeProject.projectStatus === 'Active';
 
   return (
     <div className="w-full space-y-6">
-      
-      {/* 1. HEADER CARD (Procurement Library styling as the reference) */}
+      {/* 1. HEADER CARD */}
       <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 shadow-sm overflow-hidden relative">
         <CardHeader className="py-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <CardTitle className="text-3xl font-extrabold tracking-tight text-default-900">
-                Bid Evaluation & Post-Qualification
+                Bid Opening, Evaluation & Post-Qualification
               </CardTitle>
               <CardDescription className="text-base text-muted-foreground max-w-3xl">
-                Workspace to rank bids, track dual post-qualification SLAs, handle disqualification cascades, and generate the BAC Resolution.
+                Official BAC workspace to verify submitted packages, unseal Envelope 2, mathematically rank bids, and manage post-qualification.
               </CardDescription>
             </div>
             <Badge variant="outline" className="h-fit px-3 py-1 font-semibold border-primary/30 text-primary-700 bg-primary/5 shadow-sm">
-              <FileCheck2 className="h-3.5 w-3.5 mr-1.5 text-primary" /> Evaluation Dashboard
+              <FileCheck2 className="h-3.5 w-3.5 mr-1.5 text-primary" /> BAC Public Bidding Workspace
             </Badge>
           </div>
         </CardHeader>
       </Card>
 
-      {/* 2. PROJECT SELECTOR CARD (Clean workspace below the header card) */}
+      {/* 2. PROJECT SELECTOR CARD */}
       <Card className="border border-default-200 shadow-sm bg-white hover:shadow-md transition-shadow duration-200">
         <CardHeader className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <CardTitle className="text-sm font-bold text-default-900 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4 text-primary" /> Project Workspace
+              <Sparkles className="h-4 w-4 text-primary" /> Active Project Selection
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
-              Select a public bidding project to evaluate bids and track post-qualification progress.
+              Select a public bidding project to record bid opening, execute evaluation, and track post-qualification.
             </CardDescription>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-default-800 whitespace-nowrap">Active Project:</span>
-            <Select value={activeProject.id} onValueChange={selectProject}>
+            <Select value={activeProject?.id} onValueChange={handleSelectProject}>
               <SelectTrigger className="w-[380px] bg-white text-default-900 border-default-300 hover:border-default-400 shadow-sm focus:ring-2 focus:ring-primary/20 h-10 transition-colors">
                 <SelectValue placeholder="Choose project..." />
               </SelectTrigger>
               <SelectContent className="max-w-[450px]">
-                {projects.map((p) => (
+                {combinedProjects.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     <span className="font-semibold text-primary">{p.resolutionNumber}</span> - {p.projectName}
                   </SelectItem>
@@ -170,7 +231,7 @@ export function BidEvaluationPage() {
         </Alert>
       )}
 
-      {/* 4. PROJECT HEADS & STATE BRIEF (With premium left accent borders) */}
+      {/* 4. PROJECT HEADS & STATE BRIEF */}
       <div className="grid gap-4 md:grid-cols-4">
         {/* Governing Law */}
         <Card className="border border-default-200 shadow-sm bg-white border-l-4 border-l-blue-500 hover:translate-y-[-2px] transition-all duration-200">
@@ -179,10 +240,10 @@ export function BidEvaluationPage() {
           </CardHeader>
           <CardContent>
             <div className="text-xl font-extrabold text-default-900">
-              {activeProject.governingLaw === 'RA_9184' ? 'RA 9184' : 'RA 12009'}
+              RA 12009
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
-              BAC SLA: <span className="font-semibold text-blue-600">{activeProject.governingLaw === 'RA_9184' ? '12 Days' : '10 Days'}</span>
+              BAC SLA: <span className="font-semibold text-blue-600">10 Days</span>
             </p>
           </CardContent>
         </Card>
@@ -194,12 +255,22 @@ export function BidEvaluationPage() {
           </CardHeader>
           <CardContent>
             <div className="text-xl font-extrabold text-default-900">
-              {activeProject.awardCriterion === 'LCRB' ? 'LCRB (Lowest Price)' : 'MEARB (Weighted Total)'}
+              {effectiveAwardCriterion === 'LCRB'
+                ? 'LCRB (Lowest Price)'
+                : effectiveAwardCriterion === 'MEARB'
+                ? 'MEARB (Weighted Total)'
+                : effectiveAwardCriterion
+                ? effectiveAwardCriterion
+                : 'Not Established'}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
-              {activeProject.awardCriterion === 'MEARB' 
-                ? `Split: ${activeProject.technicalWeight}% Tech / ${activeProject.financialWeight}% Fin` 
-                : 'Criteria: Lowest Financial Bid'}
+              {effectiveAwardCriterion === 'MEARB' 
+                ? (effectiveTechnicalWeight != null && effectiveFinancialWeight != null
+                    ? `Split: ${effectiveTechnicalWeight}% Tech / ${effectiveFinancialWeight}% Fin`
+                    : 'Weights Not Configured')
+                : effectiveAwardCriterion === 'LCRB'
+                ? 'Criteria: Lowest Financial Bid'
+                : 'Criterion established during evaluation'}
             </p>
           </CardContent>
         </Card>
@@ -261,395 +332,70 @@ export function BidEvaluationPage() {
         </Card>
       </div>
 
-      {/* 5. HAPPY PATH RESOLUTION ALERT BLOCK */}
-      {(activeProject.projectStatus === 'Pending_HoPE_Approval' || activeProject.projectStatus === 'Approved') && activeProject.bacResolutionDraft && (
-        <Card className="border border-success/30 bg-success/5 shadow-sm border-l-4 border-l-success overflow-hidden relative animate-in fade-in slide-in-from-left-2">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-            <CheckCircle2 className="h-24 w-24 text-success" />
-          </div>
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="text-base text-success-950 font-extrabold flex items-center gap-1.5">
-                  <CheckCircle2 className="h-5 w-5 text-success" />
-                  {activeProject.projectStatus === 'Approved' 
-                    ? 'BAC Resolution signed & approved!' 
-                    : 'BAC Resolution Generated successfully!'}
-                </CardTitle>
-                <CardDescription className="text-success-800 text-xs">
-                  {activeProject.projectStatus === 'Approved' 
-                    ? 'Official recommendation approved by Head of Procuring Entity (HoPE).' 
-                    : 'Recommendation of award submitted for Head of Procuring Entity (HoPE) signature.'}
-                </CardDescription>
-              </div>
-              <Button onClick={() => setIsModalOpen(true)} className="gap-2 bg-success text-white hover:bg-success/90 font-semibold shadow-md">
-                <FileText className="h-4 w-4" /> View / Print {activeProject.projectStatus === 'Approved' ? 'Approved' : 'Draft'} Resolution
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="text-xs space-y-2 border-t border-success/15 pt-3">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-success-850">
-              <div>
-                <span className="font-semibold text-gray-500 block uppercase text-[10px] tracking-wider">Resolution No.</span>
-                <span className="font-bold text-default-900 text-sm">{activeProject.bacResolutionDraft.resolutionNumber}</span>
-              </div>
-              <div>
-                <span className="font-semibold text-gray-500 block uppercase text-[10px] tracking-wider">Winning Supplier</span>
-                <span className="font-bold text-default-900 text-sm">{activeProject.bacResolutionDraft.winningSupplier}</span>
-              </div>
-              <div>
-                <span className="font-semibold text-gray-500 block uppercase text-[10px] tracking-wider">Awarded Amount</span>
-                <span className="font-bold text-default-900 text-sm">{formatCurrency(activeProject.bacResolutionDraft.lcrbAmount)}</span>
-              </div>
-              <div>
-                <span className="font-semibold text-gray-500 block uppercase text-[10px] tracking-wider">Drafted Date</span>
-                <span className="font-bold text-default-900 text-sm">
-                  {new Date(activeProject.bacResolutionDraft.draftedAt).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* 5. WORKFLOW TABS (Phases 2, 3, 4, 5 Live API Integration) */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
+        <TabsList className="bg-default-100 p-1 rounded-lg border border-default-200">
+          <TabsTrigger value="opening" className="gap-2 font-bold text-xs">
+            <FolderOpen className="h-4 w-4 text-primary" />
+            1. Bid Opening
+          </TabsTrigger>
+          <TabsTrigger value="evaluation" className="gap-2 font-bold text-xs">
+            <Calculator className="h-4 w-4 text-purple-600" />
+            2. Evaluation & Ranking
+          </TabsTrigger>
+          <TabsTrigger value="postqual" className="gap-2 font-bold text-xs">
+            <Sparkles className="h-4 w-4 text-amber-600" />
+            3. Post-Qualification
+          </TabsTrigger>
+          <TabsTrigger value="award" className="gap-2 font-bold text-xs">
+            <Award className="h-4 w-4 text-emerald-600" />
+            4. Award Recommendation
+          </TabsTrigger>
+        </TabsList>
 
-      {/* 6. MAIN SUPPLIER WORKSPACE TABLE */}
-      <Card className="border border-default-200 shadow-sm bg-white overflow-hidden">
-        <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-default-100 bg-default-50/50">
-          <div>
-            <CardTitle className="text-base font-bold text-default-900">Bid Evaluation and Ranking Table</CardTitle>
-            <CardDescription className="text-xs text-muted-foreground mt-0.5">
-              {activeProject.awardCriterion === 'LCRB'
-                ? 'Suppliers sorted strictly by lowest financial bid.'
-                : 'Suppliers ranked using the MEARB weighted score formula. Normalized financial score (lowest bid/bid * 100) + quality technical score.'}
-            </CardDescription>
-          </div>
-          {showRecommendButton && (
-            <Button size="lg" className="bg-success hover:bg-success/90 text-white font-bold gap-2 shadow-md animate-bounce" onClick={handleRecommend}>
-              <CheckCircle2 className="h-5 w-5" /> Recommend for Award
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-default-50/70">
-              <TableRow>
-                <TableHead className="w-[100px] font-bold text-default-900">Rank</TableHead>
-                <TableHead className="font-bold text-default-900">Supplier Name</TableHead>
-                <TableHead className="font-bold text-default-900">Financial Bid</TableHead>
-                {activeProject.awardCriterion === 'MEARB' && (
-                  <>
-                    <TableHead className="font-bold text-default-900">Fin Score (Norm.)</TableHead>
-                    <TableHead className="font-bold text-default-900">Tech Score</TableHead>
-                    <TableHead className="font-bold text-default-900 bg-primary/5">Weighted Total</TableHead>
-                  </>
-                )}
-                <TableHead className="font-bold text-default-900">Status</TableHead>
-                <TableHead className="font-bold text-default-900">Active SLA Timer</TableHead>
-                <TableHead className="w-[240px] text-right font-bold text-default-900">Workspace Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedSuppliers.map((bid, index) => {
-                const isActive = activeIndex === index && activeProject.projectStatus === 'Active';
-                const isDisqualified = bid.status === 'Disqualified';
-                const isWinner = bid.status === 'LCRB';
-                const isRowLocked = !isActive && !isDisqualified && !isWinner;
+        {/* TAB 1: BID OPENING (LIVE API) */}
+        <TabsContent value="opening" className="space-y-4">
+          <BidOpeningTab
+            projectId={activeProject.id}
+            projectName={activeProject.projectName}
+            abc={activeProject.abc}
+          />
+        </TabsContent>
 
-                return (
-                  <TableRow
-                    key={bid.supplierId}
-                    className={`transition-colors duration-150 ${
-                      isDisqualified
-                        ? 'opacity-40 bg-default-50/50 cursor-not-allowed select-none line-through'
-                        : isWinner
-                        ? 'bg-success/5 border-l-4 border-l-success hover:bg-success/10'
-                        : isActive
-                        ? 'bg-primary/5 border-l-4 border-l-primary hover:bg-primary/10'
-                        : 'text-default-500 hover:bg-default-50/50'
-                    }`}
-                  >
-                    {/* Rank Badge */}
-                    <TableCell className="font-bold">
-                      {isDisqualified ? (
-                        <span className="text-gray-400 font-medium italic">Disqualified</span>
-                      ) : bid.computedRank === 1 ? (
-                        <Badge color="success" className="font-bold border border-success/30 shadow-sm px-2 py-0.5">
-                          1st ({activeProject.awardCriterion === 'LCRB' ? 'LCB' : 'MEARB'})
-                        </Badge>
-                      ) : bid.computedRank === 2 ? (
-                        <Badge color="info" className="font-bold border border-info/30 px-2 py-0.5">
-                          2nd
-                        </Badge>
-                      ) : (
-                        <Badge color="secondary" className="font-bold border border-default-250 px-2 py-0.5">
-                          {bid.computedRank}rd
-                        </Badge>
-                      )}
-                    </TableCell>
+        {/* TAB 2: AUTHORITATIVE BID EVALUATION & RANKING (LIVE API) */}
+        <TabsContent value="evaluation" className="space-y-4">
+          <BidEvaluationTab
+            projectId={activeProject.id}
+            projectName={activeProject.projectName}
+            abc={activeProject.abc}
+            awardCriterion={effectiveAwardCriterion}
+            technicalWeight={effectiveTechnicalWeight}
+            financialWeight={effectiveFinancialWeight}
+          />
+        </TabsContent>
 
-                    {/* Supplier Name */}
-                    <TableCell className="font-semibold text-default-950">
-                      {bid.supplierName}
-                    </TableCell>
+        {/* TAB 3: POST-QUALIFICATION WORKSPACE (LIVE API) */}
+        <TabsContent value="postqual" className="space-y-4">
+          <PostQualificationTab
+            projectId={activeProject.id}
+            projectName={activeProject.projectName}
+          />
+        </TabsContent>
 
-                    {/* Financial Bid */}
-                    <TableCell className="font-mono text-default-900 font-medium">
-                      {formatCurrency(bid.financialBid)}
-                    </TableCell>
-
-                    {/* MEARB metrics columns */}
-                    {activeProject.awardCriterion === 'MEARB' && (
-                      <>
-                        <TableCell className="font-mono text-default-700 font-medium">{bid.normalizedFinancialScore ?? 0} pts</TableCell>
-                        <TableCell className="font-mono text-default-700 font-medium">{bid.technicalScore ?? 0} pts</TableCell>
-                        <TableCell className="font-mono font-extrabold text-primary-700 bg-primary/5">
-                          {bid.totalScore}%
-                        </TableCell>
-                      </>
-                    )}
-
-                    {/* Status Badge & audit tooltip */}
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <Badge
-                          variant="outline"
-                          color={
-                            isDisqualified
-                              ? 'destructive'
-                              : isWinner
-                              ? 'success'
-                              : bid.status === 'LCB_Notified'
-                              ? 'warning'
-                              : bid.status === 'Under_PostQual'
-                              ? 'info'
-                              : 'secondary'
-                          }
-                          className="capitalize font-bold px-2 py-0.5 shadow-sm"
-                        >
-                          {bid.status === 'LCB_Notified'
-                            ? 'LCB Notified'
-                            : bid.status === 'Under_PostQual'
-                            ? 'Docs Received'
-                            : bid.status === 'LCRB'
-                            ? 'LCRB (Passed)'
-                            : bid.status}
-                        </Badge>
-                        <AuditLogTooltip
-                          complianceEvents={bid.complianceEvents}
-                          lcbNoticeSentDate={bid.lcbNoticeSentDate}
-                          postQualDocsReceivedDate={bid.postQualDocsReceivedDate}
-                        />
-                      </div>
-                    </TableCell>
-
-                    {/* Active Timer Countdown */}
-                    <TableCell>
-                      {bid.status === 'LCB_Notified' && bid.lcbNoticeSentDate ? (
-                        <SlaTimerBadge
-                          projectId={activeProject.id}
-                          supplierId={bid.supplierId}
-                          startDate={bid.lcbNoticeSentDate}
-                          slaDays={5}
-                          timerType="Bidder"
-                          statusLabel="LCB_Notified"
-                        />
-                      ) : bid.status === 'Under_PostQual' && bid.postQualDocsReceivedDate ? (
-                        <SlaTimerBadge
-                          projectId={activeProject.id}
-                          supplierId={bid.supplierId}
-                          startDate={bid.postQualDocsReceivedDate}
-                          slaDays={
-                            activeProject.governingLaw === 'RA_9184'
-                              ? RA_9184_BAC_DAYS
-                              : RA_12009_BAC_DAYS
-                          }
-                          timerType="BAC"
-                          statusLabel="Under_PostQual"
-                        />
-                      ) : (
-                        <span className="text-xs text-muted-foreground font-medium">—</span>
-                      )}
-                    </TableCell>
-
-                    {/* Stateful buttons and indicators */}
-                    <TableCell className="text-right">
-                      {isDisqualified && (
-                        <span className="text-xs font-semibold text-destructive/80 uppercase">Disqualified</span>
-                      )}
-
-                      {isWinner && (
-                        <span className="text-xs font-semibold text-success uppercase">Calculated Winner (LCRB)</span>
-                      )}
-
-                      {isRowLocked && (
-                        <span className="text-xs text-muted-foreground italic font-medium">Evaluation locked</span>
-                      )}
-
-                      {isActive && (
-                        <div className="flex items-center justify-end gap-2 animate-in fade-in zoom-in-95">
-                          
-                          {/* Send Notice button */}
-                          {bid.status === 'Ranked' && (
-                            <Button
-                              size="sm"
-                              className="font-semibold shadow-sm bg-primary text-white hover:bg-primary/90"
-                              onClick={() => sendNoticeOfLcb(activeProject.id, bid.supplierId)}
-                            >
-                              Send Notice of LCB
-                            </Button>
-                          )}
-
-                          {/* Log docs received button */}
-                          {bid.status === 'LCB_Notified' && (
-                            <Button
-                              size="sm"
-                              className="font-semibold shadow-sm bg-warning text-warning-foreground hover:bg-warning/90"
-                              onClick={() => logDocsReceived(activeProject.id, bid.supplierId)}
-                            >
-                              Log Docs Received
-                            </Button>
-                          )}
-
-                          {/* Post-qual Passed / Failed Select */}
-                          {bid.status === 'Under_PostQual' && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Post-Qual Decision:</span>
-                              <Select
-                                onValueChange={(val) =>
-                                  setPostQualResult(activeProject.id, bid.supplierId, val === 'passed')
-                                }
-                              >
-                                <SelectTrigger className="w-[130px] h-8 text-xs bg-white text-default-900 border-default-300">
-                                  <SelectValue placeholder="Select outcome" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="passed">Passed</SelectItem>
-                                  <SelectItem value="failed">Failed</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
-
-                          {/* Recommend Award button */}
-                          {bid.status === 'LCRB' && (
-                            <Button
-                              size="sm"
-                              className="font-bold shadow-md bg-success hover:bg-success/90 text-white animate-pulse"
-                              onClick={handleRecommend}
-                            >
-                              Recommend Award
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* 7. PROCESS WORKFLOW GUIDE */}
-      <Card className="border border-default-200 shadow-sm bg-white overflow-hidden">
-        <CardHeader className="pb-3 border-b border-default-100 bg-default-50/50 py-3">
-          <CardTitle className="text-xs font-bold text-default-900 uppercase tracking-wider">Public Bidding State Workflow Guide</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4 text-xs">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <TooltipProvider>
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Ranked */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="px-2.5 py-1 bg-default-100 rounded text-default-800 font-semibold border text-[11px] cursor-help hover:bg-default-200 transition-colors shadow-sm">
-                      Ranked
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent color="secondary" className="p-3 max-w-[280px] shadow-xl border border-default-200">
-                    <div className="space-y-1">
-                      <p className="font-bold text-default-950">Ranked Status</p>
-                      <p className="text-[11px] text-default-700 leading-normal font-normal">
-                        Bidders are sorted according to the award criterion (LCRB or MEARB). The first-ranked bidder becomes the active LCB candidate, unlocking the initial notification workflow.
-                      </p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-
-                <ChevronRight className="h-3 w-3 text-muted-foreground" />
-
-                {/* LCB Notified */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="px-2.5 py-1 bg-warning/10 rounded text-warning-850 font-semibold border border-warning/20 text-[11px] cursor-help hover:bg-warning/20 transition-colors shadow-sm">
-                      LCB Notified
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent color="secondary" className="p-3 max-w-[280px] shadow-xl border border-default-200">
-                    <div className="space-y-1">
-                      <p className="font-bold text-default-950">LCB Notified Status</p>
-                      <p className="text-[11px] text-default-700 leading-normal font-normal">
-                        The active bidder has been notified of their LCB status. A 5-day SLA countdown timer is started for the bidder to submit their original document checklist.
-                      </p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-
-                <ChevronRight className="h-3 w-3 text-muted-foreground" />
-
-                {/* Docs Received */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="px-2.5 py-1 bg-info/10 rounded text-info-850 font-semibold border border-info/20 text-[11px] cursor-help hover:bg-info/20 transition-colors shadow-sm">
-                      Docs Received
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent color="secondary" className="p-3 max-w-[280px] shadow-xl border border-default-200">
-                    <div className="space-y-1">
-                      <p className="font-bold text-default-950">Documents Received Status</p>
-                      <p className="text-[11px] text-default-700 leading-normal font-normal">
-                        Original documents have been logged. The bidder's SLA timer is stopped, and the BAC Legal Evaluation SLA timer (12 days for RA 9184, 10 days for RA 12009) is initiated for TWG review.
-                      </p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-
-                <ChevronRight className="h-3 w-3 text-muted-foreground" />
-
-                {/* LCRB */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="px-2.5 py-1 bg-success/10 rounded text-success-850 font-semibold border border-success/20 text-[11px] cursor-help hover:bg-success/20 transition-colors shadow-sm">
-                      LCRB
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent color="secondary" className="p-3 max-w-[280px] shadow-xl border border-default-200">
-                    <div className="space-y-1">
-                      <p className="font-bold text-default-950">LCRB Status (Passed)</p>
-                      <p className="text-[11px] text-default-700 leading-normal font-normal">
-                        The bidder has passed all post-qualification requirements and is declared the Lowest Calculated Responsive Bid. Recommending for award generates the official BAC Resolution.
-                      </p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </TooltipProvider>
-            
-            <div className="text-muted-foreground text-left max-w-lg leading-relaxed text-[11px]">
-              <p>
-                <strong>Cascading Rule:</strong> Actions are strictly locked. Lower ranks can only be evaluated if the supplier above them is explicitly marked as <strong>Disqualified</strong>.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        {/* TAB 4: AWARD RECOMMENDATION (LIVE API) */}
+        <TabsContent value="award" className="space-y-4">
+          <AwardRecommendationTab
+            projectId={activeProject.id}
+            projectName={activeProject.projectName}
+          />
+        </TabsContent>
+      </Tabs>
 
       <BacResolutionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        draft={activeProject.bacResolutionDraft}
+        draft={activeProject?.bacResolutionDraft}
       />
     </div>
-  );
+  )
 }

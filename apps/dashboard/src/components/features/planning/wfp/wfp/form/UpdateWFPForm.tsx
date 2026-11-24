@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import ModeCard from '../components/ModeCard'
+import { FundSourceCombobox } from '@/components/features/planning/fund-source/components/FundSourceCombobox'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { getOfficesRequest } from '@/components/features/planning/office/office/handlers/getOfficesRequest'
 import { getFundSourcesRequest } from '@/components/features/planning/fund-source/handlers/getFundSourcesRequest'
@@ -103,16 +104,21 @@ export default function UpdateWFPForm({
     enabled: opcrModeSelected,
   })
 
-  // Fetch fund sources - always enabled
+  // Fetch fund sources (max 2000 items) - always enabled
   const { data: fundSourcesResponse, isLoading: fundSourcesLoading } = useFundSources({
     pathParams: {},
-    queryParams: {},
+    queryParams: { pageSize: 2000 },
   })
 
   // Extract data from responses
   const offices = officesResponse?.data || []
   const opcrs = opcrsResponse?.data || []
-  const fundSources = fundSourcesResponse?.data || []
+  const fundSources = useMemo(() => {
+    const list = fundSourcesResponse?.data || []
+    return [...list].sort((a: any, b: any) =>
+      (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
+    )
+  }, [fundSourcesResponse?.data])
 
   const defaultValues = useMemo(() => {
     const apiData = initialValues || {}
@@ -370,28 +376,20 @@ export default function UpdateWFPForm({
             <Label htmlFor={field.name} className="text-gray-700 font-medium">
               Fund Source
             </Label>
-            <select
-              id={field.name}
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                handleValueChange('fundSourceId', e.target.value)
+            <FundSourceCombobox
+              options={fundSources}
+              value={field.state.value || ''}
+              onValueChange={(val) => {
+                field.handleChange(val)
+                handleValueChange('fundSourceId', val)
               }}
+              placeholder={fundSourcesLoading ? 'Loading fund sources...' : 'Select a Fund Source'}
+              searchPlaceholder="Search by UACS code, fund name, or authorization..."
+              emptyMessage="No Fund Source found matching your search."
               disabled={fundSourcesLoading}
-              className={`w-full rounded-md border px-3 py-2 text-sm bg-white ${
-                field.state.meta.errors.length > 0 ? 'border-red-500' : 'border-gray-300'
-              } ${fundSourcesLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-            >
-              <option value="">
-                {fundSourcesLoading ? 'Loading fund sources...' : 'Select a Fund Source'}
-              </option>
-              {fundSources && fundSources.length > 0 && fundSources.map((fundSource) => (
-                <option key={fundSource.id} value={fundSource.id}>
-                  {fundSource.name} ({fundSource.code})
-                </option>
-              ))}
-            </select>
+              isLoading={fundSourcesLoading}
+              className="w-full text-sm"
+            />
             {field.state.meta.errors.length > 0 && (
               <p className="text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
             )}

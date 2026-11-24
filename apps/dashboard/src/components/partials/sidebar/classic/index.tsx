@@ -7,15 +7,15 @@ import SingleMenuItem from "./single-menu-item";
 import SubMenuHandler from "./sub-menu-handler";
 import { cn, getDynamicPath, isLocationMatch } from "@/lib/utils";
 import { useSidebar, useThemeStore } from "@/store";
-import { menusConfig } from "@/config/menus";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useFilteredNavMenus } from "@/hooks/useFilteredNavMenus";
 
 const ClassicSidebar = () => {
   const { sidebarBg } = useSidebar();
   const [activeSubmenu, setActiveSubmenu] = useState<number | null>(null);
   const [activeMultiMenu, setMultiMenu] = useState<number | null>(null);
-  const menus = menusConfig?.sidebarNav?.classic || [];
+  const { classic: menus } = useFilteredNavMenus();
   const { collapsed, setCollapsed } = useSidebar();
   const { isRtl } = useThemeStore();
   const [hovered, setHovered] = useState<boolean>(false);

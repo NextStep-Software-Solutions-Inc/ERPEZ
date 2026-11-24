@@ -1,7 +1,6 @@
-﻿import { useEffect } from 'react'
+import { useEffect } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
-import type { ApproveBacResolutionPayload } from '../types'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import FieldInfo from '@/components/FieldInfo'
@@ -19,11 +18,12 @@ export type ApproveBacResolutionFormValues = z.infer<
 
 interface ApproveBacResolutionFormProps {
   bacResolutionId: string
-  onSubmit: (values: ApproveBacResolutionPayload) => Promise<void> | void
+  onSubmit: (values: ApproveBacResolutionFormValues) => Promise<void> | void
   isLoading?: boolean
   onDirtyChange?: (isDirty: boolean) => void
   formId?: string
 }
+
 
 export function ApproveBacResolutionForm({
   bacResolutionId,
@@ -58,12 +58,12 @@ export function ApproveBacResolutionForm({
       }
 
       await onSubmit({
-        bacResolutionId,
         signedDocument: value.signedDocument,
       })
       onDirtyChange?.(false)
     },
   })
+
 
   useEffect(() => {
     onDirtyChange?.(form.state.isDirty)

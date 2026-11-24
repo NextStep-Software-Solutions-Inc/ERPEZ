@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -14,12 +14,14 @@ type ReturnPurchaseOrderDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (reason: string) => void
+  isSubmitting?: boolean
 }
 
 export function ReturnPurchaseOrderDialog({
   open,
   onOpenChange,
   onSubmit,
+  isSubmitting = false,
 }: ReturnPurchaseOrderDialogProps) {
   const [reason, setReason] = useState('')
   const isValid = reason.trim().length > 0
@@ -42,21 +44,20 @@ export function ReturnPurchaseOrderDialog({
             variant="outline"
             color="secondary"
             onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
           >
             Cancel
           </Button>
           <Button
             color="warning"
-            disabled={!isValid}
+            disabled={!isValid || isSubmitting}
             onClick={() => {
               if (isValid) {
                 onSubmit(reason.trim())
-                setReason('')
-                onOpenChange(false)
               }
             }}
           >
-            Return PO
+            {isSubmitting ? 'Returning...' : 'Return PO'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -6,3 +6,5 @@
 export { usePSDBMItems } from './usePSDBMItems'
 export { usePSDBMCategories } from './usePSDBMCategories'
 export { usePSDBMDepots } from './usePSDBMDepots'
+export { useTriggerPSDBMSync } from './useTriggerPSDBMSync'
+

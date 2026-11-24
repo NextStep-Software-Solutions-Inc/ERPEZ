@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, type UseMutationResult, type UseMutationOptions } from '@tanstack/react-query'
 import type {
   PositionCategorySetting,
   PlantillaTypeSetting,
@@ -113,14 +113,18 @@ function makeMutationWithRefresh(baseHook: () => UseMutationResult<any, unknown,
     const mutation = baseHook()
 
     const invalidateAll = () => {
-      qc.invalidateQueries({ queryKey: [listQueryKey] })
+      qc.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === listQueryKey ||
+          (typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith(listQueryKey)),
+      })
       qc.invalidateQueries({ queryKey: ['allSettings'] })
     }
 
     const wrapOptions = (opts?: UseMutationOptions<any, unknown, any, unknown>) => ({
       ...opts,
       onSuccess: (data: any, variables: any, context: any) => {
-        opts?.onSuccess?.(...args)
+        opts?.onSuccess?.(data, variables, context)
         invalidateAll()
       },
     })

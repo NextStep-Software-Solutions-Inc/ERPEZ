@@ -55,12 +55,13 @@ export function PpmpRelationshipChain({ ppmp }: PpmpRelationshipChainProps) {
               variant="ghost"
               size="sm"
               className="h-8 gap-1.5 px-2 text-xs"
-              onClick={() => {
-                const route = parent.isMasterOffice
-                  ? '/v2/ppmp/office-level/$ppmpId'
-                  : '/v2/ppmp/department-level/$ppmpId'
-                navigate({ to: route, params: { ppmpId: parent.id } })
-              }}
+              onClick={() =>
+                navigate({
+                  to: '/v2/ppmp/$ppmpId',
+                  params: { ppmpId: parent.id },
+                  search: {},
+                })
+              }
             >
               Parent: {parent.documentName}
             </Button>
@@ -82,8 +83,9 @@ export function PpmpRelationshipChain({ ppmp }: PpmpRelationshipChainProps) {
               className="h-8 gap-1.5 px-2 text-xs"
               onClick={() =>
                 navigate({
-                  to: '/v2/ppmp/office-level/$ppmpId',
+                  to: '/v2/ppmp/$ppmpId',
                   params: { ppmpId: masterParent.id },
+                  search: {},
                 })
               }
             >
@@ -101,12 +103,13 @@ export function PpmpRelationshipChain({ ppmp }: PpmpRelationshipChainProps) {
               variant="outline"
               size="sm"
               className="h-8 gap-1.5 px-2 text-xs"
-              onClick={() => {
-                const route = child.isMasterOffice
-                  ? '/v2/ppmp/office-level/$ppmpId'
-                  : '/v2/ppmp/department-level/$ppmpId'
-                navigate({ to: route, params: { ppmpId: child.id } })
-              }}
+              onClick={() =>
+                navigate({
+                  to: '/v2/ppmp/$ppmpId',
+                  params: { ppmpId: child.id },
+                  search: {},
+                })
+              }
             >
               {child.documentName}
             </Button>

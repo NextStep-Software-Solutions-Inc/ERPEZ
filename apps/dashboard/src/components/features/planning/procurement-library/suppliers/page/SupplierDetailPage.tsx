@@ -1,9 +1,10 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
   Building,
   Check,
+  ExternalLink,
   Pencil,
   FileText,
   MapPin,
@@ -27,7 +28,11 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { SupplierRegistryForm } from '../dialog/SupplierRegistryForm'
-import { useSupplierById, useUpdateSupplierStatus } from '../useSuppliers'
+import {
+  useSupplierById,
+  useUpdateSupplierStatus,
+  useVerifySupplierRequirements,
+} from '../useSuppliers'
 import type {
   SupplierDetail,
   SupplierRequirementInfo,
@@ -150,6 +155,7 @@ export function SupplierDetailPage({
 }: SupplierDetailPageProps) {
   const queryClient = useQueryClient()
   const updateStatusMutation = useUpdateSupplierStatus()
+  const verifyRequirementsMutation = useVerifySupplierRequirements()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false)
   const [declineStatusNote, setDeclineStatusNote] = useState('')
@@ -276,6 +282,41 @@ export function SupplierDetailPage({
             error instanceof Error
               ? error.message
               : 'Failed to update supplier status'
+          toast.error(message)
+        },
+      },
+    )
+  }
+
+  const handleToggleRequirementVerification = (
+    requirement: SupplierRequirementInfo,
+  ) => {
+    if (!targetSupplierId) return
+
+    verifyRequirementsMutation.mutate(
+      {
+        pathParams: { id: targetSupplierId },
+        payload: {
+          requirements: [
+            {
+              supplierRequirementId: requirement.supplierRequirementId,
+              isVerified: !requirement.isVerified,
+            },
+          ],
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            `Requirement marked as ${!requirement.isVerified ? 'verified' : 'pending'}`,
+          )
+          invalidateSuppliers()
+        },
+        onError: (error: unknown) => {
+          const message =
+            error instanceof Error
+              ? error.message
+              : 'Failed to update requirement verification status'
           toast.error(message)
         },
       },
@@ -527,24 +568,57 @@ export function SupplierDetailPage({
                             key={requirement.supplierRequirementId}
                             className="flex items-center justify-between rounded-lg border p-3"
                           >
-                            <div>
+                            <div className="space-y-1">
                               <p className="font-medium">
                                 {requirement.requirementName ||
                                   'Unnamed requirement'}
                               </p>
-                              <p className="text-sm text-muted-foreground">
-                                Uploaded {formatDateTime(requirement.createdAt)}
-                              </p>
+                              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                <span>
+                                  Uploaded {formatDateTime(requirement.createdAt)}
+                                </span>
+                                {requirement.url && (
+                                  <a
+                                    href={requirement.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                                  >
+                                    View Document
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                )}
+                              </div>
                             </div>
-                            <Badge
-                              className={
-                                requirement.isVerified
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }
-                            >
-                              {requirement.isVerified ? 'Verified' : 'Pending'}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                className={
+                                  requirement.isVerified
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                                }
+                              >
+                                {requirement.isVerified ? 'Verified' : 'Pending'}
+                              </Badge>
+                              {canUseApiActions && isReviewable && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={
+                                    verifyRequirementsMutation.isPending
+                                  }
+                                  onClick={() =>
+                                    handleToggleRequirementVerification(
+                                      requirement,
+                                    )
+                                  }
+                                >
+                                  {requirement.isVerified
+                                    ? 'Mark Pending'
+                                    : 'Verify'}
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         ),
                       )}

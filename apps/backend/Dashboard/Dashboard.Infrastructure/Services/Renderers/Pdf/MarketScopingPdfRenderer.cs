@@ -1,0 +1,200 @@
+using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Features.Planning.Document.Dtos;
+using ERPEZ.Domain.Enums;
+using ERPEZ.Infrastructure.Services.DocumentGeneration;
+using ERPEZ.Infrastructure.Services.Renderers.Pdf.Base;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+
+namespace ERPEZ.Infrastructure.Services.Renderers.Pdf;
+
+internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRenderer<MarketScopingDataDto>
+{
+    public DocumentType DocumentType => DocumentType.MarketScoping;
+    public ExportFormat Format => ExportFormat.Pdf;
+
+    public Task<byte[]> RenderAsync(MarketScopingDataDto request, CancellationToken cancellationToken = default)
+    {
+        var pdf = Document.Create(doc =>
+        {
+            doc.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.Margin(1.5f, Unit.Centimetre);
+                page.DefaultTextStyle(t => t.FontSize(10).FontFamily("Arial"));
+
+                page.Header().Column(col =>
+                {
+                    RenderAgencyHeader(
+                        col,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: null,
+                        documentTitle: "MARKET SCOPING CHECKLIST",
+                        showUnderline: true,
+                        titleFontSize: 12f,
+                        alignment: request.LetterheadAlignment);
+                });
+
+                page.Content().Column(col =>
+                {
+                    // 1. AGENCY INFORMATION
+                    col.Item().PaddingTop(10).Text("1. AGENCY INFORMATION").Bold();
+                    col.Item().PaddingTop(5).Table(table =>
+                    {
+                        table.ColumnsDefinition(c =>
+                        {
+                            c.RelativeColumn(1);
+                            c.RelativeColumn(2);
+                        });
+
+                        DrawRow(table, "Name of Procuring Entity", CleanEntityName(request.ProcuringEntity));
+                        DrawRow(table, "End-User/Implementing Unit", request.ImplementingUnit);
+                        DrawRow(table, "Name & Designation of Representative", request.RepresentativeNameAndDesignation);
+                    });
+
+                    // 2. PROJECT OVERVIEW
+                    col.Item().PaddingTop(15).Text("2. PROJECT OVERVIEW").Bold();
+                    col.Item().PaddingTop(5).Table(table =>
+                    {
+                        table.ColumnsDefinition(c =>
+                        {
+                            c.RelativeColumn(1);
+                            c.RelativeColumn(2);
+                        });
+
+                        DrawRow(table, "Project Name", request.ProjectName);
+                        DrawRow(table, "Estimated Budget", $"Php {request.EstimatedBudget:N2}");
+                        DrawRow(table, "Period of Market Scoping\n[From (mm/yyyy) To (mm/yyyy)]", 
+                            $"{request.PeriodFrom:MM/yyyy} - {request.PeriodTo:MM/yyyy}");
+                        DrawRow(table, "Expected Date of Delivery (mm/yyyy)", request.ExpectedDeliveryDate.ToString("MM/yyyy"));
+                    });
+
+                    // 3. MARKET SCOPING ACTIVITY/IES CONDUCTED
+                    col.Item().PaddingTop(15).Text("3. MARKET SCOPING ACTIVITY/IES CONDUCTED (Check all that apply)").Bold();
+                    col.Item().PaddingTop(5).Text("This confirms that market scoping activities were conducted in accordance with Section 10 of Republic Act No. 12009 and its Implementing Rules and Regulations (IRR), and considered in the Project Procurement Management Plan, consistent with the Principle of Proportionality.");
+                    
+                    col.Item().PaddingTop(5).Table(table =>
+                    {
+                        table.ColumnsDefinition(c =>
+                        {
+                            c.ConstantColumn(50);
+                            c.RelativeColumn(2);
+                            c.RelativeColumn(2);
+                        });
+
+                        const string checkmarkSvg = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"black\" stroke-width=\"4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"></polyline></svg>";
+
+                        table.Header(h =>
+                        {
+                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle().Text("Check").Bold();
+                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle().Text("Activity/ies Conducted").Bold();
+                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle().Text("Documentation\n(as may be applicable)").Bold();
+                        });
+
+                        foreach (var act in request.Activities)
+                        {
+                            table.Cell().Element(TableDataCell).AlignCenter().AlignMiddle().Width(12).Height(12).Border(0.5f).BorderColor(Colors.Black).Padding(1.5f).Element(c =>
+                            {
+                                if (act.IsChecked)
+                                {
+                                    c.Svg(checkmarkSvg);
+                                }
+                            });
+                            table.Cell().Element(TableDataCell).Text(act.Description);
+                            table.Cell().Element(TableDataCell).Text(act.Documentation);
+                        }
+                    });
+
+                    col.Item().PaddingTop(5).Text("Notes:\n  i. The market scoping activities shall be identified and undertaken at the option of the End-User or Implementing Unit based on its needs and objectives.\n  ii. The list of supporting documents in the Documentation column is not exclusive and may include other documents that may be gathered by the End-User or Implementing Unit pertinent to the activity/ies conducted.").FontSize(9).Italic();
+
+                    // 4. MARKET SCOPING RESULTS
+                    col.Item().PaddingTop(15).Text("4. MARKET SCOPING RESULTS").Bold();
+                    col.Item().PaddingTop(5).Text("Indicate recommendations in the column provided based on the results of the market scoping activities undertaken. These recommendations shall be considered in the development of a comprehensive and realistic PPMP, taking into account the parameters outlined under Section 10.4 of the IRR of RA 12009, as may be applicable.");
+                    
+                    col.Item().PaddingTop(5).Table(table =>
+                    {
+                        table.ColumnsDefinition(c =>
+                        {
+                            c.RelativeColumn(2);
+                            c.RelativeColumn(1);
+                            c.RelativeColumn(2);
+                        });
+
+                        table.Header(h =>
+                        {
+                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle().Text("Parameters").Bold();
+                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle().Text("Considered?\n(Yes/No/ Not\nApplicable)").Bold();
+                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle().Text("Recommendations\nbased on the Market Scoping\n(Attach additional documents\nif necessary)").Bold();
+                        });
+
+                        var letters = new[] { "a", "b", "c", "d", "e", "f", "g", "h" };
+                        var i = 0;
+                        foreach (var param in request.Parameters)
+                        {
+                            table.Cell().Element(TableDataCell).Text(t =>
+                            {
+                                t.Span($"{letters[i]}. {param.ParameterName}").Bold();
+                                t.Span($"\n\n[{param.GuidedQuestion}]").FontSize(8.5f);
+                            });
+                            table.Cell().Element(TableDataCell).AlignCenter().AlignMiddle().Text(param.Considered);
+                            table.Cell().Element(TableDataCell).Text(param.Recommendations);
+                            i++;
+                        }
+                    });
+
+                    // Signatories
+                    col.Item().PaddingTop(30).Row(row =>
+                    {
+                        SignatoryBlock(row, "Prepared by:\nPersonnel-in-Charge, End-User or\nImplementing Unit", request.PreparedBy);
+                        row.ConstantItem(40);
+                        SignatoryBlock(row, "Approved by:\nHead, End-User or Implementing Unit", request.ApprovedBy);
+                    });
+                });
+
+                page.Footer().Row(row =>
+                {
+                    row.RelativeItem().Text(t =>
+                    {
+                        t.Span("Page ");
+                        t.CurrentPageNumber();
+                        t.Span(" of ");
+                        t.TotalPages();
+                        t.EmptyLine();
+                        t.Span("Market Scoping Checklist").Italic();
+                    });
+                });
+            });
+        }).GeneratePdf();
+
+        return Task.FromResult(pdf);
+    }
+
+    private static void DrawRow(TableDescriptor table, string label, string value)
+    {
+        table.Cell().Element(TableDataCell).Text(label);
+        table.Cell().Element(TableDataCell).Text(value);
+    }
+
+    private static void SignatoryBlock(RowDescriptor row, string headerLabel, SignatoryDto sig)
+    {
+        row.RelativeItem().Column(sc =>
+        {
+            sc.Item().Text(headerLabel).FontSize(10);
+            sc.Item().PaddingTop(30).BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2)
+                .Text(sig.PrintedName).Bold();
+            sc.Item().PaddingTop(2).Text("Signature over Printed Name").FontSize(8).Italic();
+            sc.Item().Text(sig.Position);
+            if (sig.Date.HasValue)
+            {
+                sc.Item().Text(sig.Date.Value.ToString("MM/dd/yyyy"));
+            }
+            else
+            {
+                sc.Item().Text("Date");
+            }
+        });
+    }
+}

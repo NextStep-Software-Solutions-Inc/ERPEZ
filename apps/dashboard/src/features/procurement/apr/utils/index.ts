@@ -69,3 +69,10 @@ export type {
   SubmissionValidationError,
   SubmissionValidationResult,
 } from './validateAPRBeforeSubmission'
+
+export {
+  normalizeAPRStatus,
+  matchesAPRStatus,
+} from './normalizeAPRStatus'
+
+export { isCSEItem } from './isCSEItem'

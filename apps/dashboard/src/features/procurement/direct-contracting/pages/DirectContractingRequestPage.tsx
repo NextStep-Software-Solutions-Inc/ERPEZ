@@ -1,326 +1,480 @@
-import { useState, useEffect } from 'react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
-import { Checkbox } from '@/components/ui/checkbox'
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { MoreVertical, Eye, Trash2, ShoppingCart, Plus, Search, Send, CheckCircle2, Building } from 'lucide-react'
-import { useDirectContractingStore } from '../store/directContractingStore'
-import { CreateDirectContractingModal } from '../components/CreateDirectContractingModal'
-import { UpdateDirectContractingModal } from '../components/UpdateDirectContractingModal'
-import { ViewProposalDetailsModal } from '../components/ViewProposalDetailsModal'
-import { DirectContractingDetailsPage } from '../components/DirectContractingDetailsPage'
-import { useToast } from '@/components/ui/use-toast'
-import { useChangeDirectContractingStatus } from '../handlers'
-import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
-import type { DirectContracting } from '../store/directContractingStore'
-import { cn } from '@/lib/utils'
+import * as React from 'react'
+import { Building, Plus, Layers, Clock, Send, CheckCircle2 } from 'lucide-react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 
-const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  draft: { label: 'DRAFT', className: 'bg-gray-100 text-gray-700 border-gray-300' },
-  submitted: { label: 'SUBMITTED', className: 'bg-blue-50 text-blue-800 border-blue-300' },
-  'for-review': { label: 'FOR REVIEW', className: 'bg-amber-100 text-amber-700 border-amber-300' },
-  'submitted-to-supplier': { label: 'SUBMITTED TO SUPPLIER', className: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
-}
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+import { extractErrorMessage } from '@/services/utils/messages'
+import type { AxiosError } from 'erpez-shared-lib'
+import {
+  useChangeDirectContractingStatus,
+  useDeleteDirectContracting,
+  useDirectContractingSummary,
+} from '../handlers'
+
+import { CreateDirectContractingDialog } from '../components/CreateDirectContractingDialog'
+import { UpdateDirectContractingDialog } from '../components/UpdateDirectContractingDialog'
+import { ViewProposalDetailsModal } from '../components/ViewProposalDetailsModal'
+import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
+import { createQueryHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
+import { getDirectContractingsRequest } from '../handlers/getDirectContractingsRequest'
+
+import { DirectContractingTable, type TableActionHandlers } from '../tables'
+import { DirectContractingStatusEnum, type DirectContracting } from '../types'
+
+const useDirectContractings = createQueryHookFromTemplate(
+  getDirectContractingsRequest,
+)
 
 export function DirectContractingRequestPage() {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null)
-  const [editEntryId, setEditEntryId] = useState<string | null>(null)
-  
-  const { entries, removeEntry, fetchEntries } = useDirectContractingStore()
+  const queryClient = useQueryClient()
+  const statusMutation = useChangeDirectContractingStatus()
+  const deleteMutation = useDeleteDirectContracting()
+  const [isDeleting, setIsDeleting] = React.useState(false)
+  const [confirmConvertToDraftId, setConfirmConvertToDraftId] = React.useState<string | null>(null)
 
-  useEffect(() => {
-    fetchEntries()
-  }, [fetchEntries])
-
-  const { toast } = useToast()
-  const [viewOpen, setViewOpen] = useState(false)
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
-  const [confirmSubmitId, setConfirmSubmitId] = useState<string | null>(null)
-  
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [page, setPage] = useState(1)
-  const pageSize = 8
-
-  const selectedEntry = entries.find(e => e.id === selectedEntryId) || null
-
-  const filtered = entries.filter((e) => {
-    if (statusFilter !== 'all' && e.status !== statusFilter) return false
-    if (!search) return true
-    const q = search.toLowerCase()
-    return (
-      e.dcNumber.toLowerCase().includes(q) ||
-      e.dcName.toLowerCase().includes(q) ||
-      e.prNumber.toLowerCase().includes(q) ||
-      e.office.toLowerCase().includes(q) ||
-      e.supplierName?.toLowerCase().includes(q)
-    )
+  // URL-based Search Parameters & Navigation
+  const searchParams = useSearch({
+    from: '/v2/(procurement)/direct-contracting-request/',
+  })
+  const navigate = useNavigate({
+    from: '/v2/direct-contracting-request',
   })
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
-  const pagedItems = filtered.slice((page - 1) * pageSize, page * pageSize)
+  const { pageNumber, pageSize, status, searchQuery } = searchParams
 
-  // KPI Counts
-  const counts = {
-    total: entries.length,
-    draft: entries.filter(e => e.status === 'draft').length,
-    submitted: entries.filter(e => e.status === 'submitted').length,
-  }
+  const updateSearch = React.useCallback(
+    (updates: Partial<typeof searchParams>) => {
+      navigate({
+        search: (prev) => {
+          const next = {
+            ...prev,
+            ...updates,
+          }
+          if (!next.searchQuery || !next.searchQuery.trim()) {
+            next.searchQuery = undefined
+            delete next.searchQuery
+          }
+          return next
+        },
+        replace: true,
+      })
+    },
+    [navigate],
+  )
 
-  const handleRemove = () => {
-    if (confirmDeleteId) {
-      removeEntry(confirmDeleteId)
-      toast({ title: 'Removed', description: 'Request deleted.' })
-      setConfirmDeleteId(null)
+  // Build Sieve filter string only when filters are active
+  const sieveFilters = React.useMemo(() => {
+    const filterParts: string[] = []
+
+    if (status && status !== 'all') {
+      const statusMap: Record<string, string> = {
+        draft: 'DRAFT',
+        'for-review': 'FOR_REVIEW',
+        'submitted-to-supplier': 'SUBMITTED_TO_SUPPLIER',
+        approved: 'APPROVED',
+        rejected: 'RETURNED',
+        returned: 'RETURNED',
+      }
+      const backendStatus =
+        statusMap[status.toLowerCase()] || status.toUpperCase()
+      filterParts.push(`status==${backendStatus}`)
     }
-  }
 
-  const statusMutation = useChangeDirectContractingStatus()
+    if (searchQuery && searchQuery.trim()) {
+      filterParts.push(`name@=*${searchQuery.trim()}`)
+    }
 
-  const handleSendRequest = async (id: string) => {
+    return filterParts.length > 0 ? filterParts.join(',') : undefined
+  }, [status, searchQuery])
+
+  // API Query listening to URL params
+  const { data: directContractings, isLoading } = useDirectContractings({
+    pathParams: {},
+    queryParams: {
+      pageSize: pageSize ?? 10,
+      pageNumber: pageNumber ?? 1,
+      ...(sieveFilters ? { filters: sieveFilters } : {}),
+    },
+  })
+
+  // Summary Metrics Query
+  const { data: summary, isLoading: isSummaryLoading } =
+    useDirectContractingSummary({})
+
+  // Modals & Action States
+  const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false)
+  const [editEntryId, setEditEntryId] = React.useState<string | null>(null)
+  const [viewEntry, setViewEntry] = React.useState<DirectContracting | null>(
+    null,
+  )
+  const [viewOpen, setViewOpen] = React.useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(
+    null,
+  )
+  const [confirmSubmitId, setConfirmSubmitId] = React.useState<string | null>(
+    null,
+  )
+  const [bulkDeleteRows, setBulkDeleteRows] = React.useState<
+    DirectContracting[] | null
+  >(null)
+
+  // Row Action Handlers
+  const handlers: TableActionHandlers = React.useMemo(
+    () => ({
+      onCopyDCNumber: (dcNumber: string) => {
+        navigator.clipboard.writeText(dcNumber)
+        toast.success(`Reference number ${dcNumber} copied successfully.`)
+      },
+      onViewProposal: (entry: DirectContracting) => {
+        setViewEntry(entry)
+        setViewOpen(true)
+      },
+      onEdit: (id: string) => {
+        setEditEntryId(id)
+      },
+      onPromptSubmit: (id: string) => {
+        setConfirmSubmitId(id)
+      },
+      onPromptConvertToDraft: (id: string) => {
+        setConfirmConvertToDraftId(id)
+      },
+      onPromptDelete: (id: string) => {
+        setConfirmDeleteId(id)
+      },
+    }),
+    [toast],
+  )
+
+  // Single submit execution
+  const handleExecuteSubmit = async () => {
+    if (!confirmSubmitId) return
+    const idToSubmit = confirmSubmitId
     try {
-      await statusMutation.mutateAsync({
-        pathParams: { id },
-        payload: { status: "FOR_REVIEW" }
-      })
-      toast({ title: 'Request Submitted', description: 'Direct Contracting request has been submitted for review.' })
-      await fetchEntries()
-    } catch (err) {
-      console.error(err)
-      toast({
-        title: 'Error',
-        description: 'Failed to submit request.'
-      })
+      await toast.promise(
+        statusMutation.mutateAsync(
+          {
+            pathParams: { id: idToSubmit },
+            payload: { status: DirectContractingStatusEnum.FOR_REVIEW },
+          },
+          {
+            onSuccess: () => {
+              void queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  query.queryKey[0].includes('direct-contracting'),
+              })
+            },
+          },
+        ),
+        {
+          loading: 'Submitting request for review...',
+          success: 'Direct Contracting request submitted for review successfully.',
+          error: (err) => extractErrorMessage(err as AxiosError) || 'Failed to submit request for review.',
+        },
+      )
+      setConfirmSubmitId(null)
+    } catch {
+      // toast.promise handles presentation
     }
   }
 
-  const handleOpenView = (entry: DirectContracting) => {
-    setSelectedEntryId(entry.id)
+  // Single convert to draft execution
+  const handleExecuteConvertToDraft = async () => {
+    if (!confirmConvertToDraftId) return
+    const idToConvert = confirmConvertToDraftId
+    try {
+      await toast.promise(
+        statusMutation.mutateAsync(
+          {
+            pathParams: { id: idToConvert },
+            payload: { status: DirectContractingStatusEnum.DRAFT },
+          },
+          {
+            onSuccess: () => {
+              void queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  query.queryKey[0].includes('direct-contracting'),
+              })
+            },
+          },
+        ),
+        {
+          loading: 'Converting request to draft...',
+          success: 'Direct Contracting request converted back to draft successfully.',
+          error: (err) => extractErrorMessage(err as AxiosError) || 'Failed to convert request to draft.',
+        },
+      )
+      setConfirmConvertToDraftId(null)
+    } catch {
+      // toast.promise handles presentation
+    }
   }
 
-  if (selectedEntry) {
-    return (
-      <DirectContractingDetailsPage 
-        entry={selectedEntry} 
-        onBack={() => setSelectedEntryId(null)} 
-      />
-    )
+  // Single delete execution
+  const handleExecuteDelete = async () => {
+    if (!confirmDeleteId) return
+    const idToDelete = confirmDeleteId
+    try {
+      setIsDeleting(true)
+      await toast.promise(
+        deleteMutation.mutateAsync(
+          {
+            pathParams: { id: idToDelete },
+          },
+          {
+            onSuccess: () => {
+              void queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  query.queryKey[0].includes('direct-contracting'),
+              })
+            },
+          },
+        ),
+      )
+
+      setConfirmDeleteId(null)
+    } catch {
+      // toast.promise handles presentation
+    } finally {
+      setIsDeleting(false)
+    }
   }
+
+  // Bulk delete execution
+  const handleExecuteBulkDelete = async () => {
+    if (!bulkDeleteRows || bulkDeleteRows.length === 0) return
+    const rowsToDelete = [...bulkDeleteRows]
+    try {
+      setIsDeleting(true)
+      await toast.promise(
+        Promise.all(
+          rowsToDelete.map((row) =>
+            deleteMutation.mutateAsync({
+              pathParams: { id: row.id },
+            }),
+          ),
+        ),
+        {
+          loading: `Deleting ${rowsToDelete.length} Direct Contracting request(s)...`,
+          success: `${rowsToDelete.length} Direct Contracting request(s) deleted successfully.`,
+          error: (err) => extractErrorMessage(err as AxiosError),
+        },
+      )
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].includes('direct-contracting'),
+      })
+      setBulkDeleteRows(null)
+    } catch {
+      // toast.promise handles presentation
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  // CSV Export
+  const handleExportCSV = () => {}
 
   return (
-    <div className="space-y-6 pb-10">
-      <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+    <div className="space-y-6 pb-12">
+      {/* Header Banner */}
+      <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-primary/20 shadow-xs">
         <CardHeader>
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="space-y-1">
-              <CardTitle className="text-3xl">Direct Contracting</CardTitle>
-              <CardDescription className="text-base">
-                Single-source procurement for proprietary items. Strictly requires Proof of Exclusivity.
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-3xl font-bold tracking-tight">
+                  Direct Contracting
+                </CardTitle>
+              </div>
+              <CardDescription className="text-base text-muted-foreground">
+                Single-source procurement for proprietary items under RA 12009
+                Rule XVI. Strictly requires Proof of Exclusivity & Verified
+                PhilGEPS Certification.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="h-fit px-3 py-1 font-semibold">
-                <Building className="h-3.5 w-3.5 mr-1.5" /> RA 12009 / Rule XVI
+              <Badge
+                variant="outline"
+                className="h-fit px-3 py-1 font-semibold border-default-300"
+              >
+                <Building className="h-3.5 w-3.5 mr-1.5 text-primary" /> RA
+                12009 / Rule XVI
               </Badge>
+              <Button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="gap-1.5 shadow-sm"
+              >
+                <Plus className="h-4 w-4" /> New Direct Contracting
+              </Button>
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Direct Contracting Dashboard</CardTitle>
-              <CardDescription>List of Direct Contracting Requests</CardDescription>
+      {/* Interactive KPI Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Requests */}
+        <Card
+          onClick={() => updateSearch({ status: 'all', pageNumber: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200 hover:shadow-md border',
+            !status || status === 'all'
+              ? 'ring-2 ring-primary/40 border-primary/40 bg-primary/[0.03]'
+              : 'hover:border-primary/30',
+          )}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Total Requests
+              </p>
+              <p className="text-2xl font-bold text-foreground">
+                {isSummaryLoading ? '...' : (summary?.total ?? 0)}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                All DC procurement requests
+              </p>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Total</p>
-                  <p className="text-3xl font-bold text-blue-900">{counts.total}</p>
-                </div>
-                <div className="h-12 w-12 bg-blue-200 rounded-full flex items-center justify-center">
-                  <ShoppingCart className="h-6 w-6 text-blue-700" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200 shadow-sm">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Draft</p>
-                  <p className="text-3xl font-bold text-gray-800">{counts.draft}</p>
-                </div>
-                <div className="h-12 w-12 bg-gray-200 rounded-full flex items-center justify-center">
-                  <Send className="h-6 w-6 text-gray-600" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 shadow-sm">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Submitted</p>
-                  <p className="text-3xl font-bold text-amber-900">{counts.submitted}</p>
-                </div>
-                <div className="h-12 w-12 bg-amber-200 rounded-full flex items-center justify-center">
-                  <CheckCircle2 className="h-6 w-6 text-amber-700" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                placeholder="Search Direct Contracting number, PR#, Supplier..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full border rounded-md pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
+            <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+              <Layers className="h-5 w-5" />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48" variant="bordered" radius="md">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                {Object.entries(STATUS_CONFIG).map(([val, cfg]) => (
-                  <SelectItem key={val} value={val}>{cfg.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2 ml-auto">
-              <Plus className="h-4 w-4" /> Create Request
-            </Button>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12"><Checkbox /></TableHead>
-                  <TableHead>Direct Contracting Name</TableHead>
-                  <TableHead>Direct Contracting number</TableHead>
-                  <TableHead>PR / Resolution</TableHead>
-                  <TableHead>Exclusive Supplier</TableHead>
-                  <TableHead>ABC</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-10"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pagedItems.map((entry) => {
-                  const cfg = STATUS_CONFIG[entry.status] || STATUS_CONFIG.draft
-                  return (
-                    <TableRow key={entry.id} className="hover:bg-muted/40">
-                      <TableCell onClick={(e) => e.stopPropagation()}><Checkbox /></TableCell>
-                      <TableCell className="font-semibold">{entry.dcName}</TableCell>
-                      <TableCell className="font-semibold text-primary">{entry.dcNumber}</TableCell>
-                      <TableCell>
-                        <div className="text-sm font-medium">{entry.prNumber}</div>
-                        <div className="text-xs text-muted-foreground">{entry.bacResolutionNumber}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm font-semibold">{entry.supplierName || 'Not Assigned'}</div>
-                        <div className="text-xs text-muted-foreground">{entry.office}</div>
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">₱{entry.totalABC.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn("rounded-full px-3 py-0.5 text-[10px] font-bold", cfg.className)}>
-                          {cfg.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="gap-2" onClick={() => handleOpenView(entry)}>
-                              <Eye className="h-4 w-4" /> View Details
-                            </DropdownMenuItem>
-                            
-                            {entry.status === 'draft' && (
-                              <DropdownMenuItem 
-                                className="gap-2 text-blue-600 font-semibold"
-                                onClick={() => setConfirmSubmitId(entry.id)}
-                              >
-                                <Send className="h-4 w-4" /> Submit
-                              </DropdownMenuItem>
-                            )}
-
-                            <DropdownMenuItem 
-                              className="gap-2 text-destructive" 
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setConfirmDeleteId(entry.id)
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-muted-foreground">
-              Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, filtered.length)} of {filtered.length} entries
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === 1}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                Previous
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                  <Button
-                    key={p}
-                    variant={page === p ? 'default' : 'outline'}
-                    size="sm"
-                    className="w-8"
-                    onClick={() => setPage(p)}
-                  >
-                    {p}
-                  </Button>
-                ))}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next
-              </Button>
+        {/* Drafts */}
+        <Card
+          onClick={() => updateSearch({ status: 'draft', pageNumber: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200 hover:shadow-md border',
+            status === 'draft'
+              ? 'ring-2 ring-slate-400/50 border-slate-400 bg-slate-500/[0.04]'
+              : 'hover:border-slate-300',
+          )}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Drafts
+              </p>
+              <p className="text-2xl font-bold text-slate-700 dark:text-slate-300">
+                {isSummaryLoading ? '...' : (summary?.draft ?? 0)}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Editable and unsent
+              </p>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="h-11 w-11 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+              <Clock className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
 
-      <CreateDirectContractingModal open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen} />
+        {/* In Review / Active */}
+        <Card
+          onClick={() => updateSearch({ status: 'for-review', pageNumber: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200 hover:shadow-md border',
+            status === 'for-review' || status === 'submitted-to-supplier'
+              ? 'ring-2 ring-amber-500/50 border-amber-500 bg-amber-500/[0.04]'
+              : 'hover:border-amber-400/40',
+          )}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+                In Review / Active
+              </p>
+              <p className="text-2xl font-bold text-amber-800 dark:text-amber-300">
+                {isSummaryLoading
+                  ? '...'
+                  : (summary?.forReview ?? 0) +
+                    (summary?.submittedToSupplier ?? 0) +
+                    (summary?.pendingForApproval ?? 0)}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                With BAC or Supplier
+              </p>
+            </div>
+            <div className="h-11 w-11 rounded-lg bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <Send className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Approved */}
+        <Card
+          onClick={() => updateSearch({ status: 'approved', pageNumber: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200 hover:shadow-md border',
+            status === 'approved'
+              ? 'ring-2 ring-emerald-500/50 border-emerald-500 bg-emerald-500/[0.04]'
+              : 'hover:border-emerald-400/40',
+          )}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                Approved
+              </p>
+              <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">
+                {isSummaryLoading ? '...' : (summary?.approved ?? 0)}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Ready for award / PO
+              </p>
+            </div>
+            <div className="h-11 w-11 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Modular TanStack Table Component */}
+      <DirectContractingTable
+        directContractings={directContractings}
+        summary={summary}
+        isLoading={isLoading}
+        handlers={handlers}
+        onBulkSubmit={() => {}}
+        onBulkDelete={(rows) => setBulkDeleteRows(rows)}
+        onExportCSV={handleExportCSV}
+        pageNumber={pageNumber}
+        pageSize={pageSize}
+        status={status}
+        searchQuery={searchQuery}
+        onPageChange={(page) => updateSearch({ pageNumber: page })}
+        onPageSizeChange={(size) =>
+          updateSearch({ pageSize: size, pageNumber: 1 })
+        }
+        onStatusChange={(status) => updateSearch({ status, pageNumber: 1 })}
+        onSearchChange={(query) =>
+          updateSearch({ searchQuery: query || undefined, pageNumber: 1 })
+        }
+      />
+
+      {/* Modals & Confirmation Dialogs */}
+      <CreateDirectContractingDialog
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+      />
+
       {editEntryId && (
-        <UpdateDirectContractingModal
+        <UpdateDirectContractingDialog
           open={!!editEntryId}
           onOpenChange={(v) => {
             if (!v) setEditEntryId(null)
@@ -328,32 +482,56 @@ export function DirectContractingRequestPage() {
           editEntryId={editEntryId}
         />
       )}
-      <ViewProposalDetailsModal 
-        open={viewOpen} 
-        onOpenChange={setViewOpen} 
-        entry={selectedEntry} 
-      />
+
+      {viewEntry && (
+        <ViewProposalDetailsModal
+          open={viewOpen}
+          onOpenChange={(v) => {
+            setViewOpen(v)
+            if (!v) setViewEntry(null)
+          }}
+          entry={viewEntry as any}
+        />
+      )}
 
       <ConfirmAlertDialog
         open={!!confirmDeleteId}
-        onOpenChange={(v) => !v && setConfirmDeleteId(null)}
-        title="Delete Request?"
+        onOpenChange={(v) => !v && !isDeleting && setConfirmDeleteId(null)}
+        title="Delete Direct Contracting Request?"
         description="Are you sure you want to delete this Direct Contracting request? This action cannot be undone."
         confirmLabel="Delete"
-        onConfirm={handleRemove}
+        loading={isDeleting}
+        onConfirm={handleExecuteDelete}
       />
+
       <ConfirmAlertDialog
         open={!!confirmSubmitId}
         onOpenChange={(v) => !v && setConfirmSubmitId(null)}
-        title="Submit Request for Review?"
-        description="Are you sure you want to submit this Direct Contracting request for review?"
+        title="Submit Request for BAC Review?"
+        description="Are you sure you want to submit this Direct Contracting request for BAC review and validation under Rule XVI?"
         confirmLabel="Submit"
-        onConfirm={async () => {
-          if (confirmSubmitId) {
-            await handleSendRequest(confirmSubmitId)
-            setConfirmSubmitId(null)
-          }
-        }}
+        loading={statusMutation.isPending}
+        onConfirm={handleExecuteSubmit}
+      />
+
+      <ConfirmAlertDialog
+        open={!!confirmConvertToDraftId}
+        onOpenChange={(v) => !v && setConfirmConvertToDraftId(null)}
+        title="Convert Request to Draft?"
+        description="Are you sure you want to convert this Direct Contracting request back to draft? It will be editable again."
+        confirmLabel="Convert to Draft"
+        loading={statusMutation.isPending}
+        onConfirm={handleExecuteConvertToDraft}
+      />
+
+      <ConfirmAlertDialog
+        open={!!bulkDeleteRows}
+        onOpenChange={(v) => !v && !isDeleting && setBulkDeleteRows(null)}
+        title={`Delete ${bulkDeleteRows?.length || 0} Selected Requests?`}
+        description={`Are you sure you want to delete ${bulkDeleteRows?.length || 0} selected Direct Contracting requests? This action cannot be undone.`}
+        confirmLabel="Delete All Selected"
+        loading={isDeleting}
+        onConfirm={handleExecuteBulkDelete}
       />
     </div>
   )

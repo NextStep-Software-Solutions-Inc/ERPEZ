@@ -1,25 +1,25 @@
 import type { APIResponse, MutationBlueprintFromTemplate } from 'erpez-shared-lib'
-import type {
-  WhereasClauseTemplate,
-  WhereasClauseTemplatePayload,
-} from '../types'
+import type { BacResolutionWhereasClause } from '../types'
 import { api } from '@/services/api'
 
 const endpoint = '/bac-resolution-whereas-clauses'
+export type BacResolutionWhereasClausePayload = {
+  name: string
+  body: string
+}
 
 export const createWhereasClauseTemplateRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
-  WhereasClauseTemplate,
+  BacResolutionWhereasClause,
   undefined,
-  WhereasClauseTemplatePayload
-> = {
+  BacResolutionWhereasClausePayload> = {
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
     if (!payload) {
       throw new Error('WHEREAS template payload is required.')
     }
 
-    const response = await api.post<APIResponse<WhereasClauseTemplate>>(finalUrl, payload)
+    const response = await api.post<APIResponse<BacResolutionWhereasClause>>(finalUrl, payload)
     return response.data.data
   },
 }

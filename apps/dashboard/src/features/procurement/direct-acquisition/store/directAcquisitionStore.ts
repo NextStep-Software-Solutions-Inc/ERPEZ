@@ -3,14 +3,12 @@ import { create } from 'zustand'
 export type ProofFile = {
   id: string
   name: string
-  /**
-   * URL pointing to the stored file. For dev/mock data this can be a data: URL
-   * (used here for quick preview). In production this would be a durable
-   * server-side URL returned after uploading the file.
-   */
   url?: string
+  fileId?: string
   fileType?: 'image' | 'pdf' | 'document'
+  documentType?: string
   uploadedAt?: string
+  size?: number
 }
 
 export type DirectAcquisition = {
@@ -44,6 +42,7 @@ export type DirectAcquisition = {
   supplierTin?: string
   createdBy?: string
   createdAt: string
+  selectedItemIds?: string[]
   /** Optional deadline for completing the DA (ISO date string) */
   deadline?: string
 }

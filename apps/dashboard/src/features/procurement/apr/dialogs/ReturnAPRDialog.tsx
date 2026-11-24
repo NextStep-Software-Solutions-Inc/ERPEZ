@@ -15,12 +15,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import type { APRMaster } from '../types'
 
 interface ReturnAPRDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  apr: APRMaster | null
+  apr: any | null
   isSubmitting?: boolean
   onConfirm?: (remarks: string) => void | Promise<void>
 }
@@ -35,6 +34,8 @@ export function ReturnAPRDialog({
   const [remarks, setRemarks] = useState('')
 
   if (!apr) return null
+
+  const itemsCount = apr.consolidatedItems?.length ?? apr.itemCount ?? apr.totalItemsCount ?? 0
 
   const handleConfirm = async () => {
     if (onConfirm) {
@@ -79,7 +80,7 @@ export function ReturnAPRDialog({
             </div>
             <div>
               <p className="text-gray-600">Total Items</p>
-              <p className="font-medium text-gray-900">{apr.consolidatedItems.length}</p>
+              <p className="font-medium text-gray-900">{itemsCount}</p>
             </div>
           </div>
 

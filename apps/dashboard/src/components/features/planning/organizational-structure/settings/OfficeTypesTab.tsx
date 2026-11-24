@@ -15,7 +15,7 @@ export function OfficeTypesTab() {
 
   const { data: response } = useOfficeTypes({
     pathParams: {},
-    queryParams: {},
+    queryParams: { pageSize: 1000, sorts: 'name' },
   })
 
   const items = response?.data ?? []

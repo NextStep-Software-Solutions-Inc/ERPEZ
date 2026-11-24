@@ -1,8 +1,6 @@
 /**
- * NTP List Row Actions (User/Creator View)
- * Defines action buttons for each NTP row (View, Print, Delete)
- * Users can delete Draft NTPs
- * TODO: Add Edit action when edit mode is implemented
+ * NTP List Row Actions
+ * Defines action buttons for each NTP row
  */
 
 import { useState } from 'react'
@@ -15,26 +13,40 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import type { NTP } from '../types/ntpTypes'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import type { NoticeToProceedListItem } from '../types/ntpTypes'
 
 export interface NTPListActionsProps {
-  ntp: NTP
-  onView: (ntp: NTP) => void
-  onPrint: (ntp: NTP) => void
-  onDelete: (ntp: NTP) => void
+  ntp: NoticeToProceedListItem
+  onView: (ntp: NoticeToProceedListItem) => void
+  onPrint: (ntp: NoticeToProceedListItem) => void
+  onDelete?: (ntp: NoticeToProceedListItem) => void
   isDeleting?: boolean
 }
 
-export function NTPListActions({ ntp, onView, onPrint, onDelete, isDeleting = false }: NTPListActionsProps) {
+export function NTPListActions({
+  ntp,
+  onView,
+  onPrint,
+  onDelete,
+  isDeleting = false,
+}: NTPListActionsProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const handleDelete = () => {
-    onDelete(ntp)
+    onDelete?.(ntp)
     setShowDeleteConfirm(false)
   }
 
-  const canEditDelete = ntp.status === 'Draft'
+  const canDelete = ntp.status === 'Draft' && !!onDelete
 
   return (
     <>
@@ -52,12 +64,12 @@ export function NTPListActions({ ntp, onView, onPrint, onDelete, isDeleting = fa
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onPrint(ntp)}>
             <Printer className="mr-2 h-4 w-4" />
-            <span>Print</span>
+            <span>Preview / Print</span>
           </DropdownMenuItem>
-          {canEditDelete && (
+          {canDelete && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={isDeleting}
                 className="text-red-600 focus:text-red-600"
@@ -73,14 +85,18 @@ export function NTPListActions({ ntp, onView, onPrint, onDelete, isDeleting = fa
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete NTP</AlertDialogTitle>
+            <AlertDialogTitle>Delete Draft Notice to Proceed</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {ntp.ntpNumber}? This action cannot be undone.
+              Are you sure you want to delete {ntp.ntpNumber}? This draft will be removed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-2 justify-end">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
               Delete
             </AlertDialogAction>
           </div>

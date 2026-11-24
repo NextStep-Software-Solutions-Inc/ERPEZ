@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   ArrowLeft,
   Download,
@@ -20,8 +20,7 @@ import { Button } from '@/components/ui/button'
 import type { PublicProject, ProjectStatus, ModeOfProcurement } from '../types/portalTypes'
 import { printDocument } from '../utils/printDocument'
 import { BACApplicationForm } from './BACApplicationForm'
-import api from '@/services/api'
-import { mapBackendProjectToFrontend } from '../utils/projectMapper'
+import { usePublicProject } from '../hooks/usePublicPortalApi'
 
 // Use the full BACApplicationForm component from the sibling file.
 // See documentations/bac-application-form.md for implementation details.
@@ -46,44 +45,25 @@ function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2 }).format(amount)
 }
 
-function formatDatetime(dateStr: string) {
+function formatDatetime(dateStr?: string) {
+  if (!dateStr || isNaN(Date.parse(dateStr))) return '—'
   return new Date(dateStr).toLocaleDateString('en-PH', {
     year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
   })
 }
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr?: string) {
+  if (!dateStr || isNaN(Date.parse(dateStr))) return '—'
   return new Date(dateStr).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
 export function BACProjectDetail({ project: initialProject, onBack }: BACProjectDetailProps) {
   const [showApplicationForm, setShowApplicationForm] = useState(false)
   const [selectedBidIds, setSelectedBidIds] = useState<Set<string>>(new Set())
-  const [project, setProject] = useState<PublicProject>(initialProject)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchProjectDetails = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const res = await api.get(`/api/public/projects/${initialProject.id}`)
-        if (res.data && res.data.data) {
-          const mapped = mapBackendProjectToFrontend(res.data.data)
-          setProject(mapped)
-        } else {
-          setError(res.data?.message || 'Failed to load project details.')
-        }
-      } catch (err: any) {
-        console.error('Failed to fetch project details:', err)
-        setError(err?.response?.data?.message || err?.message || 'This project is not currently available.')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchProjectDetails()
-  }, [initialProject.id])
+  const { data: fetchedProject, isLoading, error: queryError } = usePublicProject(initialProject.id)
+  const project = fetchedProject ?? initialProject
+  const error = queryError instanceof Error ? queryError.message : null
 
   if (isLoading) {
     return (
@@ -110,8 +90,8 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
   }
 
   const statusCfg = STATUS_CONFIG[project.status]
-  const templates = project.requiredDocuments.filter((d) => d.isTemplate)
-  const uploads = project.requiredDocuments.filter((d) => !d.isTemplate)
+  const templates = project.requiredDocuments.filter((d) => Boolean(d.downloadUrl || d.viewerDocId))
+  const uploads = project.requiredDocuments
 
   const toggleBidSelection = (id: string) => {
     setSelectedBidIds((prev) => {
@@ -120,6 +100,17 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
       else next.add(id)
       return next
     })
+  }
+
+  const isAllSelected = templates.length > 0 && templates.every((d) => selectedBidIds.has(d.id))
+  const isSomeSelected = templates.some((d) => selectedBidIds.has(d.id)) && !isAllSelected
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedBidIds(new Set())
+    } else {
+      setSelectedBidIds(new Set(templates.map((d) => d.id)))
+    }
   }
 
   const selectedBidNotices = templates.filter((d) => selectedBidIds.has(d.id))
@@ -150,7 +141,7 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
             <div className="space-y-2 flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${statusCfg.className}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${project.status === 'open' ? 'bg-emerald-500' : 'bg-amber-500'} inline-block`} />
+                  <span className={`h-1.5 w-1.5 rounded-full ${project.status === 'open' ? 'bg-emerald-500' : project.status === 'closing-soon' ? 'bg-amber-500' : 'bg-slate-400'} inline-block`} />
                   {statusCfg.label}
                 </span>
                 <Badge
@@ -211,6 +202,65 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
           </div>
         </div>
 
+        {/* Schedule of Requirements / Items to be Quoted */}
+        {project.items && project.items.length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-slate-600" />
+                <h2 className="font-semibold text-slate-800">
+                  {project.mop === 'svp' ? 'Items for Price Quotation' : 'Schedule of Requirements / Bill of Quantities'}
+                </h2>
+              </div>
+              <span className="text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
+                {project.items.length} {project.items.length === 1 ? 'item' : 'items'}
+              </span>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-slate-500">
+                {project.mop === 'svp'
+                  ? 'Suppliers will submit unit price quotations for each of the following line items in the online quotation form.'
+                  : 'The following items comprise the scope of requirements. Detailed line-item pricing must be provided via the official Price Schedule / BOQ uploaded under the Second Envelope (Financial Component).'}
+              </p>
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-2.5 w-12 text-center">#</th>
+                      <th className="px-4 py-2.5">Item Description & Specifications</th>
+                      <th className="px-4 py-2.5 w-28 text-center">Quantity</th>
+                      <th className="px-4 py-2.5 w-36 text-right">ABC Unit Price</th>
+                      <th className="px-4 py-2.5 w-36 text-right">ABC Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {project.items.map((item, idx) => (
+                      <tr key={item.id} className="hover:bg-slate-50/60">
+                        <td className="px-4 py-3 text-center font-medium text-slate-400">{idx + 1}</td>
+                        <td className="px-4 py-3">
+                          <p className="font-semibold text-slate-800">{item.itemName}</p>
+                          {item.description && (
+                            <p className="text-[11px] text-slate-500 mt-0.5">{item.description}</p>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center font-medium text-slate-700">
+                          {item.quantity} {item.uom || 'Unit'}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium text-slate-600">
+                          {formatCurrency(item.abcUnitPrice)}
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-slate-900">
+                          {formatCurrency(item.abcTotalPrice || item.quantity * item.abcUnitPrice)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Required Submissions — full width, same size as Project Details */}
         {uploads.length > 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -241,18 +291,56 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
         {/* Bid Notices — full width, same size as Project Details */}
         {templates.length > 0 && (
           <div className="bg-white rounded-2xl border border-blue-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 flex items-center gap-2">
-              <Download className="h-4 w-4 text-blue-600" />
-              <h2 className="font-semibold text-slate-800">Bid Notices</h2>
-              <span className="ml-auto text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full font-medium">
-                {templates.length} file{templates.length > 1 ? 's' : ''}
-              </span>
+            <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Download className="h-4 w-4 text-blue-600" />
+                <h2 className="font-semibold text-slate-800">Bid Notices</h2>
+                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full font-medium">
+                  {templates.length} file{templates.length > 1 ? 's' : ''}
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={toggleSelectAll}
+                className="h-8 px-3 text-xs font-semibold border-blue-200 text-blue-700 hover:bg-blue-100 hover:text-blue-800 gap-2 transition-all shadow-xs"
+              >
+                <div
+                  className={`h-4 w-4 rounded border-2 shrink-0 flex items-center justify-center transition-colors ${
+                    isAllSelected
+                      ? 'bg-blue-600 border-blue-600'
+                      : isSomeSelected
+                      ? 'bg-blue-500 border-blue-500'
+                      : 'border-slate-300 bg-white'
+                  }`}
+                >
+                  {isAllSelected && (
+                    <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 12 12">
+                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                  {isSomeSelected && (
+                    <span className="h-0.5 w-2 bg-white rounded-full inline-block" />
+                  )}
+                </div>
+                <span>{isAllSelected ? 'Deselect All' : 'Select All'}</span>
+              </Button>
             </div>
             <div className="p-6 space-y-2">
-              <p className="text-xs text-slate-500 pb-2">
-                Download, fill out, and prepare the following bid documents before submitting your application.
-                <span className="font-medium text-blue-600 ml-1">Select the documents you need to submit.</span>
-              </p>
+              <div className="flex items-center justify-between pb-2 flex-wrap gap-2">
+                <p className="text-xs text-slate-500">
+                  Download, fill out, and prepare the following bid documents before submitting your application.
+                  <span className="font-medium text-blue-600 ml-1">Select the documents you need to submit.</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                >
+                  {isAllSelected ? 'Clear all selections' : `Select all (${templates.length})`}
+                </button>
+              </div>
               {templates.map((doc) => {
                 const isSelected = selectedBidIds.has(doc.id)
                 return (
@@ -304,6 +392,7 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
                           href={doc.downloadUrl ?? '#'}
                           target="_blank"
                           rel="noopener noreferrer"
+                          download
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
                         >
                           <Download className="h-3 w-3" /> Download
@@ -324,14 +413,12 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
         )}
 
         {/* CTA */}
-        {project.status !== 'closed' && (
+        {project.status !== 'closed' ? (
           <div className="bg-gradient-to-r from-[#1e3a8a] to-[#1d4ed8] rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
             <div>
               <h3 className="text-white font-semibold text-lg">Ready to submit your bid?</h3>
               <p className="text-blue-200 text-sm mt-1">
-                {selectedBidIds.size > 0
-                  ? `${selectedBidIds.size} bid notice${selectedBidIds.size > 1 ? 's' : ''} selected. Click Submit Now to upload and submit.`
-                  : 'Select the bid notices above that you need to submit, then click Submit Now.'}
+                Click Submit Now to fill out your application and upload the {uploads.length} required documents.
               </p>
             </div>
             <Button
@@ -340,6 +427,22 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
               className="bg-white text-[#1e3a8a] hover:bg-blue-50 font-semibold gap-2 shrink-0 shadow-sm"
             >
               Submit Now <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="bg-slate-100 border border-slate-200 rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h3 className="text-slate-700 font-semibold text-lg">Submissions are Closed</h3>
+              <p className="text-slate-500 text-sm mt-1">
+                The submission deadline for this procurement opportunity has passed. Applications are no longer being accepted.
+              </p>
+            </div>
+            <Button
+              size="lg"
+              disabled
+              className="bg-slate-200 text-slate-400 font-semibold gap-2 shrink-0 cursor-not-allowed border border-slate-300"
+            >
+              Closed
             </Button>
           </div>
         )}

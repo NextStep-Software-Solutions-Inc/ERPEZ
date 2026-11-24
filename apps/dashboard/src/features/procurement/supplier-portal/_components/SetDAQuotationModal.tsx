@@ -1,9 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   AlertDialog,
@@ -30,7 +28,7 @@ import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 import { useConsolidatedPRStore } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
 import type { ConsolidatedPRItem } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
 import { ItemBidSpecModal } from './ItemBidSpecModal'
-import type { DirectContractingItem, QuotationItemBid } from '../types/daItemTypes'
+import type { DirectContractingItem, QuotationItemBid } from '../types/direct-contracting-item-type'
 
 type RowBidState = {
   unitPrice: number | ''
@@ -108,7 +106,7 @@ export function SetDAQuotationModal({
       blobUrls.current.forEach((u) => {
         try {
           URL.revokeObjectURL(u)
-        } catch {}
+        } catch { }
       })
       blobUrls.current = []
     }

@@ -1,5 +1,5 @@
 import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
-import type { BackendDirectContractingItem } from '../store/directContractingStore'
+import type { BackendDirectContractingItem } from '../types'
 import api from '@/services/api'
 
 const endpoint = '/direct-contracting/:id/review'

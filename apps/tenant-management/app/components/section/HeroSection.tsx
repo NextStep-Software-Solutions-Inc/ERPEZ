@@ -18,8 +18,7 @@ export function HeroSection() {
             <p className="mt-6 max-w-2xl text-balance text-base text-slate-600 sm:text-lg">
               Transform your business operations with our integrated ERP
               platform. Unify Account Management, Strategic Planning,
-              Procurement, and Asset Management into one powerful, intelligent
-              system.
+              and Procurement into one powerful, intelligent system.
             </p>
             <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
               <Button

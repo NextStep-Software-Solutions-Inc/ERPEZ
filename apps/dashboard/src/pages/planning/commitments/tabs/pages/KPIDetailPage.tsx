@@ -1,7 +1,7 @@
 import { ArrowLeft, TrendingUp, Target, Award } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { KPICombination } from '../CommitmentsOPCRAccordion'
+import type { KPICombination } from '../types'
 
 interface KPIDetailPageProps {
   kpi: KPICombination | null

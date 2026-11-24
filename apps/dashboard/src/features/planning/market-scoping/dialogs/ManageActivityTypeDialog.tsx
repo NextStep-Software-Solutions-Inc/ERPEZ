@@ -7,14 +7,26 @@
 import { useState, useEffect } from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { toast } from 'sonner'
-import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  createMutationHookFromTemplate,
+  useQueryClient,
+} from 'erpez-shared-lib'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { AlertCircle } from 'lucide-react'
-import { selectedActivityTypeForEditAtom, activityTypesAtom } from '../atoms/managementStateAtoms'
+import {
+  selectedActivityTypeForEditAtom,
+  activityTypesAtom,
+} from '../atoms/managementStateAtoms'
 import {
   createActivityTypeRequest,
   updateActivityTypeRequest,
@@ -25,7 +37,9 @@ interface ManageActivityTypeDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-const useCreateActivityType = createMutationHookFromTemplate(createActivityTypeRequest)
+const useCreateActivityType = createMutationHookFromTemplate(
+  createActivityTypeRequest,
+)
 
 export function ManageActivityTypeDialog({
   open,
@@ -37,7 +51,9 @@ export function ManageActivityTypeDialog({
   const queryClient = useQueryClient()
   const createActivityType = useCreateActivityType()
   const updateActivityType = createMutationHookFromTemplate(
-    activity ? updateActivityTypeRequest(activity.id) : updateActivityTypeRequest('')
+    activity
+      ? updateActivityTypeRequest(activity.id)
+      : updateActivityTypeRequest(''),
   )()
 
   const [formData, setFormData] = useState({
@@ -73,10 +89,13 @@ export function ManageActivityTypeDialog({
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
-    if (!formData.activityType.trim()) newErrors.activityType = 'Activity type is required'
+    if (!formData.activityType.trim())
+      newErrors.activityType = 'Activity type is required'
     if (!formData.label.trim()) newErrors.label = 'Label is required'
-    if (!formData.description.trim()) newErrors.description = 'Description is required'
-    if (formData.sortOrder < 0) newErrors.sortOrder = 'Sort order must be non-negative'
+    if (!formData.description.trim())
+      newErrors.description = 'Description is required'
+    if (formData.sortOrder < 0)
+      newErrors.sortOrder = 'Sort order must be non-negative'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -103,7 +122,9 @@ export function ManageActivityTypeDialog({
               void queryClient.invalidateQueries({
                 predicate: (query) =>
                   typeof query.queryKey[0] === 'string' &&
-                  query.queryKey[0].startsWith('/market-scoping-activity-settings'),
+                  query.queryKey[0].startsWith(
+                    '/market-scoping-activity-settings',
+                  ),
               })
             },
           },
@@ -117,10 +138,10 @@ export function ManageActivityTypeDialog({
                 ? {
                     ...item,
                     ...updatedActivity,
-                    type: ((updatedActivity as unknown) as Record<string, unknown>).activityType as string ?? updatedActivity.type,
+                    type: updatedActivity.activityType || updatedActivity.type,
                   }
-                : item
-            )
+                : item,
+            ),
           )
         }
       } else {
@@ -140,7 +161,9 @@ export function ManageActivityTypeDialog({
               void queryClient.invalidateQueries({
                 predicate: (query) =>
                   typeof query.queryKey[0] === 'string' &&
-                  query.queryKey[0].startsWith('/market-scoping-activity-settings'),
+                  query.queryKey[0].startsWith(
+                    '/market-scoping-activity-settings',
+                  ),
               })
             },
           },
@@ -152,7 +175,7 @@ export function ManageActivityTypeDialog({
             ...prev,
             {
               ...createdActivity,
-              type: ((createdActivity as unknown) as Record<string, unknown>).activityType as string ?? createdActivity.type,
+              type: createdActivity.activityType || createdActivity.type,
             },
           ])
         }
@@ -188,7 +211,9 @@ export function ManageActivityTypeDialog({
             <Input
               id="activityType"
               value={formData.activityType}
-              onChange={(e) => setFormData({ ...formData, activityType: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, activityType: e.target.value })
+              }
               placeholder="e.g., sa"
               className={errors.activityType ? 'border-red-500' : ''}
             />
@@ -203,11 +228,15 @@ export function ManageActivityTypeDialog({
             <Input
               id="label"
               value={formData.label}
-              onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, label: e.target.value })
+              }
               placeholder="e.g., Supplier Visits"
               className={errors.label ? 'border-red-500' : ''}
             />
-            {errors.label && <p className="text-sm text-red-600">{errors.label}</p>}
+            {errors.label && (
+              <p className="text-sm text-red-600">{errors.label}</p>
+            )}
           </div>
 
           {/* Description */}
@@ -216,7 +245,9 @@ export function ManageActivityTypeDialog({
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               placeholder="Brief description of this activity type..."
               rows={3}
               className={errors.description ? 'border-red-500' : ''}
@@ -235,7 +266,10 @@ export function ManageActivityTypeDialog({
               min="0"
               value={formData.sortOrder}
               onChange={(e) =>
-                setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })
+                setFormData({
+                  ...formData,
+                  sortOrder: parseInt(e.target.value) || 0,
+                })
               }
               className={errors.sortOrder ? 'border-red-500' : ''}
             />
@@ -250,7 +284,9 @@ export function ManageActivityTypeDialog({
               type="checkbox"
               id="isActive"
               checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, isActive: e.target.checked })
+              }
               className="rounded"
             />
             <Label htmlFor="isActive" className="cursor-pointer m-0">
@@ -262,26 +298,28 @@ export function ManageActivityTypeDialog({
           <div className="flex gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-blue-800">
-              Deactivated activity types will not appear in new market scoping forms
+              Deactivated activity types will not appear in new market scoping
+              forms
             </p>
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex justify-end gap-3 mt-6">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
           >
             Cancel
           </Button>
-          <Button 
-            onClick={handleSubmit} 
+          <Button
+            onClick={handleSubmit}
             className="gap-2"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Saving...' : activity ? 'Update' : 'Create'} Activity Type
+            {isSubmitting ? 'Saving...' : activity ? 'Update' : 'Create'}{' '}
+            Activity Type
           </Button>
         </div>
       </DialogContent>

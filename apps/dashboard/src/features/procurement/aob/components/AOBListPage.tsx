@@ -29,9 +29,24 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ChevronLeft, ChevronRight, Plus, Gavel } from 'lucide-react'
-import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { ChevronLeft, ChevronRight, Plus, Gavel, Loader2, AlertCircle } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  createQueryHookFromTemplate,
+  createMutationHookFromTemplate,
+  useQueryClient,
+} from 'erpez-shared-lib'
 import { getAOBListRequest } from '../handlers/getAOBListRequest'
+import { deleteAOBRequest } from '../handlers/deleteAOBRequest'
 import { createAOBDialogAtom } from '../atoms/createAOBDialogAtom'
 import { CreateAOBDialog } from '../dialogs/CreateAOBDialog'
 import { AOBListToolbar } from '../tables/AOBListToolbar'
@@ -39,6 +54,7 @@ import { createAOBListColumns } from '../tables/AOBListColumns'
 import type { AOB } from '../types'
 
 const useAOBList = createQueryHookFromTemplate(getAOBListRequest)
+const useDeleteAOB = createMutationHookFromTemplate(deleteAOBRequest)
 
 interface AOBListPageProps {
   onViewDetails?: (aob: AOB) => void
@@ -51,9 +67,17 @@ export function AOBListPage({ onViewDetails, onEdit, onDelete }: AOBListPageProp
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
+  const [aobToDelete, setAobToDelete] = useState<AOB | null>(null)
+  const queryClient = useQueryClient()
+  const { mutateAsync: deleteAOB, isPending: isDeleting } = useDeleteAOB()
 
-  // Fetch AOB list with mock data fallback
-  const { data: apiResponse } = useAOBList({
+  // Fetch AOB list
+  const {
+    data: apiResponse,
+    isLoading,
+    error,
+    refetch,
+  } = useAOBList({
     pathParams: {},
     queryParams: {
       pageNumber: 1,
@@ -65,13 +89,36 @@ export function AOBListPage({ onViewDetails, onEdit, onDelete }: AOBListPageProp
     return apiResponse?.data || []
   }, [apiResponse])
 
+  const handleRequestDeleteAOB = (aob: AOB) => {
+    if (onDelete) {
+      onDelete(aob)
+      return
+    }
+    setAobToDelete(aob)
+  }
+
+  const handleConfirmDeleteAOB = async () => {
+    if (!aobToDelete) return
+    try {
+      await deleteAOB({
+        pathParams: { id: aobToDelete.id },
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [getAOBListRequest.endpoint],
+      })
+      setAobToDelete(null)
+    } catch {
+      // Global API interceptor displays the error toast
+    }
+  }
+
   // Create columns with user actions
   const columns = useMemo(
     () =>
       createAOBListColumns({
         onView: onViewDetails,
         onEdit: onEdit,
-        onDelete: onDelete,
+        onDelete: handleRequestDeleteAOB,
       }),
     [onViewDetails, onEdit, onDelete]
   )
@@ -134,8 +181,29 @@ export function AOBListPage({ onViewDetails, onEdit, onDelete }: AOBListPageProp
             />
           </div>
 
+          {/* Loading state */}
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center h-64 border rounded-md bg-muted/20 gap-3">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Loading Abstract of Bids...</p>
+            </div>
+          )}
+
+          {/* Error state */}
+          {!isLoading && error && (
+            <div className="flex flex-col items-center justify-center h-64 border border-destructive/30 rounded-md bg-destructive/5 gap-3 p-6 text-center">
+              <AlertCircle className="h-6 w-6 text-destructive" />
+              <p className="text-sm text-destructive font-medium">
+                Failed to load Abstract of Bids.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => void refetch()}>
+                Retry
+              </Button>
+            </div>
+          )}
+
           {/* Empty state for no AOBs */}
-          {aobList.length === 0 && (
+          {!isLoading && !error && aobList.length === 0 && (
             <div className="flex flex-col items-center justify-center h-64 border rounded-md bg-gray-50 gap-4">
               <p className="text-muted-foreground">No AOBs created yet</p>
               <Button onClick={handleCreateClick} className="gap-2">
@@ -146,7 +214,7 @@ export function AOBListPage({ onViewDetails, onEdit, onDelete }: AOBListPageProp
           )}
 
           {/* Table */}
-          {aobList.length > 0 && (
+          {!isLoading && !error && aobList.length > 0 && (
             <>
               <div className="rounded-md border overflow-x-auto">
                 <Table>
@@ -218,6 +286,31 @@ export function AOBListPage({ onViewDetails, onEdit, onDelete }: AOBListPageProp
           onViewDetails?.(aob)
         }}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!aobToDelete} onOpenChange={(open) => !open && setAobToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Abstract of Bids?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete AOB &quot;{aobToDelete?.aobNumber}&quot;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault()
+                void handleConfirmDeleteAOB()
+              }}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

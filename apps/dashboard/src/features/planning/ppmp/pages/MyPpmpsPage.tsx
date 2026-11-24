@@ -1,9 +1,9 @@
 import { lazy, Suspense } from 'react'
-import { useNavigate } from '@tanstack/react-router'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import type { PPMPManagementSearch } from '@/routes/v2/ppmp/constants'
+import type { PPMPManagementSearch } from '@/routes/v2/(planning)/ppmp/constants'
+import { Route } from '@/routes/v2/(planning)/ppmp/index'
 
 // Lazy load the tab components
 const DepartmentPpmpTab = lazy(() => import('./tabs/DepartmentPpmpTab'))
@@ -11,31 +11,40 @@ const OfficePpmpTab = lazy(() => import('./tabs/OfficePpmpTab'))
 
 interface MyPpmpsPageProps {
   searchParams: PPMPManagementSearch
+  navigate: ReturnType<typeof Route.useNavigate>
 }
 
-export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
-  const navigate = useNavigate({ from: '/v2/ppmp' })
+export function MyPpmpsPage({ searchParams, navigate }: MyPpmpsPageProps) {
+  // const navigate = Route.useNavigate()
   const { view = 'department' } = searchParams
 
-  const handleUpdateSearch = (updater: (prev: PPMPManagementSearch) => Partial<PPMPManagementSearch>) => {
+  const handleUpdateSearch = (
+    updater: (prev: PPMPManagementSearch) => Partial<PPMPManagementSearch>,
+  ) => {
     const next = updater(searchParams)
     navigate({
       search: (prev) => {
-        const merged = { ...prev, ...next }
-        const clean: Record<string, unknown> = {}
-        
-        clean.view = merged.view ?? 'department'
-        clean.pageNumber = merged.pageNumber ?? 1
-        clean.pageSize = merged.pageSize ?? 10
+        const merged = {
+          ...(prev as PPMPManagementSearch),
+          ...next,
+        } as Partial<PPMPManagementSearch>
 
+        const clean: PPMPManagementSearch = {
+          view: (merged.view as 'department' | 'office') ?? 'department',
+          pageNumber: (merged.pageNumber as number) ?? 1,
+          pageSize: (merged.pageSize as number) ?? 10,
+        }
         if (merged.searchQuery) clean.searchQuery = merged.searchQuery
-        if (merged.status && merged.status !== 'all') clean.status = merged.status
+        if (merged.status && merged.status !== 'all')
+          clean.status = merged.status
         if (merged.fiscalYearId) clean.fiscalYearId = merged.fiscalYearId
         if (merged.officeId) clean.officeId = merged.officeId
         if (merged.lib && merged.lib !== 'all') clean.lib = merged.lib
         if (merged.sortBy) clean.sortBy = merged.sortBy
         if (merged.sortOrder) clean.sortOrder = merged.sortOrder
-        
+        if (merged.consolidated && merged.consolidated !== 'all')
+          clean.consolidated = merged.consolidated
+
         return clean
       },
     })
@@ -56,6 +65,7 @@ export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
                 fiscalYearId: '',
                 officeId: '',
                 lib: 'all',
+                consolidated: 'all',
               }))
             }
             className="w-full"

@@ -1,4 +1,4 @@
-﻿export type ProcurementItem = {
+export type ProcurementItem = {
   id: string
   name: string
   specifications: string
@@ -25,9 +25,16 @@ export type LookupOption = {
   isActive: boolean
 }
 
+export type ParentObjectInfo = {
+  id: string
+  name: string
+  code: string
+  parent?: ParentObjectInfo | null
+}
+
 export type ObjectCodeLookup = {
   id: string
-  parent: Record<string, unknown> | null
+  parent: ParentObjectInfo | null
   name: string
   code: string
   isActive: boolean

@@ -1,14 +1,16 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import type { ApproveNoticeOfAwardPayload } from '../types'
 import { ApproveNoticeOfAwardForm } from '../forms'
 
-type ApproveNoticeOfAwardDialogProps = {
+export type ApproveNoticeOfAwardDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   noaId: string
   noaNumber: string
+  supplierName?: string
+  totalAmount?: number
   onApprove: (values: ApproveNoticeOfAwardPayload) => Promise<void> | void
 }
 
@@ -17,6 +19,8 @@ export function ApproveNoticeOfAwardDialog({
   onOpenChange,
   noaId,
   noaNumber,
+  supplierName,
+  totalAmount,
   onApprove,
 }: ApproveNoticeOfAwardDialogProps) {
   const [isDirty, setIsDirty] = useState(false)
@@ -36,13 +40,16 @@ export function ApproveNoticeOfAwardDialog({
       <ResponsiveDialog
         open={open && !showDiscardWarning}
         onOpenChange={handleOpenChange}
-        title="Approve NOA"
-        description={`Upload the signed NOA before approving ${noaNumber}.`}
-        size="lg"
+        title="Approve Notice of Award"
+        description={`Upload the physically signed NOA before approving and issuing ${noaNumber}.`}
+        size="md"
         showCloseButton
       >
         <ApproveNoticeOfAwardForm
           noaId={noaId}
+          noaNumber={noaNumber}
+          supplierName={supplierName}
+          totalAmount={totalAmount}
           onSubmit={onApprove}
           onCancel={() => handleOpenChange(false)}
           onDirtyChange={setIsDirty}

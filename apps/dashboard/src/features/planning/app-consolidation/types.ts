@@ -18,8 +18,9 @@ export interface User {
 // ============================================================================
 // APP STATE MANAGEMENT
 // ============================================================================
-export type AppStatus = 'Draft' | 'Submitted' | 'Approved' | 'Rejected' | 'Locked'
-export type AppType = 'Indicative' | 'Supplemental' | 'Final'
+export type AppStatus = 'Draft' | 'Submitted' | 'Approved' | 'Rejected' | 'Locked' | 'Returned'
+export type AppType = 'Indicative' | 'Final' | 'Updated'
+
 
 // ============================================================================
 // BID EVALUATION & PROCUREMENT STRATEGY
@@ -103,6 +104,7 @@ export interface HybridScheduleValue {
 // ============================================================================
 export interface PPMPItem {
   id: string
+  papCode?: string
   code: string
   description: string
   unit: string
@@ -190,8 +192,13 @@ export interface BACMilestones {
 export interface BACLineItem {
   id: string
   ppmpItemId?: string
+  papCode?: string
+  name?: string
   code?: string // Item code for reference (e.g., "ITEM-001", from delta extraction)
   description: string // Item name/title (e.g., "Office Chairs", "Laptops")
+  itemDescription?: string // Detailed technical specifications/description
+  itemNameOverride?: string
+  generalDescription?: string
   unit: string
   quantity: number
   unitCost: number
@@ -206,6 +213,19 @@ export interface BACLineItem {
   remarks?: string
   eligibleForEPA: boolean
   epaRemarks?: string
+  startOfProcurementOverride?: string
+  endOfProcurementOverride?: string
+  estimatedBudgetOverride?: number | null
+  effectiveStartOfProcurement?: string
+  effectiveEndOfProcurement?: string
+  isStartProcurementOverridden?: boolean
+  isEndProcurementOverridden?: boolean
+  isABCOverridden?: boolean
+  originalPPMPBudget?: number
+  effectiveABC?: number
+  isOutsourced?: boolean
+  isNew?: boolean
+  isRevised?: boolean
 
   // Bid Evaluation & Procurement Strategy (Government Planning Process Enhancement)
   bidEvaluationCriteria?: BidEvaluationCriteria // One of: LCRB, MEARB, MARB/HRRB/SRRB, LCCRB
@@ -284,7 +304,12 @@ export interface AppMaster {
   appName: string // e.g., "Indicative APP 2024"
   appCode: string // e.g., "APP-2024-001"
   appNumber: string
-  appType: AppType // 'Indicative' | 'Supplemental'
+  appType: AppType // 'Indicative' | 'Final' | 'Updated'
+  batch?: string
+  quarter?: string
+  versionNumber?: number | null
+  versionDate?: string | null
+  sourceAppId?: string | null
   status: AppStatus // 'Draft' | 'Submitted' | 'Approved' | 'Rejected' | 'Locked'
   aggregationResults: APPAggregationResult
   bac: BACWorkspace
@@ -306,6 +331,10 @@ export interface AppMaster {
   isFinal?: string | boolean
   submittedDate?: string | null
   approvedDate?: string | null
+  derivedFinalAppId?: string | null
+  derivedFinalAppNumber?: string | null
+  derivedFinalAppName?: string | null
+  derivedFinalAppStatus?: string | null
   APPItems?: APPItemFromAPI[]
 }
 
@@ -333,13 +362,15 @@ export interface SupplementalAPP extends AppMaster {
 
 // Form Types
 export interface CreateAPPFormValues {
-  ppmpIds: string[] // Multiple PPMPs can be selected
+  ppmpIds?: string[] // Multiple PPMPs can be selected
   fiscalYear: number
   appName: string
   appCode: string
   appType: AppType
-  officeId?: string // Required by API
-  fiscalYearId?: string // Required by API
+  batch?: string
+  quarter?: string
+  fiscalYearId?: string
+  sourceAppId?: string
 }
 
 export interface BACFormValues {
@@ -434,6 +465,22 @@ export interface APPItemDetail {
   createdBy?: string
   updatedAt?: string | null
   updatedBy?: string | null
+  isNew?: boolean
+  isRevised?: boolean
+  effectiveStartOfProcurement?: string | null
+  effectiveEndOfProcurement?: string | null
+  startOfProcurementOverride?: string | null
+  endOfProcurementOverride?: string | null
+  estimatedBudgetOverride?: number | null
+  originalPPMPBudget?: number
+  effectiveABC?: number
+  quantity?: number
+  unitCost?: number
+  totalAmount?: number
+  isABCOverridden?: boolean
+  isStartProcurementOverridden?: boolean
+  isEndProcurementOverridden?: boolean
+  unit?: string
   APP?: {
     id: string
     appNumber: string

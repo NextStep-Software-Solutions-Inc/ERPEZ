@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { ColumnDef } from '@tanstack/react-table'
 import {
@@ -7,6 +7,7 @@ import {
   Circle,
   AlertCircle,
   Loader2,
+  Clock,
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -24,11 +25,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 
 export interface ApprovalWorkflowTableMeta {
+  readonly?: boolean
   onViewDetails?: (opcr: OPCR) => void | Promise<void>
   onApprove?: (opcr: OPCR) => void | Promise<void>
   onReturn?: (opcr: OPCR) => void | Promise<void>
-  onGenerate?: (opcr: OPCR) => void | Promise<void>
-  onDraft?: (opcr: OPCR) => void | Promise<void>
   isUpdating?: boolean
 }
 
@@ -60,6 +60,7 @@ const getStatusIcon = (status: CommitmentStatus | null | undefined) => {
     case 'returned':
       return <AlertCircle {...iconProps} />
     case 'submitted':
+      return <Clock {...iconProps} />
     case 'draft':
       return <Circle {...iconProps} />
     default:
@@ -72,10 +73,10 @@ const getStatusColor = (
 ): string => {
   const statusLower = status?.toLowerCase()
   const colorMap: Record<string, string> = {
-    draft: 'bg-gray-100 text-gray-700',
-    submitted: 'bg-blue-100 text-blue-700 border-blue-200',
-    approved: 'bg-green-100 text-green-700 border-green-200',
-    returned: 'bg-red-100 text-red-700 border-red-200',
+    draft: 'bg-gray-100 text-gray-700 border-gray-200',
+    submitted: 'bg-amber-100 text-amber-800 border-amber-200',
+    approved: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    returned: 'bg-rose-100 text-rose-800 border-rose-200',
   }
   return colorMap[statusLower || ''] || 'bg-gray-100 text-gray-700'
 }
@@ -85,37 +86,11 @@ const getStatusLabel = (
 ): string => {
   const labelMap: Record<string, string> = {
     draft: 'DRAFT',
-    submitted: 'SUBMITTED',
+    submitted: 'FOR APPROVAL',
     approved: 'APPROVED',
     returned: 'RETURNED',
   }
   return labelMap[status?.toLowerCase() || ''] || status || 'UNKNOWN'
-}
-
-const getPriorityColor = (priority: string): string => {
-  const colorMap: Record<string, string> = {
-    high: 'bg-red-100 text-red-700 border-red-200',
-    medium: 'bg-amber-100 text-amber-700 border-amber-200',
-    low: 'bg-gray-100 text-gray-700 border-gray-200',
-  }
-  return colorMap[priority.toLowerCase()] || 'bg-gray-100 text-gray-700'
-}
-
-const calculatePriority = (kpiCount: number): string => {
-  if (kpiCount > 5) return 'HIGH'
-  if (kpiCount > 2) return 'MEDIUM'
-  return 'LOW'
-}
-
-const calculateDueDate = (submittedDate: string | null | undefined): string => {
-  if (!submittedDate) {
-    const futureDate = new Date()
-    futureDate.setMonth(futureDate.getMonth() + 1)
-    return formatDate(futureDate.toISOString())
-  }
-  const date = new Date(submittedDate)
-  date.setMonth(date.getMonth() + 1)
-  return formatDate(date.toISOString())
 }
 
 // ─── Column Definitions ──────────────────────────────────────────────
@@ -194,37 +169,6 @@ export const columns: ColumnDef<OPCR>[] = [
     },
   },
   {
-    id: 'priority',
-    header: 'Priority',
-    cell: ({ row }) => {
-      const kpiCount =
-        row.original.kpiAssignmentCount ??
-        row.original.dukpiTargetAssignments?.length ??
-        0
-      const priority = calculatePriority(kpiCount)
-      const priorityKey = priority.toLowerCase()
-      const colorClass = getPriorityColor(priorityKey)
-      return (
-        <div
-          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${colorClass}`}
-        >
-          {priority}
-        </div>
-      )
-    },
-  },
-  {
-    id: 'dueDate',
-    header: 'Due Date',
-    cell: ({ row }) => {
-      return (
-        <span className="text-sm">
-          {calculateDueDate(row.original.submittedDate)}
-        </span>
-      )
-    },
-  },
-  {
     accessorKey: 'totalBudget',
     header: 'Total Budget',
     cell: ({ row }) => {
@@ -267,22 +211,6 @@ export const columns: ColumnDef<OPCR>[] = [
         }
       }
 
-      const handleGenerate = async () => {
-        try {
-          await meta?.onGenerate?.(opcr)
-        } catch (error) {
-          toast.error('Failed to generate OPCR')
-        }
-      }
-
-      const handleDraft = async () => {
-        try {
-          await meta?.onDraft?.(opcr)
-        } catch (error) {
-          toast.error('Failed to draft OPCR')
-        }
-      }
-
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -304,33 +232,24 @@ export const columns: ColumnDef<OPCR>[] = [
             <DropdownMenuItem onClick={handleViewDetails} disabled={isUpdating}>
               View Details
             </DropdownMenuItem>
-            {status === 'submitted' && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleApprove} disabled={isUpdating}>
-                  Approve
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleReturn} disabled={isUpdating}>
-                  Return
-                </DropdownMenuItem>
-              </>
-            )}
-            {status === 'draft' && (
+            {status?.toLowerCase() === 'submitted' && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={handleGenerate}
+                  onClick={handleApprove}
                   disabled={isUpdating}
+                  className="text-green-700 hover:text-green-800 font-medium cursor-pointer"
                 >
-                  Generate
+                  <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                  Approve
                 </DropdownMenuItem>
-              </>
-            )}
-            {status === '' && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleDraft} disabled={isUpdating}>
-                  Draft
+                <DropdownMenuItem
+                  onClick={handleReturn}
+                  disabled={isUpdating}
+                  className="text-amber-700 hover:text-amber-800 font-medium cursor-pointer"
+                >
+                  <AlertCircle className="mr-2 h-4 w-4 text-amber-600" />
+                  Return
                 </DropdownMenuItem>
               </>
             )}

@@ -70,12 +70,13 @@ export default function UpdateWFPObjectiveTargetExpenditureDialog() {
         },
         {
           onSuccess: () => {
-            // Refetch both endpoints to ensure UI reflects updated expenditure
+            // Refetch endpoints to ensure UI reflects updated expenditure
             void queryClient.invalidateQueries({
               predicate: (query) => query.queryKey.some(key =>
                 typeof key === 'string' && (
                   key.includes('/wfp-objective-activities') ||
-                  key.includes('/wfp-objective-activity-expenditures')
+                  key.includes('/wfp-objective-activity-expenditures') ||
+                  key.includes('/wfps')
                 )
               ),
             })

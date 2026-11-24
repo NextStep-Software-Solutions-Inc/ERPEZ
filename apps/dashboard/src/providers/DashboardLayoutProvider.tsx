@@ -36,18 +36,18 @@ const DashboardLayoutProvider = ({ children }: DashboardLayoutProviderProps) => 
                 <Sidebar />
 
                 <div
-                    className={cn("content-wrapper transition-all duration-150 ", {
+                    className={cn("content-wrapper transition-all duration-150 min-w-0 overflow-x-hidden", {
                         "ltr:xl:ml-18 rtl:xl:mr-18": collapsed,
                         "ltr:xl:ml-68 rtl:xl:mr-68": !collapsed,
                     })}
                 >
                     <div
                         className={cn(
-                            "pt-6 pb-8 px-4  page-min-height-semibox ",
+                            "pt-6 pb-8 px-4  page-min-height-semibox min-w-0",
 
                         )}
                     >
-                        <div className="semibox-content-wrapper ">
+                        <div className="semibox-content-wrapper min-w-0">
                             <LayoutWrapper
                                 isMobile={isMobile}
                                 setOpen={setOpen}
@@ -64,16 +64,15 @@ const DashboardLayoutProvider = ({ children }: DashboardLayoutProviderProps) => 
             </>
         );
     }
-
     if (layout === "horizontal") {
         return (
             <>
                 <Header handleOpenSearch={() => setOpen(true)} />
 
-                <div className={cn("content-wrapper transition-all duration-150 ")}>
+                <div className={cn("content-wrapper transition-all duration-150 min-w-0 overflow-x-hidden")}>
                     <div
                         className={cn(
-                            "  pt-6 px-6 pb-8  page-min-height-horizontal ",
+                            "  pt-6 px-6 pb-8  page-min-height-horizontal min-w-0",
                             {}
                         )}
                     >
@@ -100,14 +99,14 @@ const DashboardLayoutProvider = ({ children }: DashboardLayoutProviderProps) => 
                 <Sidebar />
 
                 <div
-                    className={cn("content-wrapper transition-all duration-150 ", {
+                    className={cn("content-wrapper transition-all duration-150 min-w-0 overflow-x-hidden", {
                         "ltr:xl:ml-62 rtl:xl:mr-62 ": !collapsed,
                         "ltr:xl:ml-18 rtl:xl:mr-18": collapsed,
                     })}
                 >
                     <div
                         className={cn(
-                            "  pt-6 px-6 pb-8  page-min-height ",
+                            "  pt-6 px-6 pb-8  page-min-height min-w-0",
                             {}
                         )}
                     >
@@ -133,14 +132,14 @@ const DashboardLayoutProvider = ({ children }: DashboardLayoutProviderProps) => 
             <Sidebar />
 
             <div
-                className={cn("content-wrapper transition-all duration-150 ", {
+                className={cn("content-wrapper transition-all duration-150 min-w-0 overflow-x-hidden", {
                     "ltr:xl:ml-75 rtl:xl:mr-75": !collapsed,
                     "ltr:xl:ml-18 rtl:xl:mr-18": collapsed,
                 })}
             >
                 <div
                     className={cn(
-                        " layout-padding px-6 pt-6  page-min-height ",
+                        " layout-padding px-6 pt-6  page-min-height min-w-0",
 
                     )}
                 >
@@ -184,6 +183,7 @@ const LayoutWrapper = ({
                 initial="pageInitial"
                 animate="pageAnimate"
                 exit="pageExit"
+                className="min-w-0 w-full"
                 variants={{
                     pageInitial: {
                         opacity: 0,
@@ -204,7 +204,7 @@ const LayoutWrapper = ({
                     duration: 0.5,
                 }}
             >
-                <main>{children}</main>
+                <main className="min-w-0 w-full">{children}</main>
             </motion.div>
 
             <MobileSidebar className="left-75" />

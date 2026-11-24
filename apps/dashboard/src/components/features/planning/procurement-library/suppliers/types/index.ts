@@ -1,4 +1,4 @@
-﻿export type SupplierCategoryInfo = {
+export type SupplierCategoryInfo = {
   id: string
   name: string | null
   description: string | null
@@ -9,9 +9,11 @@
 export type SupplierRequirementInfo = {
   supplierRequirementId: string
   requirementName: string | null
-  fileId: string | null
+  url?: string | null
+  fileId?: string | null
   isVerified: boolean
   createdAt: string
+  updatedAt?: string | null
 }
 
 export type SupplierListItem = {
@@ -76,6 +78,9 @@ export type SupplierRequirementFormValue = {
   requirementName: string
   file: File | null
   fileId: string | null
+  url?: string | null
+  isVerified?: boolean
+  isExisting?: boolean
 }
 
 export type SupplierStatus = 'Pending' | 'Approved' | 'Declined'
@@ -90,7 +95,25 @@ export type CreateSupplierPayload = {
   tinNumber?: string | null
   philGEPSNumber?: string | null
   supplierCategoryId: string
+  requirements?: SupplierRequirement[] | null
   supplierRequirements?: SupplierRequirement[] | null
+}
+
+export type SupplierRequirementVerificationItem = {
+  supplierRequirementId: string
+  isVerified: boolean
+}
+
+export type VerifySupplierRequirementsPayload = {
+  requirements: SupplierRequirementVerificationItem[]
+}
+
+export type UpdateSupplierRequirementItem = {
+  id?: string | null
+  requirementName: string | null
+  fileId?: string | null
+  url?: string | null
+  isVerified?: boolean | null
 }
 
 export type UpdateSupplierPayload = {
@@ -105,6 +128,8 @@ export type UpdateSupplierPayload = {
   isBlacklisted: boolean
   status?: SupplierStatus | null
   supplierCategoryId: string
+  requirements?: UpdateSupplierRequirementItem[] | null
+  supplierRequirements?: UpdateSupplierRequirementItem[] | null
 }
 
 export type UpdateSupplierStatusPayload =

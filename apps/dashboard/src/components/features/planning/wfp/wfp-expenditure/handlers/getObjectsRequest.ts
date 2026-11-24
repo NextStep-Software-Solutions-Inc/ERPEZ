@@ -1,9 +1,10 @@
 import type { Objects } from '../table/types'
-import type { QueryBlueprintFromTemplate, QueryKey } from 'erpez-shared-lib'
 import type {
   APIResponse,
   QueryParams,
-} from 'erpez-shared-lib/dist/types/Blueprint'
+  QueryBlueprintFromTemplate,
+  QueryKey,
+} from 'erpez-shared-lib'
 import api from '@/services/api'
 
 const endpoint = '/objects'
@@ -15,7 +16,7 @@ export const getObjectsRequest: QueryBlueprintFromTemplate<
   QueryKey
 > = {
   endpoint,
-  key: ({ url }) => [url],
+  key: ({ url, queryParams }) => [url, queryParams],
   fetcher: async ({ finalUrl, signal }) => {
     const response = await api.get<APIResponse<Array<Objects>>>(finalUrl, {
       signal,

@@ -1,12 +1,22 @@
-﻿import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import ManageRFQApprovalPage from '@/features/procurement/rfq/pages/ManageRFQApprovalPage'
-
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 export const Route = createFileRoute('/v2/(procurement)/manage-rfq/')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    rfqId: typeof search.rfqId === 'string' ? search.rfqId : undefined,
+  }),
   component: ManageRfqRoute,
 })
 
 function ManageRfqRoute() {
-  // Use approval page as the UI for Manage RFQ
-  return <ManageRFQApprovalPage />
+  return (
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Procurement.Rfq.Manage}
+      message="You do not have permission to manage RFQs."
+    >
+      <ManageRFQApprovalPage />
+    </RoutePermissionGuard>
+  )
 }

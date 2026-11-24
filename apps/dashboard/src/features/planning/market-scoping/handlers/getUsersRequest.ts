@@ -33,7 +33,9 @@ export const getUsersRequest: QueryBlueprintFromTemplate<
   endpoint,
   key: ({ url }) => [url] as const,
   fetcher: async ({ finalUrl, signal }) => {
-    const response = await api.get<PaginationResponse<User>>(finalUrl, { signal })
+    const response = await api.get<PaginationResponse<User>>(finalUrl, {
+      signal,
+    })
     return response.data
   },
 }

@@ -15,7 +15,7 @@ export function SatelliteClustersTab() {
 
   const { data: response } = useSatelliteClusters({
     pathParams: {},
-    queryParams: {},
+    queryParams: { pageSize: 1000, sorts: 'name' },
   })
 
   const items = response?.data ?? []

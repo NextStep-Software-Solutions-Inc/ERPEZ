@@ -7,7 +7,7 @@ import type { FieldArrayLike, FieldRenderProps, Item, LineItem, WFPExpenditureFo
 import type { CreateWFPObjectiveTargetExpenditureValues } from './schema'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select'
 import { ItemRow } from '@/components/features/planning/wfp/wfp-expenditure/form/ItemRow'
 import { formatCurrencyPHP } from '@/utils/formatters'
 import { SelectProcurementItemDialog } from '@/components/features/planning/wfp/wfp-expenditure/dialog/SelectProcurementItemDialog'
@@ -67,17 +67,63 @@ export function LineItemBlock({
       {/* Level 2: Item of Expenditure (objectId) */}
       <form.Field name={`expenditures[${expenditureIndex}].lineItems[${lineItemIndex}].objectId`}>
         {(f: FieldRenderProps<string>) => {
-          // Get all selected objectIds in this expenditure block, excluding the current field's value
-          const selectedObjectIds = lineItems
-            .map((li: LineItem) => li.objectId)
-            .filter((id) => id && (typeof f.state.value !== 'string' || id !== f.state.value))
+          const allObjects = allChildrenData?.data ?? []
 
-          const childrenOptions =
-            allChildrenData?.data?.filter(
-              (child) =>
-                child.parent?.id === currentType &&
-                !selectedObjectIds.includes(child.id)
-            ) || []
+          // Step 1: Find the Expenses root node
+          const expensesRoot = allObjects.find(
+            o => o.code === 'CLS:Expenses' || o.name?.toLowerCase() === 'expenses'
+          )
+
+          // Step 2: Collect relevant Sub-Classes (filtered by selected currentType if set)
+          const allExpenseSubClasses = allObjects.filter(
+            o => (expensesRoot && (o.parent?.id === expensesRoot.id || o.parentId === expensesRoot.id)) ||
+                 o.parent?.code === 'CLS:Expenses' ||
+                 o.parent?.name?.toLowerCase() === 'expenses'
+          )
+
+          const relevantSubClasses = currentType 
+            ? allExpenseSubClasses.filter(sc => sc.id === currentType)
+            : allExpenseSubClasses
+
+          const relevantSubClassIds = new Set(
+            (relevantSubClasses.length > 0 ? relevantSubClasses : allExpenseSubClasses).map(sc => sc.id)
+          )
+
+          // Step 3: Collect group IDs directly under those sub-classes
+          const expenseGroupMap = new Map<string, { id: string; name: string }>()
+          allObjects
+            .filter(o => o.parent?.id && relevantSubClassIds.has(o.parent.id))
+            .forEach(g => expenseGroupMap.set(g.id, { id: g.id, name: g.name }))
+
+          // Step 4: Get leaf items and group by Sub-Class → Group
+          const subClassNameById = new Map<string, string>(
+            allExpenseSubClasses.map(o => [o.id, o.name])
+          )
+
+          const groupParentSubClass = new Map<string, string>()
+          allObjects
+            .filter(o => o.parent?.id && relevantSubClassIds.has(o.parent.id))
+            .forEach(g => {
+              const scName = subClassNameById.get(g.parent!.id) ?? ''
+              groupParentSubClass.set(g.id, scName)
+            })
+
+          const leafItems = allObjects.filter(
+            o => o.parent?.id && expenseGroupMap.has(o.parent.id)
+          )
+
+          const grouped: Record<string, Record<string, Objects[]>> = {}
+          for (const item of leafItems) {
+            const groupId = item.parent!.id
+            const groupName = expenseGroupMap.get(groupId)?.name ?? 'Other'
+            const scName = groupParentSubClass.get(groupId) ?? 'Other'
+            if (!grouped[scName]) grouped[scName] = {}
+            if (!grouped[scName][groupName]) grouped[scName][groupName] = []
+            grouped[scName][groupName].push(item)
+          }
+
+          const hasOptions = leafItems.length > 0
+
           return (
             <div className="space-y-1.5">
               <Label className="text-[11px] font-bold text-gray-600 uppercase">
@@ -85,21 +131,38 @@ export function LineItemBlock({
               </Label>
               <Select
                 onValueChange={(v) => {
-                  f.handleChange(v)
+                  f.handleChange(v);
                 }}
                 value={typeof f.state.value === 'string' ? f.state.value : undefined}
-                disabled={!currentType}
               >
                 <SelectTrigger className="w-full bg-white h-10">
-                  <SelectValue placeholder={currentType ? "Select expenditure item..." : "Select Type First"} />
+                  <SelectValue placeholder={hasOptions ? 'Select expenditure item...' : 'Loading options...'} />
                 </SelectTrigger>
                 <SelectContent>
-                  {childrenOptions.length > 0 ? (
-                    childrenOptions.map((child) => (
-                      <SelectItem key={child.id} value={child.id}>{child.name}</SelectItem>
+                  {hasOptions ? (
+                    Object.entries(grouped).map(([subClass, groups]) => (
+                      <SelectGroup key={subClass}>
+                        {/* Sub-Class header */}
+                        <SelectLabel className="text-[10px] uppercase tracking-widest text-blue-600 bg-blue-50 px-2 py-1 -mx-1">
+                          {subClass}
+                        </SelectLabel>
+                        {Object.entries(groups).map(([groupName, items]) => (
+                          <SelectGroup key={groupName}>
+                            {/* Group sub-header */}
+                            <SelectLabel className="text-[11px] font-semibold text-gray-500 pl-3">
+                              {groupName}
+                            </SelectLabel>
+                            {items.map((item) => (
+                              <SelectItem key={item.id} value={item.id} className="pl-6 text-sm">
+                                {item.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        ))}
+                      </SelectGroup>
                     ))
                   ) : (
-                    <span className="text-xs text-gray-500 pl-2">No available options</span>
+                    <span className="text-xs text-gray-500 px-3 py-2 block">No expense items available</span>
                   )}
                 </SelectContent>
               </Select>

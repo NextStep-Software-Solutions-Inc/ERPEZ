@@ -1,44 +1,37 @@
 /**
- * Return APP Request Handler
- * Mutation blueprint for changing APP status from Submitted back to Draft
- * Used by HoPE to reject/return the APP for revisions
+ * returnAPPRequest
+ * Returns an APP for revision (Submitted → Returned) with a reason.
+ * Alias for rejectAppRequest — delegates to the real PATCH /apps/{id}/status endpoint.
  */
 
-import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
-import type { AppMaster } from '../types'
+import type { MutationBlueprintFromTemplate, APIResponse } from 'erpez-shared-lib'
+import api from '@/services/api'
 
-const endpoint = '/app-consolidation/:appId/return'
+const endpoint = '/apps/:appId/status' as const
 
 interface ReturnAPPPayload {
   appId: string
-  returnedAt: string
-  returnedBy: string
   returnReason: string
+}
+
+interface ReturnAPPResult {
+  id: string
+  status: string
 }
 
 export const returnAPPRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
-  AppMaster,
+  ReturnAPPResult,
   undefined,
   ReturnAPPPayload
 > = {
   endpoint,
-  fetcher: async ({ payload }) => {
-    // TODO: Replace with real API call when backend is ready
-    // const response = await api.post(finalUrl, payload)
-    // return response.data
-    
+  fetcher: async ({ finalUrl, payload }) => {
     if (!payload) throw new Error('Payload is required')
-    
-    // Mock implementation
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    
-    return {
-      status: 'draft',
-      returnedAt: payload.returnedAt,
-      returnedBy: payload.returnedBy,
-      returnReason: payload.returnReason,
-      updatedAt: payload.returnedAt,
-    } as any
+    const response = await api.patch<APIResponse<ReturnAPPResult>>(finalUrl, {
+      status: 'Returned',
+      remarks: payload.returnReason,
+    })
+    return response.data.data
   },
 }

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * CreateItemDialog
  * Modal for creating a new Non-CSE catalog item.
  * Controlled by createItemDialogOpenAtom.
@@ -38,7 +38,6 @@ export function CreateItemDialog() {
       uacsCode: data.uacsCode ?? null,
       unspscCode: data.unspscCode,
       isCSE: data.isCSE,
-      isActive: data.status === 'Active',
     }
     createItem(input)
     toast.success(`"${data.name}" added to catalog.`)

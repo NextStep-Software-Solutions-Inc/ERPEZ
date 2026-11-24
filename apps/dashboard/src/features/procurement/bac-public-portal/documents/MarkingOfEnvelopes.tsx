@@ -13,10 +13,10 @@ export function MarkingOfEnvelopes() {
   }
 
   const EnvelopeCard = ({
-    label,
+    label: _label,
     typeLabel,
   }: {
-    label: string
+    label?: string
     typeLabel: string
   }) => (
     <div

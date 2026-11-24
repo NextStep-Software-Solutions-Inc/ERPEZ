@@ -27,7 +27,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import type { PPMPManagementSearch } from '@/routes/v2/ppmp/constants'
+import type { PPMPManagementSearch } from '@/routes/v2/(planning)/ppmp/constants'
 import DebouncedInput from '@/components/ui/DebouncedInput'
 import {
   Select,
@@ -93,7 +93,9 @@ export function DataTable<TData, TValue>({
       if (lib.status !== 'Approved' && lib.status !== 'Proposed') {
         return false
       }
-      const isSuperseded = libs.some((other) => other.previousVersionId === lib.id)
+      const isSuperseded = libs.some(
+        (other) => other.previousVersionId === lib.id,
+      )
       if (isSuperseded) {
         return false
       }
@@ -139,7 +141,7 @@ export function DataTable<TData, TValue>({
                 pageNumber: 1,
               }))
             }
-            className="h-9 min-w-[200px] max-w-xs border-primary/20 focus-visible:ring-primary/30"
+            className="h-9 min-w-50 max-w-xs border-primary/20 focus-visible:ring-primary/30"
           />
 
           {/* Status Filter */}
@@ -153,14 +155,16 @@ export function DataTable<TData, TValue>({
               }))
             }
           >
-            <SelectTrigger className="h-9 w-[150px] border-primary/20">
+            <SelectTrigger className="h-9 w-37.5 border-primary/20">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="pending_review">Pending Review</SelectItem>
+              <SelectItem value="submitted">Submitted</SelectItem>
+              <SelectItem value="returned">Returned</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="pending_review">Pending Review</SelectItem>
               <SelectItem value="amending">Amending</SelectItem>
               <SelectItem value="superseded">Superseded</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>
@@ -178,10 +182,10 @@ export function DataTable<TData, TValue>({
               }))
             }
           >
-            <SelectTrigger className="h-9 w-[150px] border-primary/20">
+            <SelectTrigger className="h-9 w-37.5 border-primary/20">
               <SelectValue placeholder="Fiscal Year" />
             </SelectTrigger>
-             <SelectContent>
+            <SelectContent>
               <SelectItem value="all">All Fiscal Years</SelectItem>
               {sortedFiscalYears.map((fy) => (
                 <SelectItem key={fy.id} value={fy.id}>
@@ -202,7 +206,7 @@ export function DataTable<TData, TValue>({
               }))
             }
           >
-            <SelectTrigger className="h-9 w-[150px] border-primary/20">
+            <SelectTrigger className="h-9 w-37.5 border-primary/20">
               <SelectValue placeholder="Office" />
             </SelectTrigger>
             <SelectContent>
@@ -226,7 +230,7 @@ export function DataTable<TData, TValue>({
               }))
             }
           >
-            <SelectTrigger className="h-9 w-[150px] border-primary/20">
+            <SelectTrigger className="h-9 w-37.5 border-primary/20">
               <SelectValue placeholder="Line Item Budget" />
             </SelectTrigger>
             <SelectContent>
@@ -270,16 +274,17 @@ export function DataTable<TData, TValue>({
             </DropdownMenu>
           </div>
         </div>
-        <div>
-          <Button
-            onClick={onCreateNew}
-            disabled={!onCreateNew}
-            size="sm"
-            className="h-9"
-          >
-            Create New Master PPMP
-          </Button>
-        </div>
+        {onCreateNew && (
+          <div>
+            <Button
+              onClick={onCreateNew}
+              size="sm"
+              className="h-9"
+            >
+              Create New Master PPMP
+            </Button>
+          </div>
+        )}
       </div>
       <div className="overflow-hidden rounded-md border">
         <Table>
@@ -353,7 +358,7 @@ export function DataTable<TData, TValue>({
                 }))
               }}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-8 w-17.5">
                 <SelectValue
                   placeholder={String(searchParams.pageSize ?? 10)}
                 />
@@ -367,7 +372,7 @@ export function DataTable<TData, TValue>({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+          <div className="flex w-25 items-center justify-center text-sm font-medium">
             Page {searchParams.pageNumber ?? 1} of {pageCount || 1}
           </div>
           <div className="flex items-center space-x-2">

@@ -1,16 +1,19 @@
-export const getExpenseClassesRequest = {
-  endpoint: '/expense-classes',
-  key: ({ url }: { url: string }) => [url] as const,
-  fetcher: async ({ finalUrl }: { finalUrl: string }) => {
-    const response = await fetch(finalUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-    })
-    if (!response.ok) {
-      throw new Error(`Failed to fetch expense classes: ${response.statusText}`)
-    }
-    return response.json()
+import type { QueryBlueprintFromTemplate, QueryKey, PaginationResponse, QueryParams } from 'erpez-shared-lib'
+import type { ExpenseClass } from '../types/expenseClassTypes'
+import api from '@/services/api'
+
+const endpoint = '/expense-classes'
+
+export const getExpenseClassesRequest: QueryBlueprintFromTemplate<
+  typeof endpoint,
+  PaginationResponse<ExpenseClass>,
+  QueryParams,
+  QueryKey
+> = {
+  endpoint,
+  key: ({ url }) => [url] as const,
+  fetcher: async ({ finalUrl, signal }) => {
+    const response = await api.get<PaginationResponse<ExpenseClass>>(finalUrl, { signal })
+    return response.data
   },
 }

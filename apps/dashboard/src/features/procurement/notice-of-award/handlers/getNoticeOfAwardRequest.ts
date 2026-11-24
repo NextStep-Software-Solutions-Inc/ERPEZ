@@ -1,17 +1,20 @@
-﻿import { findNoticeOfAward } from '../data/mockNoticeOfAwardData'
+﻿import api from '@/services/api'
+import type { APIResponse } from 'erpez-shared-lib'
+import type { NoticeOfAward } from '../types'
+import {
+  mapDetailDtoToNoticeOfAward,
+  type BackendNoticeOfAwardDetailDto,
+} from '../utils/mapNoticeOfAward'
 
 export const getNoticeOfAwardRequest = {
   endpoint: '/notice-of-awards/:id',
   key: null,
-  fetcher: async ({ noaId }: { noaId: string }) => {
-    await new Promise((resolve) => window.setTimeout(resolve, 120))
-
-    const noticeOfAward = findNoticeOfAward(noaId)
-
-    if (!noticeOfAward) {
-      throw new Error('Notice of Award not found.')
+  fetcher: async ({ noaId }: { noaId: string }): Promise<NoticeOfAward> => {
+    const response = await api.get<APIResponse<BackendNoticeOfAwardDetailDto>>(`/notice-of-awards/${noaId}`)
+    if (!response.data?.data) {
+      throw new Error(response.data?.message || 'Notice of Award not found.')
     }
 
-    return noticeOfAward
+    return mapDetailDtoToNoticeOfAward(response.data.data)
   },
 }

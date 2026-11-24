@@ -58,7 +58,7 @@ export function UnitDetailsMetadata({ unit }: UnitDetailsMetadataProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
           <p className="text-[10px] font-medium text-default-400 uppercase">Category</p>
-          <p className="font-medium text-sm text-default-700">{unit.category ?? '—'}</p>
+          <p className="font-medium text-sm text-default-700">{unit.categoryName ?? unit.category ?? '—'}</p>
         </div>
 
         <div className="space-y-2">

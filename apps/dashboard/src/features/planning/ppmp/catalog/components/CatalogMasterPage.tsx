@@ -1,4 +1,4 @@
-﻿/**
+/**
  * CatalogMasterPage
  * RBAC-enabled main page for Item Management (formerly "Non-CSE Item Catalog")
  *
@@ -44,12 +44,12 @@ export function CatalogMasterPage() {
 
   // Determine available tabs based on role
   const userTabs = [
-    { id: 'active-catalog', label: 'Browse Library' },
+    { id: 'active-catalog', label: 'Browse Catalog' },
     { id: 'my-requests', label: 'My Requests' },
   ]
 
   const adminTabs = [
-    { id: 'master-catalog', label: 'Master Library' },
+    { id: 'master-catalog', label: 'Master Catalog' },
     { id: 'pending-queue', label: 'Request Queue' },
   ]
 
@@ -63,11 +63,11 @@ export function CatalogMasterPage() {
 
   return (
     <PageContainerDashtail
-      title="Item Management"
+      title="Item Catalog"
       description={
         userRole === 'user'
-          ? 'Browse approved items and submit requests for new items'
-          : 'Manage master library items and review item requests from office planners'
+          ? 'Browse approved catalog items and submit requests for new items'
+          : 'Manage master catalog items and review item requests from offices'
       }
       titleIcon={<Package className="h-5 w-5 text-primary" />}
       mode="tabbed"

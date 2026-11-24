@@ -26,18 +26,25 @@ export function transformAPPItemsToBACLineItems(app: AppMaster): BACLineItem[] {
     return transformAggregatedItemsToBACLineItems(app)
   }
 
-  return items.map((appItem) => {
+  return items.map((appItem: any) => {
     return {
       id: appItem.id,
+      papCode: appItem.papCode || '',
       code: appItem.papCode || appItem.code || '',
       description: appItem.ppmpItemName || appItem.description || 'Procurement Item',
       unit: appItem.unit || 'unit',
       quantity: appItem.quantity || 1,
       unitCost: appItem.unitCost || 0,
-      totalAmount: appItem.totalAmount || 0,
+      totalAmount: appItem.effectiveABC || appItem.totalAmount || 0,
       modeOfProcurement: appItem.procurementModeName || appItem.modeOfProcurement || '',
       office: appItem.officeName || appItem.office || '',
       fundSource: appItem.fundSourceName || appItem.fundSource || '',
+      startOfProcurementOverride: appItem.startOfProcurementOverride || (appItem.effectiveStartOfProcurement ? appItem.effectiveStartOfProcurement.split('T')[0] : ''),
+      endOfProcurementOverride: appItem.endOfProcurementOverride || (appItem.effectiveEndOfProcurement ? appItem.effectiveEndOfProcurement.split('T')[0] : ''),
+      estimatedBudgetOverride: appItem.estimatedBudgetOverride !== undefined && appItem.estimatedBudgetOverride !== null ? appItem.estimatedBudgetOverride : undefined,
+      isOutsourced: appItem.isOutsourced || false,
+      isNew: appItem.isNew || false,
+      isRevised: appItem.isRevised || false,
       schedules: (appItem.schedules || []).map((s: any) => ({
         id: s.id || `sch-${Math.random()}`,
         period: s.procurementActivityTypeName || '',
@@ -67,6 +74,7 @@ export function transformAggregatedItemsToBACLineItems(app: AppMaster): BACLineI
 
       return {
         id: ppmpItem.id,
+        papCode: ppmpItem.papCode || '',
         description: ppmpItem.description,
         unit: ppmpItem.unit,
         quantity: ppmpItem.quantity,

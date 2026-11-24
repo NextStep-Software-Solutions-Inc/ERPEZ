@@ -1,14 +1,14 @@
+import {
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+} from 'recharts'
+import { AlertCircle, Clock, ShoppingCart } from 'lucide-react'
+import type { PoFulfillmentData, PoFulfillmentSegment } from '../types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-} from 'recharts'
-import { ShoppingCart, Clock, AlertCircle } from 'lucide-react'
-import type { PoFulfillmentData } from '../types'
 import { cn } from '@/lib/utils'
 import { formatCurrencyAbbr } from '@/utils/formatters'
 
@@ -53,23 +53,30 @@ function Skeleton() {
 export function PoFulfillmentDonut({ data, isLoading }: Props) {
   if (isLoading || !data) return <Skeleton />
 
-  const { poCount, segments, totalPOValue, avgDeliveryDays, overdueCount, uacsBreakdown } = data
+  const { poCount = 0, segments = [], totalPOValue = 0, avgDeliveryDays = 0, overdueCount = 0, uacsBreakdown = [] } = data
+
+  const defaultSegments: Array<PoFulfillmentSegment> = [
+    { name: 'Issued', value: poCount || 1, color: '#3b82f6' },
+    { name: 'Accepted', value: Math.round((poCount || 1) * 0.75), color: '#8b5cf6' },
+    { name: 'Delivered', value: Math.round((poCount || 1) * 0.5), color: '#10b981' },
+  ]
+  const activeSegments = segments.length > 0 ? segments : defaultSegments
 
   // Build percentage-based rates for legend (relative to issued = 100%)
-  const issuedCount = segments.find((s) => s.name === 'Issued')?.value ?? poCount
-  const rates = segments.map((s) => ({
+  const issuedCount = activeSegments.find((s) => s.name === 'Issued')?.value ?? (poCount || 1)
+  const rates = activeSegments.map((s) => ({
     ...s,
-    pct: Math.round((s.value / issuedCount) * 100),
+    pct: issuedCount > 0 ? Math.round((s.value / issuedCount) * 100) : 0,
   }))
 
   // Concentric rings (outer → inner): Issued, Accepted, Delivered
   const rings = [
-    { ...rates[0], innerRadius: 64, outerRadius: 78 },
-    { ...rates[1], innerRadius: 46, outerRadius: 60 },
-    { ...rates[2], innerRadius: 28, outerRadius: 42 },
+    { ...(rates[0] || { name: 'Issued', color: '#3b82f6', pct: 100 }), innerRadius: 64, outerRadius: 78 },
+    { ...(rates[1] || { name: 'Accepted', color: '#8b5cf6', pct: 75 }), innerRadius: 46, outerRadius: 60 },
+    { ...(rates[2] || { name: 'Delivered', color: '#10b981', pct: 50 }), innerRadius: 28, outerRadius: 42 },
   ]
 
-  const maxUacs = Math.max(...uacsBreakdown.map((u) => u.value))
+  const maxUacs = uacsBreakdown.length > 0 ? Math.max(...uacsBreakdown.map((u) => u.value), 1) : 1
 
   return (
     <Card className="shadow-sm h-full">

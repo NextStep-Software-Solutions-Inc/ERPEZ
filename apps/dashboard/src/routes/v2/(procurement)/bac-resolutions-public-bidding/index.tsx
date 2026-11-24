@@ -1,9 +1,12 @@
-﻿import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { PublicBacResolutionsPage } from '@/features/procurement/bac-resolution/pages'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 const searchSchema = z.object({
   selectedResolutionId: z.string().optional(),
+  id: z.string().optional(),
   role: z.enum(['procurement-staff', 'bac-chairperson']).optional(),
 })
 
@@ -18,9 +21,14 @@ function PublicBacResolutionsRoute() {
   const search = Route.useSearch()
 
   return (
-    <PublicBacResolutionsPage
-      selectedResolutionId={search.selectedResolutionId}
-      role={search.role}
-    />
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Procurement.Bac.Manage}
+      message="You do not have permission to view Competitive Bidding BAC Resolutions."
+    >
+      <PublicBacResolutionsPage
+        selectedResolutionId={search.selectedResolutionId || search.id}
+        role={search.role}
+      />
+    </RoutePermissionGuard>
   )
 }

@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   APIResponse,
   MutationBlueprintFromTemplate,
   QueryParams,
@@ -9,7 +9,7 @@ import { LIB } from '../types'
 const endpoint = '/libs/:id/status'
 
 export type UpdateLIBStatusPayload = {
-  status: 'Draft' | 'Submitted' | 'Approved' | 'Rejected'
+  status: 'Draft' | 'Submitted' | 'Approved' | 'Returned' | 'Rejected'
 }
 
 export const updateLIBStatusRequest: MutationBlueprintFromTemplate<

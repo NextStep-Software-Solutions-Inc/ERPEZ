@@ -41,6 +41,11 @@ export const DEFAULT_AUTO_TAG_RULES: AutoTagRule[] = [
     expenseClass: ExpenseClass.CO,
     description: 'Capital Outlay (Buildings, Equipment)',
   },
+  {
+    prefix: '506',
+    expenseClass: ExpenseClass.CO,
+    description: 'Capital Outlay (Equipment, Infrastructure)',
+  },
 ]
 
 /**

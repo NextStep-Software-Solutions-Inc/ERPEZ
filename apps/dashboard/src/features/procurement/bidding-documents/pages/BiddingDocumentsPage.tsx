@@ -1,6 +1,6 @@
-﻿import { Link } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { FileCheck2, FolderOpenDot, Lock } from 'lucide-react'
-import { PROCUREMENT_CATEGORY_LABELS } from '../../bidding-schedule/data/mockBiddingScheduleData'
+import { PROCUREMENT_CATEGORY_LABELS } from '../../bidding-schedule/types'
 import {
   areAllGatesPassed,
   canGenerateBiddingDocument,

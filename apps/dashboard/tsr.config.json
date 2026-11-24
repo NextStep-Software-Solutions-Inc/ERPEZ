@@ -1,0 +1,6 @@
+{
+  "routesDirectory": "./src/routes",
+  "generatedRouteTree": "./src/routeTree.gen.ts",
+  "routeFileIgnorePrefix": "-",
+  "routeFileIgnorePattern": "((^|/)\\.[^/]+|\\.(test|spec)\\.(js|jsx|ts|tsx)$|constants\\.ts$|_constants\\.ts$)"
+}

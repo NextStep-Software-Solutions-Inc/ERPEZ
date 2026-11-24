@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   ArrowLeft,
   Download,
@@ -26,6 +26,7 @@ import { getLIBRequest } from '@/features/planning/line-item-budgeting/line-item
 import { getLIBActivitiesRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/getLIBActivitiesRequest'
 import { getWFPRequest } from '@/components/features/planning/wfp/wfp/handlers/getWFPRequest'
 import { getOPCRRequest, OPCRActivity } from '@/features/planning/opcr'
+import { useOfficeCeilings } from '@/features/planning/line-item-budgeting/line-item-budget/hooks/useOfficeCeilings'
 import { OPCRActivityDetails } from '@/features/planning/opcr/components/OPCRActivityDetails'
 import { formatCurrencyPHP } from '@/utils/formatters'
 import CreateLIBActivityDialog from '../../../features/planning/line-item-budgeting/line-item-budget/dialogs/CreateLIBActivityDialog'
@@ -42,7 +43,11 @@ import {
   WFPObjectiveActivity,
   WFPObjectiveActivityExpenditure,
 } from '@/features/planning/wfp/types/type.wfp'
-import OrphanLineItemsView from '@/features/planning/line-item-budgeting/line-item-budget-details/components/OrphanLineItemsView'
+import GroupedExpenditureItemsView from '@/features/planning/line-item-budgeting/line-item-budget-details/components/GroupedExpenditureItemsView'
+import { groupExpenditureItems } from '@/features/planning/line-item-budgeting/line-item-budget-details/utils/groupExpenditureData'
+import type { LineItemBudgetDetails } from '@/features/planning/line-item-budgeting/line-item-budget-details/types/types'
+import { ViewLineItemBudgetDetailsDialog } from '@/features/planning/line-item-budgeting/line-item-budget-details/components/ViewLineItemBudgetDetailsDialog'
+import { EditLineItemBudgetDetailsDialog } from '@/features/planning/line-item-budgeting/line-item-budget-details/components/EditLineItemBudgetDetailsDialog'
 import { updateLIBStatusRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/updateLIBStatusRequest'
 import { generateLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/generateLIBDocumentRequest'
 import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
@@ -55,7 +60,10 @@ import {
 import { LIBSummaryDialog } from './dialogs/LIBSummaryDialog'
 import { LIBHistoryDialog } from './dialogs/LIBHistoryDialog'
 import { LayoutDashboard, History } from 'lucide-react'
-
+import {
+  LIBApprovalDialog,
+  LIBReadinessCard,
+} from '@/features/planning/line-item-budgeting/line-item-budget/components'
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -82,6 +90,8 @@ const getStatusBadgeColor = (status: string) => {
       return 'bg-yellow-100 text-yellow-700'
     case 'Returned':
       return 'bg-orange-100 text-orange-700'
+    case 'Proposed':
+      return 'bg-blue-100 text-blue-700'
     default:
       return 'bg-gray-100 text-gray-700'
   }
@@ -109,8 +119,8 @@ const useDownloadLIBDocument = createMutationHookFromTemplate(
 )
 
 export default function LIBDetailPage({
-  onBack = () => { },
-  onEdit = () => { },
+  onBack = () => {},
+  onEdit = () => {},
 }: {
   onBack?: () => void
   onEdit?: () => void
@@ -137,11 +147,29 @@ export default function LIBDetailPage({
   const isSubmitting = isLibSubmitting
   const [isExporting, setIsExporting] = useState<boolean>(false)
   const [isSubmitConfirmOpen, setIsSubmitConfirmOpen] = useState<boolean>(false)
+  const [isApprovalLoading] = useState<boolean>(false)
   const [showSummary, setShowSummary] = useState<boolean>(false)
   const [showHistory, setShowHistory] = useState<boolean>(false)
+  const [approvalDialogState, setApprovalDialogState] = useState<{
+    open: boolean
+    action: 'approve' | 'reject'
+    libId: string | null
+    libName: string
+  }>({
+    open: false,
+    action: 'approve',
+    libId: null,
+    libName: '',
+  })
   const [deletingOrphanItemId, setDeletingOrphanItemId] = useState<
     string | null
   >(null)
+  const [viewingOrphanItem, setViewingOrphanItem] = useState<LineItemBudgetDetails | null>(
+    null,
+  )
+  const [editingOrphanItem, setEditingOrphanItem] = useState<LineItemBudgetDetails | null>(
+    null,
+  )
 
   const handleExport = async (format: 'Excel' | 'Pdf') => {
     if (!libId) return
@@ -150,7 +178,7 @@ export default function LIBDetailPage({
     const exportPromise = (async () => {
       const genResponse = await generateLIBDocument({
         pathParams: { libId },
-        queryParams: { format }
+        queryParams: { format },
       })
 
       const documentId = genResponse.data
@@ -159,7 +187,7 @@ export default function LIBDetailPage({
       }
 
       const downloadResponse = await downloadLIBDocument({
-        pathParams: { documentId }
+        pathParams: { documentId },
       })
 
       const blob = downloadResponse.blob
@@ -181,7 +209,8 @@ export default function LIBDetailPage({
     toast.promise(exportPromise, {
       loading: `Generating and downloading ${format} document...`,
       success: `${format} document downloaded successfully!`,
-      error: (err) => err instanceof Error ? err.message : `Failed to export document.`,
+      error: (err) =>
+        err instanceof Error ? err.message : `Failed to export document.`,
     })
 
     try {
@@ -207,14 +236,25 @@ export default function LIBDetailPage({
   })
 
   // Fetch LIB Activities filtered by libId
-  const { data: libActivitiesData, isLoading: isLIBActivitiesLoading } =
-    useLIBActivities({
-      pathParams: {},
-      queryParams: {
-        filters: `lineItemBudgetId==${libId}`,
-      },
-      enabled: !!libId,
-    })
+  const {
+    data: libActivitiesData,
+    isLoading: isLIBActivitiesLoading,
+    refetch: refetchLibActivities,
+  } = useLIBActivities({
+    pathParams: {},
+    queryParams: {
+      filters: `lineItemBudgetId==${libId}`,
+    },
+    enabled: !!libId,
+  })
+
+  // Whenever returning from activity expenditures view, immediately refetch to evaluate readiness without delay
+  useEffect(() => {
+    if (libId && !libActivityId) {
+      void refetch()
+      void refetchLibActivities()
+    }
+  }, [libId, libActivityId, refetch, refetchLibActivities])
 
   const lib = libData?.data
   const displayActivities = libActivitiesData?.data || []
@@ -244,33 +284,90 @@ export default function LIBDetailPage({
     )
   }
 
-  const totalBudgetFromSource = opcrData?.data?.totalBudget ?? lib?.totalAmount
+  const totalBudgetFromSource =
+    lib?.sourceType === 'OPCR'
+      ? (opcrData?.data?.totalBudget ?? lib?.totalAmount)
+      : lib?.sourceType === 'WFP'
+        ? (wfpData?.data?.proposedBudget ?? lib?.totalAmount)
+        : lib?.totalAmount
 
   //Calculate total amount from all activities added from each activities's expenditures
-  const activityDetailsBudget = lib?.activities?.reduce(
-    (total, activity) =>
-      total +
-      (activity?.details || [])?.reduce(
-        (detailTotal, detail) => detailTotal + (detail.budget ?? 0),
-        0,
-      ),
-    0,
-  ) ?? 0
+  const activityDetailsBudget =
+    lib?.activities?.reduce(
+      (total, activity) =>
+        total +
+        (activity?.details || [])?.reduce(
+          (detailTotal, detail) => detailTotal + (detail.budget ?? 0),
+          0,
+        ),
+      0,
+    ) ?? 0
 
-  const orphanDetailsBudget = (lib?.orphanDetails as OrphanLineItemDetail[] | undefined)?.reduce(
-    (total, detail) => total + (detail.budget ?? 0),
-    0,
-  ) ?? 0
+  const orphanDetailsBudget =
+    (lib?.orphanDetails as OrphanLineItemDetail[] | undefined)?.reduce(
+      (total, detail) => total + (detail.budget ?? 0),
+      0,
+    ) ?? 0
 
-  const totalActivitiesDetailBudget = activityDetailsBudget + orphanDetailsBudget
+  const totalActivitiesDetailBudget =
+    activityDetailsBudget + orphanDetailsBudget
+  const proposedLibTotalBudget = Math.max(
+    totalActivitiesDetailBudget,
+    lib?.totalAmount ?? 0,
+  )
 
-  // Check if LIB is ready for submission
+  // Fetch office ceilings to validate against department ceiling
+  const ceilingFilters = [
+    lib?.officeId ? `officeId==${lib.officeId}` : '',
+    lib?.fiscalYearId ? `fiscalYearId==${lib.fiscalYearId}` : '',
+  ]
+    .filter(Boolean)
+    .join(',')
+
+  const { data: officeCeilingsData } = useOfficeCeilings({
+    pathParams: {},
+    queryParams: {
+      filters: ceilingFilters,
+    },
+    enabled: !!lib?.officeId,
+  })
+
+  const departmentCeiling = useMemo(() => {
+    if (lib?.departmentCeiling) return Number(lib.departmentCeiling)
+    if (lib?.officeCeiling?.totalAmount)
+      return Number(lib.officeCeiling.totalAmount)
+    if (lib?.agencyMasterBudget?.totalAmount)
+      return Number(lib.agencyMasterBudget.totalAmount)
+    const ceilings = officeCeilingsData?.data || []
+    if (ceilings.length > 0) {
+      const ambId = lib?.agencyMasterBudgetId
+      if (ambId) {
+        const match = ceilings.find(
+          (c) =>
+            c.agencyMasterBudgetId === ambId ||
+            c.agencyMasterBudget?.id === ambId,
+        )
+        if (match?.agencyMasterBudget?.totalAmount)
+          return Number(match.agencyMasterBudget.totalAmount)
+      }
+      return Number(ceilings[0]?.agencyMasterBudget?.totalAmount || 0)
+    }
+    return null
+  }, [lib, officeCeilingsData])
+
+  const isCeilingExceeded =
+    departmentCeiling != null &&
+    departmentCeiling > 0 &&
+    proposedLibTotalBudget > departmentCeiling
+
+  // Check if LIB is ready for submission (proposed totalBudget >= OPCR/Source totalBudget)
   const isReadyForSubmission =
-    totalBudgetFromSource !== undefined &&
-    totalBudgetFromSource > 0 &&
-    totalActivitiesDetailBudget >= totalBudgetFromSource &&
-    lib?.activities &&
-    lib.activities.length > 0
+    !isCeilingExceeded &&
+    (totalBudgetFromSource !== undefined && totalBudgetFromSource > 0
+      ? proposedLibTotalBudget >= totalBudgetFromSource
+      : proposedLibTotalBudget > 0 ||
+        (lib?.activities && lib.activities.length > 0) ||
+        (lib?.orphanDetails && lib.orphanDetails.length > 0))
 
   const activityCount = lib?.activities?.length ?? 0
   const opcrActivityCount = opcrData?.data?.activityCount
@@ -343,42 +440,25 @@ export default function LIBDetailPage({
     )
   }
 
-  // Handler for deleting orphan line items
-  const handleDeleteOrphanItem = async (item: OrphanLineItemDetail) => {
-    setDeletingOrphanItemId(item.id)
-    try {
-      await deleteLineItemBudgetDetails(
-        {
-          pathParams: { id: item.id },
-        },
-        {
-          onSuccess: async () => {
-            toast.success('Orphan line item deleted successfully!')
-            void refetch()
-          },
-        },
-      )
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to delete line item'
-      toast.error(message)
-    } finally {
-      setDeletingOrphanItemId(null)
-    }
-  }
-
   // Handler for submitting LIB
   const handleSubmitLIB = async () => {
+    if (!libId) return
+    if (isCeilingExceeded) {
+      toast.error(
+        `Cannot submit: Total budget (${formatCurrencyPHP(proposedLibTotalBudget)}) exceeds the department ceiling (${formatCurrencyPHP(departmentCeiling!)}).`,
+      )
+      return
+    }
     try {
       await updateLIBStatus(
         {
-          pathParams: { id: libId || '' },
+          pathParams: { id: libId },
           queryParams: {},
           payload: { status: 'Submitted' },
         },
         {
           onSuccess: async () => {
-            toast.success('LIB submitted successfully!')
+            toast.success('LIB submitted for approval successfully!')
             setIsSubmitConfirmOpen(false)
             void refetch()
             void queryClient.invalidateQueries({
@@ -396,6 +476,67 @@ export default function LIBDetailPage({
     }
   }
 
+  // Handler for approving LIB
+  const handleApproveLIB = (id: string, name?: string) => {
+    setApprovalDialogState({
+      open: true,
+      action: 'approve',
+      libId: id,
+      libName: name || lib?.name || 'Line-Item Budget',
+    })
+  }
+
+  // Handler for rejecting / returning LIB
+  const handleRejectLIB = (id: string, name?: string) => {
+    setApprovalDialogState({
+      open: true,
+      action: 'reject',
+      libId: id,
+      libName: name || lib?.name || 'Line-Item Budget',
+    })
+  }
+
+  const handleConfirmApproval = async () => {
+    if (!approvalDialogState.libId) return
+    try {
+      const targetStatus =
+        approvalDialogState.action === 'approve' ? 'Approved' : 'Returned'
+      await updateLIBStatus(
+        {
+          pathParams: { id: approvalDialogState.libId },
+          queryParams: {},
+          payload: { status: targetStatus },
+        },
+        {
+          onSuccess: async () => {
+            const actionLabel =
+              approvalDialogState.action === 'approve'
+                ? 'approved'
+                : 'returned for revision'
+            toast.success(
+              `LIB "${approvalDialogState.libName}" has been ${actionLabel}!`,
+            )
+            setApprovalDialogState({
+              open: false,
+              action: 'approve',
+              libId: null,
+              libName: '',
+            })
+            void refetch()
+            await queryClient.invalidateQueries({
+              predicate: (query) =>
+                typeof query.queryKey[0] === 'string' &&
+                query.queryKey[0].startsWith('/libs'),
+            })
+          },
+        },
+      )
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to update LIB status'
+      toast.error(message)
+    }
+  }
 
   const stats = [
     {
@@ -415,7 +556,16 @@ export default function LIBDetailPage({
       value:
         typeof lib?.fiscalYear === 'string'
           ? lib.fiscalYear
-          : lib?.fiscalYear?.year || 'N/A',
+          : lib?.fiscalYear?.year
+            ? lib.fiscalYear.year.toString()
+            : wfpData?.data?.projectStartDate && wfpData?.data?.projectEndDate
+              ? new Date(wfpData.data.projectStartDate).getFullYear() ===
+                new Date(wfpData.data.projectEndDate).getFullYear()
+                ? new Date(wfpData.data.projectStartDate)
+                    .getFullYear()
+                    .toString()
+                : `${new Date(wfpData.data.projectStartDate).getFullYear()} – ${new Date(wfpData.data.projectEndDate).getFullYear()}`
+              : 'N/A',
       icon: <Calendar className="h-5 w-5" />,
       gradientClass: 'from-purple-50/40 to-white hover:from-purple-50/70',
       borderClass: 'from-purple-400 to-purple-600',
@@ -431,7 +581,8 @@ export default function LIBDetailPage({
       icon: <Coins className="h-5 w-5" />,
       gradientClass: 'from-emerald-50/40 to-white hover:from-emerald-50/70',
       borderClass: 'from-emerald-400 to-emerald-600',
-      iconColorClass: 'bg-emerald-50 text-emerald-600 border border-emerald-100',
+      iconColorClass:
+        'bg-emerald-50 text-emerald-600 border border-emerald-100',
     },
   ]
   return (
@@ -507,7 +658,12 @@ export default function LIBDetailPage({
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2" disabled={isExporting}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    disabled={isExporting}
+                  >
                     {isExporting ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
@@ -530,7 +686,7 @@ export default function LIBDetailPage({
                 variant="outline"
                 size="sm"
                 className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-              // onClick={() => setShowDeleteDialog(true)}
+                // onClick={() => setShowDeleteDialog(true)}
               >
                 <Trash2 className="w-4 h-4" />
                 Delete
@@ -542,29 +698,79 @@ export default function LIBDetailPage({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Ready for Submission Banner */}
-        {isReadyForSubmission && lib?.status === 'Draft' && (
-          <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 mb-8 flex items-start justify-between">
+        {/* Workflow & Submission Readiness Persistent Card */}
+        <LIBReadinessCard
+          lib={lib}
+          departmentCeiling={departmentCeiling}
+          isLoading={
+            isLoading ||
+            (lib?.sourceType === 'OPCR'
+              ? isOPCRLoading
+              : lib?.sourceType === 'WFP'
+                ? isWFPLoading
+                : false) ||
+            isLIBActivitiesLoading
+          }
+          onOpenSubmit={() => {
+            if (isCeilingExceeded) {
+              toast.error(
+                `Cannot submit: Total budget exceeds the department ceiling (${formatCurrencyPHP(departmentCeiling!)}).`,
+              )
+              return
+            }
+            setIsSubmitConfirmOpen(true)
+          }}
+          onOpenApprove={
+            lib?.status === 'Submitted'
+              ? () => handleApproveLIB(lib.id, lib.name)
+              : undefined
+          }
+          onOpenReject={
+            lib?.status === 'Submitted'
+              ? () => handleRejectLIB(lib.id, lib.name)
+              : undefined
+          }
+          isSubmitting={isSubmitting}
+        />
+
+        {/* Department Ceiling Exceeded Banner */}
+        {isCeilingExceeded && (
+          <div className="bg-rose-50/90 border-l-4 border-rose-500 rounded-xl p-4 mb-8 flex items-center justify-between shadow-xs">
             <div className="flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-semibold text-green-800 text-sm">
-                  Ready for Submission
+                <h3 className="font-semibold text-rose-900 text-sm">
+                  Department Ceiling Exceeded
                 </h3>
-                <p className="text-green-700 text-sm mt-1">
-                  Total expenditures ({formatCurrencyPHP(totalActivitiesDetailBudget)}) have met or
-                  exceeded the total budget. You can now submit this LIB.
+                <p className="text-rose-700 text-sm mt-0.5">
+                  The current Line-Item Budget total (
+                  {formatCurrencyPHP(proposedLibTotalBudget)}) exceeds the
+                  authorized department ceiling (
+                  {formatCurrencyPHP(departmentCeiling!)}). Submission is
+                  blocked until line-item expenditures are adjusted within the
+                  ceiling.
                 </p>
               </div>
             </div>
-            <Button
-              onClick={() => setIsSubmitConfirmOpen(true)}
-              disabled={isSubmitting}
-              className="bg-green-600 hover:bg-green-700 text-white flex-shrink-0 ml-4"
-              size="sm"
-            >
-              {isSubmitting ? 'Submitting...' : 'Submit LIB'}
-            </Button>
+          </div>
+        )}
+
+        {/* Returned for Revision Notice */}
+        {lib?.status === 'Returned' && !isReadyForSubmission && (
+          <div className="bg-amber-50/80 border-l-4 border-amber-500 rounded-xl p-4 mb-8 flex items-center justify-between shadow-xs">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-amber-900 text-sm">
+                  Returned for Revision
+                </h3>
+                <p className="text-amber-700 text-sm mt-0.5">
+                  This Line-Item Budget was returned for revision. Update the
+                  activity details or line items to match the budget ceiling,
+                  then resubmit.
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -587,19 +793,19 @@ export default function LIBDetailPage({
           {/* Activities Column (left - spans 2) */}
           <div className="lg:col-span-2">
             {lib?.sourceType === 'WFP' && lib?.scope === 'Project' ? (
-              // For WFP Project scope: Show Orphan Line Items
+              // For WFP Project scope: Show Grouped Expenditure Items
               <>
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
-                    <div className="w-1 h-6 bg-amber-500 rounded-full" />
+                    <div className="w-1 h-6 bg-blue-600 rounded-full" />
                     <h2 className="text-lg font-semibold text-gray-900">
-                      Orphan Line Items ({lib?.orphanDetails?.length || 0})
+                      Line Items ({lib?.orphanDetails?.length || 0})
                     </h2>
-                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">
-                      Unlinked Items
+                    <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">
+                      Project Scope
                     </span>
                   </div>
-                  {/* Add Orphan Line Item Button for WFP Project scope */}
+                  {/* Add Line Item Button for WFP Project scope */}
                   <CreateLIBActivityDialog
                     libId={libId ?? ''}
                     onActivityAdded={() => {
@@ -612,16 +818,46 @@ export default function LIBDetailPage({
                   />
                 </div>
                 {lib?.orphanDetails && lib.orphanDetails.length > 0 ? (
-                  <OrphanLineItemsView
-                    data={lib.orphanDetails as OrphanLineItemDetail[]}
-                    onDeleteItem={handleDeleteOrphanItem}
+                  <GroupedExpenditureItemsView
+                    data={groupExpenditureItems(
+                      lib.orphanDetails as unknown as LineItemBudgetDetails[],
+                    )}
+                    onViewItem={(item) => setViewingOrphanItem(item)}
+                    onEditItem={(item) => setEditingOrphanItem(item)}
+                    onDeleteItem={async (item: LineItemBudgetDetails) => {
+                      setDeletingOrphanItemId(item.id)
+                      try {
+                        await deleteLineItemBudgetDetails(
+                          {
+                            pathParams: { id: item.id },
+                          },
+                          {
+                            onSuccess: async () => {
+                              toast.success('Line item deleted successfully!')
+                              void refetch()
+                            },
+                          },
+                        )
+                      } catch (err) {
+                        const message =
+                          err instanceof Error
+                            ? err.message
+                            : 'Failed to delete line item'
+                        toast.error(message)
+                      } finally {
+                        setDeletingOrphanItemId(null)
+                      }
+                    }}
                     isDeletingItemId={deletingOrphanItemId || undefined}
                   />
                 ) : (
                   <Card className="border-dashed">
-                    <CardContent className="pt-6 text-center">
-                      <p className="text-gray-500">
-                        No orphan line items found
+                    <CardContent className="pt-6 text-center py-12">
+                      <p className="text-gray-500 font-medium">
+                        No line items found
+                      </p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Click "Add Line Items" to add expenditures
                       </p>
                     </CardContent>
                   </Card>
@@ -645,6 +881,9 @@ export default function LIBDetailPage({
                       }}
                       type="OPCR"
                       opcrData={opcrData?.data}
+                      existingOPCRActivityIds={(displayActivities || [])
+                        .map((a) => a.opcrActivityId)
+                        .filter((id): id is string => Boolean(id))}
                       isOPCRLoading={isOPCRLoading}
                       isWFPLoading={isWFPLoading}
                     />
@@ -682,9 +921,48 @@ export default function LIBDetailPage({
                           (activity: LIBActivity, index) => {
                             // Check if this LIB activity has a linked OPCR activity or WFP activity
                             const opcrActivity = activity.opcrActivity as
-                              | OPCRActivity
-                              | undefined
+                              OPCRActivity | undefined
                             const wfpActivity = activity?.wfpObjectiveActivity
+
+                            // Match the activity in libData to get all details / line items added
+                            const matchingLibActivity = (
+                              lib?.activities || []
+                            ).find(
+                              (a) =>
+                                (activity.id && a.id === activity.id) ||
+                                (activity.wfpObjectiveActivityId &&
+                                  a.wfpObjectiveActivityId ===
+                                    activity.wfpObjectiveActivityId) ||
+                                (activity.opcrActivityId &&
+                                  a.opcrActivityId === activity.opcrActivityId),
+                            )
+
+                            const details =
+                              matchingLibActivity?.details &&
+                              matchingLibActivity.details.length > 0
+                                ? matchingLibActivity.details
+                                : activity.details || []
+
+                            const detailsBudgetSum = details.reduce(
+                              (sum, d) => sum + (Number(d.budget) || 0),
+                              0,
+                            )
+
+                            const activityExpenditures =
+                              detailsBudgetSum > 0
+                                ? detailsBudgetSum
+                                : Number(activity.budget) || 0
+
+                            const itemCount = details.length
+
+                            const targetBudget =
+                              lib.sourceType === 'OPCR'
+                                ? opcrActivity?.budget
+                                : lib.sourceType === 'WFP'
+                                  ? calculateWFPBudget(
+                                      wfpActivity as WFPObjectiveActivity,
+                                    )
+                                  : undefined
 
                             const handleDeleteActivity = async () => {
                               try {
@@ -700,7 +978,7 @@ export default function LIBDetailPage({
                                       void queryClient.invalidateQueries({
                                         predicate: (query) =>
                                           typeof query.queryKey[0] ===
-                                          'string' &&
+                                            'string' &&
                                           query.queryKey[0].startsWith(
                                             '/lib-activities',
                                           ),
@@ -717,76 +995,49 @@ export default function LIBDetailPage({
                               }
                             }
 
+                            const subtitle =
+                              lib.sourceType === 'OPCR' &&
+                              opcrActivity?.PAPDepartments
+                                ? `Responsible Office: ${opcrActivity.PAPDepartments.map(
+                                    (dept) => dept.office.name,
+                                  ).join(', ')}`
+                                : lib.sourceType === 'WFP'
+                                  ? 'WFP Activity'
+                                  : 'LIB Activity'
+
                             return (
-                              <>
-                                {lib.sourceType === 'OPCR' && opcrActivity ? (
-                                  <LIBActivityCard
-                                    key={activity.id || index}
+                              <LIBActivityCard
+                                key={activity.id || index}
+                                activity={activity}
+                                subtitle={subtitle}
+                                budget={activityExpenditures}
+                                targetBudget={targetBudget}
+                                itemCount={itemCount}
+                                onViewExpenditures={() =>
+                                  navigation({
+                                    search: (prev) => ({
+                                      ...prev,
+                                      libActivityId: activity.id || '',
+                                      wfpObjectiveActivityId:
+                                        activity.wfpObjectiveActivity?.id || '',
+                                    }),
+                                  })
+                                }
+                                actionMenu={
+                                  <LIBActivityActionMenu
+                                    onView={
+                                      opcrActivity
+                                        ? () =>
+                                            setSelectedActivity(opcrActivity)
+                                        : undefined
+                                    }
+                                    onEdit={undefined}
                                     activity={activity}
-                                    subtitle={
-                                      opcrActivity?.PAPDepartments
-                                        ? `Responsible Office: ${opcrActivity.PAPDepartments.map(
-                                          (dept) => dept.office.name,
-                                        ).join(', ')}`
-                                        : 'LIB Activity'
-                                    }
-                                    budget={opcrActivity?.budget}
-                                    onViewExpenditures={() =>
-                                      navigation({
-                                        search: (prev) => ({
-                                          ...prev,
-                                          libActivityId: activity.id || '',
-                                        }),
-                                      })
-                                    }
-                                    actionMenu={
-                                      <LIBActivityActionMenu
-                                        onView={
-                                          opcrActivity
-                                            ? () =>
-                                              setSelectedActivity(
-                                                opcrActivity,
-                                              )
-                                            : undefined
-                                        }
-                                        onEdit={undefined}
-                                        activity={activity}
-                                        onDelete={handleDeleteActivity}
-                                        isDeleting={isDeleting}
-                                      />
-                                    }
+                                    onDelete={handleDeleteActivity}
+                                    isDeleting={isDeleting}
                                   />
-                                ) : lib.sourceType === 'WFP' && wfpActivity ? (
-                                  <LIBActivityCard
-                                    key={activity.id || index}
-                                    activity={activity}
-                                    subtitle={`WFP Activity`}
-                                    budget={calculateWFPBudget(wfpActivity)}
-                                    onViewExpenditures={() =>
-                                      navigation({
-                                        search: (prev) => ({
-                                          ...prev,
-                                          libActivityId: activity.id || '',
-                                          wfpObjectiveActivityId:
-                                            activity.wfpObjectiveActivity?.id ||
-                                            '',
-                                        }),
-                                      })
-                                    }
-                                    actionMenu={
-                                      <LIBActivityActionMenu
-                                        onView={undefined}
-                                        onEdit={undefined}
-                                        activity={activity}
-                                        onDelete={handleDeleteActivity}
-                                        isDeleting={isDeleting}
-                                      />
-                                    }
-                                  />
-                                ) : (
-                                  <></>
-                                )}
-                              </>
+                                }
+                              />
                             )
                           },
                         )}
@@ -886,56 +1137,103 @@ export default function LIBDetailPage({
       <LIBSummaryDialog
         open={showSummary}
         onOpenChange={setShowSummary}
-        libId={libId}
+        libId={libId || null}
       />
 
       {/* Version History Comparative Modal */}
       <LIBHistoryDialog
         open={showHistory}
         onOpenChange={setShowHistory}
-        libId={libId}
+        libId={libId || null}
       />
 
       {/* Submission Confirmation Dialog */}
-      {isSubmitConfirmOpen && lib.status === 'Draft' && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
+      {isSubmitConfirmOpen &&
+        (lib?.status === 'Draft' ||
+          lib?.status === 'Returned' ||
+          lib?.status === 'Proposed') && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900">
+                      Submit LIB for Review?
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Once submitted, this LIB will be sent for review and
+                      approval by the Budget Office.
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">
-                    Submit LIB for Review?
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-2">
-                    Once submitted, this LIB will be sent for approval. You can
-                    view its status in the dashboard.
-                  </p>
-                </div>
-              </div>
 
-              <div className="flex gap-3 mt-6 justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsSubmitConfirmOpen(false)}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSubmitLIB}
-                  disabled={isSubmitting}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit LIB'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+                <div className="flex gap-3 mt-6 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsSubmitConfirmOpen(false)}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSubmitLIB}
+                    disabled={isSubmitting}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit LIB'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+      {/* Approval / Rejection Dialog */}
+      <LIBApprovalDialog
+        open={approvalDialogState.open}
+        libName={approvalDialogState.libName}
+        action={approvalDialogState.action}
+        onConfirm={handleConfirmApproval}
+        onCancel={() =>
+          setApprovalDialogState({
+            open: false,
+            action: 'approve',
+            libId: null,
+            libName: '',
+          })
+        }
+        isLoading={isApprovalLoading}
+      />
+
+      {/* View Line Item Details Dialog */}
+      <ViewLineItemBudgetDetailsDialog
+        item={viewingOrphanItem}
+        open={!!viewingOrphanItem}
+        onOpenChange={(open) => !open && setViewingOrphanItem(null)}
+        onEdit={(item) => setEditingOrphanItem(item)}
+        readOnly={lib?.status === 'Approved' || lib?.status === 'Submitted'}
+      />
+
+      {/* Edit Line Item Dialog */}
+      <EditLineItemBudgetDetailsDialog
+        item={editingOrphanItem}
+        open={!!editingOrphanItem}
+        onOpenChange={(open) => !open && setEditingOrphanItem(null)}
+        libId={libId}
+        onSuccess={() => {
+          void refetch()
+          void queryClient.invalidateQueries({
+            predicate: (query) =>
+              typeof query.queryKey[0] === 'string' &&
+              (query.queryKey[0].startsWith('/line-item-budget-details') ||
+                query.queryKey[0].includes('/libs') ||
+                query.queryKey[0].includes('/lib-activities')),
+          })
+        }}
+      />
     </div>
   )
 }
@@ -945,6 +1243,8 @@ interface LIBActivityCardProps {
   activity: LIBActivity
   subtitle?: string
   budget?: number
+  targetBudget?: number
+  itemCount?: number
   onViewExpenditures?: () => void
   actionMenu?: React.ReactNode
   icon?: React.ReactNode
@@ -953,52 +1253,122 @@ interface LIBActivityCardProps {
 export function LIBActivityCard({
   activity,
   subtitle,
-  budget,
+  budget = 0,
+  targetBudget,
+  itemCount = 0,
   onViewExpenditures,
   actionMenu,
   icon,
 }: LIBActivityCardProps) {
+  const hasItems = itemCount > 0 || budget > 0
+
   return (
-    <Card className="border-l-4 border-l-green-500 transition-shadow hover:border-l-green-600 hover:shadow-md">
-      <CardContent className="pt-6">
-        <div className="mb-4 flex items-start justify-between">
+    <Card
+      className={`transition-all duration-200 hover:shadow-md ${
+        hasItems
+          ? 'border-l-4 border-l-emerald-500 bg-white hover:border-l-emerald-600'
+          : 'border-l-4 border-l-amber-400 bg-amber-50/10 hover:border-l-amber-500'
+      }`}
+    >
+      <CardContent className="p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           {/* Left */}
-          <div className="flex flex-1 items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-100">
-              {icon ?? <span className="text-sm">📄</span>}
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                hasItems
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-amber-100 text-amber-700'
+              }`}
+            >
+              {icon ?? <span className="text-base">📄</span>}
             </div>
 
-            <div>
-              <h3 className="font-semibold text-gray-900">{activity.name}</h3>
+            <div className="space-y-1.5 min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-semibold text-gray-900 text-base leading-snug">
+                  {activity.name}
+                </h3>
+                {activity.papCode && (
+                  <span className="font-mono text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-0.5 rounded-full font-semibold">
+                    PAP: {activity.papCode}
+                  </span>
+                )}
+                {hasItems ? (
+                  <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-0.5 font-medium flex items-center gap-1.5 shadow-2xs">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    {itemCount} {itemCount === 1 ? 'item added' : 'items added'}
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="bg-amber-50 text-amber-700 border-amber-200 text-xs px-2.5 py-0.5 font-medium flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <AlertCircle className="h-3 w-3 text-amber-500" />
+                    No items added
+                  </Badge>
+                )}
+              </div>
 
               {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
             </div>
           </div>
 
-          {/* Right */}
-          <div className="flex items-center gap-2">
-            {budget !== undefined && (
-              <Badge className="gap-2 bg-blue-100 px-3 py-1 text-blue-700">
-                <span>₱</span>
-                {(budget / 1000).toFixed(0)}K
-              </Badge>
-            )}
+          {/* Right: Prominent Total Expenditures & Action Menu */}
+          <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
+            <div className="flex flex-col items-end justify-center bg-gray-50 border border-gray-200/80 rounded-lg px-3.5 py-1.5 shadow-2xs min-w-[150px]">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                Total Expenditures
+              </span>
+              <span
+                className={`text-base sm:text-lg font-bold tracking-tight  ${
+                  budget > 0 ? 'text-emerald-700' : 'text-gray-400'
+                }`}
+              >
+                {formatCurrencyPHP(budget)}
+              </span>
+              {targetBudget !== undefined && targetBudget > 0 && (
+                <span className="text-[11px] text-gray-400 font-medium">
+                  Target: {formatCurrencyPHP(targetBudget)}
+                </span>
+              )}
+            </div>
 
             {actionMenu}
           </div>
         </div>
 
+        {/* Bottom bar with action button and clear indicator */}
         {onViewExpenditures && (
-          <div className="flex justify-start">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 mt-4 border-t border-gray-100">
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 text-green-600 hover:text-green-700"
+              className="gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 transition-colors font-medium shadow-2xs"
               onClick={onViewExpenditures}
             >
               <Eye className="h-4 w-4" />
-              View Expenditures
+              {hasItems
+                ? `View Expenditures (${itemCount})`
+                : 'Add Expenditures'}
             </Button>
+
+            <div className="flex items-center gap-2 text-xs">
+              {hasItems ? (
+                <span className="flex items-center gap-1.5 text-emerald-700 font-medium bg-emerald-50/60 px-2.5 py-1 rounded-md border border-emerald-100">
+                  <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                  Allocated: <strong>
+                    {formatCurrencyPHP(budget)}
+                  </strong> across {itemCount}{' '}
+                  {itemCount === 1 ? 'line item' : 'line items'}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-amber-600 font-medium bg-amber-50/60 px-2.5 py-1 rounded-md border border-amber-100">
+                  <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+                  Requires expenditure line items ({formatCurrencyPHP(0)})
+                </span>
+              )}
+            </div>
           </div>
         )}
       </CardContent>
@@ -1025,9 +1395,13 @@ function StatsCard({
   iconColorClass,
 }: StatsCardProps) {
   return (
-    <Card className={`relative overflow-hidden border border-gray-100 rounded-xl shadow-xs transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br ${gradientClass}`}>
+    <Card
+      className={`relative overflow-hidden border border-gray-100 rounded-xl shadow-xs transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br ${gradientClass}`}
+    >
       {/* Visual Accent Top Bar */}
-      <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${borderClass}`} />
+      <div
+        className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${borderClass}`}
+      />
 
       <CardContent className="pt-6 pb-5 px-6">
         <div className="flex items-center justify-between">
@@ -1040,7 +1414,9 @@ function StatsCard({
             </div>
           </div>
 
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-transform duration-300 hover:scale-105 ${iconColorClass}`}>
+          <div
+            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-transform duration-300 hover:scale-105 ${iconColorClass}`}
+          >
             {icon}
           </div>
         </div>
@@ -1048,112 +1424,3 @@ function StatsCard({
     </Card>
   )
 }
-
-// {lib.sourceType === 'OPCR' ? (
-//         <></>
-//       ) : (
-//         <>
-//           {wfpData?.data.wfpObjectives?.map((objective) => (
-//             <Card key={objective.id} className="mb-6">
-//               <CardHeader>
-//                 <CardTitle>Objective</CardTitle>
-
-//                 <CardDescription className="space-y-2">
-//                   <p>{objective.description}</p>
-
-//                   <div className="flex gap-2">
-//                     <Badge variant="secondary">
-//                       Weight: {objective.weight}%
-//                     </Badge>
-
-//                     <Badge>
-//                       {objective?.wfpObjectiveActivities?.length}{' '}
-//                       Activities
-//                     </Badge>
-//                   </div>
-
-//                   {objective.outcome && (
-//                     <p>
-//                       <span className="font-medium">Outcome:</span>{' '}
-//                       {objective.outcome}
-//                     </p>
-//                   )}
-//                 </CardDescription>
-//               </CardHeader>
-
-//               <CardContent className="space-y-4">
-//                 {objective?.wfpObjectiveActivities?.map((activity) => (
-//                   <Card key={activity.id}>
-//                     <CardHeader className="pb-3">
-//                       <CardTitle className="text-base">
-//                         {activity.activityName}
-//                       </CardTitle>
-
-//                       <CardDescription>
-//                         Indicator: {activity.indicator}
-//                       </CardDescription>
-
-//                       <Badge className="w-fit">
-//                         Weight: {activity.weight}%
-//                       </Badge>
-//                     </CardHeader>
-
-//                     <CardContent className="space-y-4">
-//                       {/* Timelines */}
-//                       <div>
-//                         <h4 className="mb-2 font-medium">Timelines</h4>
-
-//                         <div className="flex flex-wrap gap-2">
-//                           {activity?.wfpObjectiveTimelines?.map(
-//                             (timeline) => (
-//                               <Badge key={timeline.id} variant="outline">
-//                                 {timeline.timelineType} •{' '}
-//                                 {timeline.targetValue}
-//                               </Badge>
-//                             ),
-//                           )}
-//                         </div>
-//                       </div>
-
-//                       <Separator />
-
-//                       {/* Expenditures */}
-//                       <div>
-//                         <h4 className="mb-2 font-medium">Expenditures</h4>
-
-//                         <div className="space-y-2">
-//                           {activity?.wfpObjectiveActivityExpenditures?.map(
-//                             (expense) => (
-//                               <div
-//                                 key={expense.id}
-//                                 className="rounded-md border p-3"
-//                               >
-//                                 <p className="font-medium">
-//                                   {expense.object.name}
-//                                 </p>
-
-//                                 <p className="text-sm text-muted-foreground">
-//                                   {expense.itemDescription}
-//                                 </p>
-
-//                                 <div className="mt-2 flex gap-4 text-sm">
-//                                   <span>Qty: {expense.quantity}</span>
-
-//                                   <span>
-//                                     Unit Cost: ₱
-//                                     {expense.unitCost.toLocaleString()}
-//                                   </span>
-//                                 </div>
-//                               </div>
-//                             ),
-//                           )}
-//                         </div>
-//                       </div>
-//                     </CardContent>
-//                   </Card>
-//                 ))}
-//               </CardContent>
-//             </Card>
-//           ))}
-//         </>
-//       )}

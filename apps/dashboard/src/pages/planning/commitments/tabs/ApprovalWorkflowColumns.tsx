@@ -1,8 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { CheckCircle, Clock, XCircle, Eye } from 'lucide-react'
+import { CheckCircle, Clock, XCircle } from 'lucide-react'
 import { ApprovalWorkflowActions } from './ApprovalWorkflowActions'
 
 export interface ApprovalWorkflow {
@@ -82,7 +81,9 @@ export const Column: ColumnDef<ApprovalWorkflow>[] = [
           returned: 'bg-red-100 text-red-800',
         }
         return (
-          <Badge className={statusStyles[status] || 'bg-gray-100 text-gray-800'}>
+          <Badge
+            className={statusStyles[status] || 'bg-gray-100 text-gray-800'}
+          >
             {status.replace('_', ' ').toUpperCase()}
           </Badge>
         )

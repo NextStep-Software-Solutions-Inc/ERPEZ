@@ -48,6 +48,7 @@ import {
 } from '@/features/planning/line-item-budgeting/realignment/constants/realignmentConstants'
 import { useLIBs } from '@/features/planning/line-item-budgeting/realignment/hooks/useLIBQueries'
 import { useLIBAmendments } from '@/features/planning/line-item-budgeting/realignment/hooks/useLIBAmendments'
+import { useRealignmentPdf } from '@/features/planning/line-item-budgeting/realignment'
 import {
   adaptApiActivitiesToFrontend,
   adaptApiOrphansToProjectGroups,
@@ -75,6 +76,7 @@ export function RealignmentTab() {
   const { toast } = useToast()
   const { mutateAsync: generateLIBDocument } = useGenerateLIBDocument()
   const { mutateAsync: downloadLIBDocument } = useDownloadLIBDocument()
+  const { downloadPdf: downloadRealignmentPdf } = useRealignmentPdf()
 
   // 1. Fetch Fiscal Years
   const { data: fiscalYearsData } = useFiscalYears({
@@ -454,6 +456,15 @@ export function RealignmentTab() {
               onExportCSV={handleExportCSV}
               onExportExcel={handleExportExcel}
               onExportPDF={handleExportPDF}
+              onExportRealignmentPDF={
+                activeAmendment
+                  ? () =>
+                      downloadRealignmentPdf(
+                        activeAmendment.id,
+                        lib.libNumber,
+                      )
+                  : undefined
+              }
               onHistoryClick={() => {
                 setSelectedLibIdForHistory(lib.id)
                 setShowVersionHistory(!showVersionHistory)

@@ -23,7 +23,7 @@ export function createAOBListColumns(options: AOBListColumnsOptions): ColumnDef<
       id: 'aobNumber',
       header: 'AOB Number',
       cell: (info) => (
-        <div className="font-mono font-semibold text-sm text-blue-600">
+        <div className="font-semibold text-sm text-blue-600">
           {info.getValue()}
         </div>
       ),
@@ -69,8 +69,8 @@ export function createAOBListColumns(options: AOBListColumnsOptions): ColumnDef<
       cell: (info) => {
         const status = info.getValue()
         return (
-          <Badge variant="outline" className={getAOBStatusColor(status)}>
-            {formatAOBStatus(status)}
+          <Badge variant="outline" className={getAOBStatusColor(status, 'user')}>
+            {formatAOBStatus(status, 'user')}
           </Badge>
         )
       },

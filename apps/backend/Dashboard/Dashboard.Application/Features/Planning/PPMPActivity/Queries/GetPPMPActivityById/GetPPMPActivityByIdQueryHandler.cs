@@ -1,0 +1,68 @@
+using ERPEZ.Application.Features.Planning.PPMPActivity.Dtos;
+using ERPEZ.Domain.Interfaces;
+using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
+using MediatR;
+
+namespace ERPEZ.Application.Features.Planning.PPMPActivity.Queries.GetPPMPActivityById;
+
+public class GetPPMPActivityByIdQueryHandler(IUnitOfWork unitOfWork)
+    : IRequestHandler<GetPPMPActivityByIdQuery, ApiResponse<PPMPActivityResponse>>
+{
+    public async Task<ApiResponse<PPMPActivityResponse>> Handle(GetPPMPActivityByIdQuery query, CancellationToken cancellationToken)
+    {
+        var result = await unitOfWork.PPMPActivityRepository.GetSingleAsync(
+            unitOfWork.PPMPActivityRepository.Query(x => x.Id == query.Id)
+                .Select(activity => new PPMPActivityResponse
+                {
+                    Id = activity.Id,
+                    PPMPId = activity.PPMPId,
+                    LIBActivityId = activity.LIBActivityId,
+                    ActivityName = activity.LIBActivity.Name,
+                    PAPCode = activity.LIBActivity.PAPCode,
+                    TotalItems = activity.PPMPExpenditureItems
+                        .Where(expenditure => !expenditure.IsDeleted)
+                        .SelectMany(expenditure => expenditure.PPMPItems.Where(item => !item.IsDeleted))
+                        .Count(),
+                    TotalItemAllocations = activity.PPMPExpenditureItems
+                        .Where(expenditure => !expenditure.IsDeleted)
+                        .SelectMany(expenditure => expenditure.PPMPItems.Where(item => !item.IsDeleted))
+                        .SelectMany(item => item.PPMPItemAllocations.Where(allocation => !allocation.IsDeleted))
+                        .Count(),
+                    TotalAllocationQuantity = activity.PPMPExpenditureItems
+                        .Where(expenditure => !expenditure.IsDeleted)
+                        .SelectMany(expenditure => expenditure.PPMPItems.Where(item => !item.IsDeleted))
+                        .SelectMany(item => item.PPMPItemAllocations.Where(allocation => !allocation.IsDeleted))
+                        .Sum(allocation => (int?)allocation.Quantity) ?? 0,
+                    TotalAllocationAmount = activity.PPMPExpenditureItems
+                        .Where(expenditure => !expenditure.IsDeleted)
+                        .SelectMany(expenditure => expenditure.PPMPItems.Where(item => !item.IsDeleted))
+                        .SelectMany(item => item.PPMPItemAllocations.Where(allocation => !allocation.IsDeleted))
+                        .Sum(allocation => (decimal?)allocation.Amount) ?? 0m,
+                    CreatedAt = activity.CreatedAt,
+                    CreatedBy = activity.CreatedBy
+                }),
+            cancellationToken);
+
+        if (result == null)
+            throw new NotFoundException("PPMP Activity not found.");
+
+        var msf = await unitOfWork.MarketScopingRepository
+            .FindAsync(ms => ms.TargetLineItemBudgetActivityId == result.LIBActivityId && !ms.IsDeleted, cancellationToken);
+
+        var finalResult = result with
+        {
+            LinkedMarketScoping = msf != null
+                ? new PPMPActivityMSFSummary
+                {
+                    Id = msf.Id,
+                    ProjectName = msf.ProjectName,
+                    EstimatedBudget = msf.EstimatedBudget,
+                    Status = msf.Status.ToString(),
+                }
+                : null
+        };
+
+        return ApiResponse<PPMPActivityResponse>.Success(finalResult);
+    }
+}

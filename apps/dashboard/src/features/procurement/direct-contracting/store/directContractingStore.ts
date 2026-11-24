@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { QuotationItemBid } from '@/features/procurement/supplier-portal/types/daItemTypes'
+import type { QuotationItemBid } from '@/features/procurement/supplier-portal/types/direct-contracting-item-type'
 import api from '@/services/api'
 
 export type ProofFile = {
@@ -43,7 +43,7 @@ export type DirectContracting = {
   // New fields for RFQ-style quotation consistency
   quotationStatus?: 'draft' | 'submitted'
   quotationSubmittedAt?: string
-  quotationItems?: QuotationItemBid[]
+  quotationItems?: Array<QuotationItemBid>
   bidTotalAmount?: number
   bidUnitPrice?: number
   proposalUnitPrice?: number
@@ -85,7 +85,7 @@ export interface BackendDirectContractingItem {
 }
 
 interface DirectContractingStore {
-  entries: DirectContracting[]
+  entries: Array<DirectContracting>
   isLoading: boolean
   addEntry: (e: DirectContracting) => void
   updateEntry: (id: string, patch: Partial<DirectContracting>) => void
@@ -109,7 +109,7 @@ export const useDirectContractingStore = create<DirectContractingStore>(
     fetchEntries: async () => {
       set({ isLoading: true })
       try {
-        const response = await api.get<{ succeeded: boolean; data: BackendDirectContractingItem[] }>('/direct-contracting')
+        const response = await api.get<{ succeeded: boolean; data: Array<BackendDirectContractingItem> }>('/direct-contracting')
         if (response.data?.succeeded && Array.isArray(response.data.data)) {
           const mapped = response.data.data.map(item => {
             const statusMap: Record<string, DirectContracting['status']> = {

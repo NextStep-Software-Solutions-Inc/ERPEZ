@@ -29,7 +29,7 @@ interface TemplateTableProps<T> {
     description?: string
     columns: ColumnDef<T>[]
     data: T[];
-    actions: [];
+    actions?: React.ReactNode[];
     readonly?: boolean;
     /** Override dynamic page sizing with a fixed page size */
     fixedPageSize?: number;

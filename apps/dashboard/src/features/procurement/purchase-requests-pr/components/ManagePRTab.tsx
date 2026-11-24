@@ -20,15 +20,33 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreVertical, Eye, CheckCircle, CornerDownLeft, FileText, Wallet, AlertCircle, Funnel } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import {
+  MoreVertical,
+  Eye,
+  CheckCircle,
+  CornerDownLeft,
+  FileText,
+  Clock,
+  Building2,
+  Layers,
+  Funnel,
+  Loader2,
+} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { format } from 'date-fns'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { usePurchaseRequestStore } from '../store/purchaseRequestStore'
 import { ApprovePRModal } from './ApprovePRModal'
 import { ReturnPRModal } from './ReturnPRModal'
-import { useToast } from '@/components/ui/use-toast'
+import { toast } from 'sonner'
 import { PurchaseRequest, PRStatus, PRType } from '../types'
 import { usePurchaseRequests, useUpdatePurchaseRequestStatus } from '../handlers/hooks'
 import { fromApiStatus, fromApiPrType } from '../types/apiTypes'
+import { openSignedDocument } from '../utils/openSignedDocument'
+import { resolveRelationalAPR } from '../utils/aprReference'
+import { getOfficesRequest } from '@/features/planning/app-consolidation/handlers/getOfficesRequest'
+
+const useOffices = createQueryHookFromTemplate(getOfficesRequest)
 
 const STATUS_BADGE_CONFIG: Record<
   PRStatus,
@@ -43,10 +61,10 @@ const STATUS_BADGE_CONFIG: Record<
   'for-bac-utilization': { label: 'For BAC Utilization', color: 'default' },
 }
 
-// Color mapping for PR types (Non-CSE vs Out-of-Stock)
-const TYPE_BADGE_COLOR: Record<string, any> = {
-  'non-cse': 'default',
-  'out-of-stock': 'warning',
+const TYPE_BADGE_COLOR: Record<PRType, any> = {
+  'non-cse': 'indigo',
+  'out-of-stock': 'cyan',
+  consolidated: 'purple',
 }
 
 interface ManagePRTabProps {
@@ -54,38 +72,75 @@ interface ManagePRTabProps {
 }
 
 export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
-  const { setIsManagePRView } = usePurchaseRequestStore()
-  const { toast } = useToast()
-  
+  const { setIsManagePRView, updatePurchaseRequest } = usePurchaseRequestStore()
+
+  useEffect(() => {
+    setIsManagePRView(true)
+    return () => setIsManagePRView(false)
+  }, [setIsManagePRView])
+
   // Use API hooks
-  const { data: prResponse } = usePurchaseRequests({ pathParams: {}, queryParams: { PageSize: 100 } })
+  const { data: prResponse, isLoading } = usePurchaseRequests({ pathParams: {}, queryParams: { PageSize: 100 } })
+  const { data: officesResponse } = useOffices({})
   const statusMutation = useUpdatePurchaseRequestStatus()
-  
-  // Map API response to frontend PurchaseRequest models
-  const purchaseRequests: PurchaseRequest[] = (prResponse?.data || []).map((apiPr) => ({
-    id: apiPr.id,
-    type: fromApiPrType(apiPr.prType),
-    status: fromApiStatus(apiPr.status),
-    headerDetails: {
-      prNumber: apiPr.prNumber,
-      description: apiPr.description,
-      date: apiPr.requestedDate,
-      purpose: '',
-      officeId: apiPr.officeId,
-      officeName: apiPr.officeName,
-    },
-    items: [],
-    totalAmount: apiPr.totalAmount,
-    createdAt: apiPr.createdDate,
-    updatedAt: apiPr.createdDate,
-    createdBy: '',
-  } as PurchaseRequest))
+
+  const officesMap = useMemo(() => {
+    const map = new Map<string, string>()
+    const list: Office[] = Array.isArray(officesResponse)
+      ? officesResponse
+      : Array.isArray((officesResponse as any)?.data)
+        ? (officesResponse as any).data
+        : []
+
+    for (const off of list) {
+      if (off && off.id && off.name) {
+        map.set(off.id, off.name)
+      }
+    }
+    return map
+  }, [officesResponse])
+
+  // Map API response to frontend PurchaseRequest models (purely API-driven)
+  const purchaseRequests: PurchaseRequest[] = useMemo(() => {
+    return (prResponse?.data || []).map((apiPr) => {
+      const resolvedOfficeName =
+        (apiPr.officeName && apiPr.officeName.trim().length > 0)
+          ? apiPr.officeName.trim()
+          : (apiPr.officeId && officesMap.get(apiPr.officeId))
+            ? officesMap.get(apiPr.officeId)!
+            : 'General Administration'
+
+      return {
+        id: apiPr.id,
+        type: fromApiPrType(apiPr.prType),
+        status: fromApiStatus(apiPr.status),
+        headerDetails: {
+          prNumber: apiPr.prNumber,
+          description: apiPr.description || '',
+          date: apiPr.requestedDate ? String(apiPr.requestedDate) : '',
+          purpose: '',
+          officeId: apiPr.officeId || '',
+          officeName: resolvedOfficeName,
+        },
+        items: [],
+        totalAmount: apiPr.totalAmount,
+        createdAt: apiPr.createdDate ? String(apiPr.createdDate) : '',
+        updatedAt: apiPr.createdDate ? String(apiPr.createdDate) : '',
+        dateSubmitted: apiPr.requestedDate ? String(apiPr.requestedDate) : (apiPr.createdDate ? String(apiPr.createdDate) : ''),
+        createdBy: '',
+        remarks: (apiPr.status === 'Approved' || apiPr.status === 'Submitted' || apiPr.status === 'ForBACUtilization') ? undefined : apiPr.returnRemarks,
+        returnRemarks: (apiPr.status === 'Approved' || apiPr.status === 'Submitted' || apiPr.status === 'ForBACUtilization') ? undefined : apiPr.returnRemarks,
+        returnedDate: (apiPr.status === 'Approved' || apiPr.status === 'Submitted' || apiPr.status === 'ForBACUtilization') ? undefined : apiPr.returnedDate,
+        returnedBy: (apiPr.status === 'Approved' || apiPr.status === 'Submitted' || apiPr.status === 'ForBACUtilization') ? undefined : apiPr.returnedBy,
+      } as PurchaseRequest
+    })
+  }, [prResponse, officesMap])
 
   // Local UI state for modals and selected PR
   const [approveOpen, setApproveOpen] = useState(false)
   const [returnOpen, setReturnOpen] = useState(false)
   const [selectedPR, setSelectedPR] = useState<PurchaseRequest | null>(null)
-  
+
   // Filter state for PR type (multi-select, restore original behavior)
   const [selectedTypes, setSelectedTypes] = useState<PRType[]>(['non-cse', 'out-of-stock'])
 
@@ -93,29 +148,60 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
   const [page, setPage] = useState(1)
   const pageSize = 5 // match purchase request tab
 
-  // Helper: displayStatus prefers 'returned' when remarks exist to ensure consistency
+  // Helper: displayStatus respects approved, submitted, for-bac-utilization ground truth
   const getDisplayStatus = (p: PurchaseRequest) => {
+    if (!p) return 'draft'
+    if (p.status === 'approved' || p.status === 'submitted' || p.status === 'for-bac-utilization') {
+      return p.status
+    }
+    if (p.status === 'returned') {
+      return 'returned'
+    }
     try {
-      if (p && p.remarks && p.remarks.toString().trim().length > 0) {
+      if (
+        (p.remarks && p.remarks.toString().trim().length > 0) ||
+        (p.returnRemarks && p.returnRemarks.toString().trim().length > 0)
+      ) {
         return 'returned' as PRStatus
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
     return p.status
   }
-
-  // Mark that the UI is currently showing the Manage PR tab so store actions are enabled
-  useEffect(() => {
-    setIsManagePRView(true)
-    return () => setIsManagePRView(false)
-  }, [setIsManagePRView])
 
   // Filter only submitted and approved PRs for review by selected types
   const submittedPRs = purchaseRequests.filter((pr) => {
     const ds = getDisplayStatus(pr)
     return (ds === 'submitted' || ds === 'approved' || ds === 'returned') && selectedTypes.includes(pr.type)
   })
+
+  // Derived Procurement Intelligence Metrics for Central Procurement Staff
+  const totalInboundCount = submittedPRs.length
+  const totalInboundAmount = submittedPRs.reduce((sum, pr) => sum + pr.totalAmount, 0)
+
+  const pendingPRs = submittedPRs.filter((pr) => getDisplayStatus(pr) === 'submitted')
+  const pendingCount = pendingPRs.length
+  const pendingAmount = pendingPRs.reduce((sum, pr) => sum + pr.totalAmount, 0)
+
+  const approvedPRs = submittedPRs.filter((pr) => getDisplayStatus(pr) === 'approved')
+  const approvedCount = approvedPRs.length
+  const approvedAmount = approvedPRs.reduce((sum, pr) => sum + pr.totalAmount, 0)
+
+  const returnedPRs = submittedPRs.filter((pr) => getDisplayStatus(pr) === 'returned')
+  const returnedCount = returnedPRs.length
+
+  const nonCseCount = submittedPRs.filter((pr) => pr.type === 'non-cse').length
+  const outOfStockCount = submittedPRs.filter((pr) => pr.type === 'out-of-stock').length
+
+  const uniqueOffices = Array.from(
+    new Set(
+      submittedPRs
+        .map((pr) => pr.headerDetails.officeName)
+        .filter((name): name is string => Boolean(name && name.trim().length > 0))
+    )
+  )
+  const uniqueOfficesCount = uniqueOffices.length
 
   const totalPages = Math.max(1, Math.ceil(submittedPRs.length / pageSize))
 
@@ -135,14 +221,14 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
           <div className="flex items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <div className="flex items-center justify-center h-14 w-14 rounded-lg bg-white shadow">
-                <FileText className="h-7 w-7 text-violet-600" />
+                <Building2 className="h-7 w-7 text-violet-600" />
               </div>
               <div>
                 <div className="flex items-center gap-3">
                   <h2 className="text-2xl font-semibold text-foreground">Manage Purchase Requests</h2>
-                  <span className="inline-flex items-center text-xs font-medium bg-violet-100 text-violet-800 px-2 py-1 rounded">Manage PR</span>
+                  <span className="inline-flex items-center text-xs font-medium bg-violet-100 text-violet-800 px-2 py-1 rounded">Procurement Staff View</span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">Review and manage submitted Purchase Requests from all office staff and procurement team</p>
+                <p className="text-sm text-muted-foreground mt-1">Review, approve, and consolidate Purchase Requests across all requesting offices and colleges</p>
               </div>
             </div>
 
@@ -206,95 +292,98 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
         </div>
       </Card>
 
-      {/* Polished summary widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/** Pending */}
-        <Card className="rounded-lg hover:shadow-lg transition">
+      {/* Procurement Intelligence Summary Widgets */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 1. Inbound PR Pipeline */}
+        <Card className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50/70 to-indigo-100/40 hover:shadow-md transition">
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
-              <div>
-                <div className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  Pending Review
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700">
+                  Inbound PR Pipeline
+                </p>
+                <div className="text-2xl font-semibold text-indigo-900">
+                  ₱{totalInboundAmount.toLocaleString()}
                 </div>
-                <div className="mt-4 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-md bg-sky-50 flex items-center justify-center shadow-sm">
-                    <FileText className="h-6 w-6 text-sky-600" />
-                  </div>
-                  <div>
-                    <div className="text-3xl font-extrabold text-sky-700">{submittedPRs.filter((pr) => getDisplayStatus(pr) === 'submitted').length}</div>
-                    <div className="text-xs text-muted-foreground mt-1">PRs awaiting review</div>
-                  </div>
-                </div>
+                <p className="text-xs text-indigo-700/80 font-normal pt-1">
+                  {totalInboundCount} PR{totalInboundCount !== 1 ? 's' : ''} across {uniqueOfficesCount || 1} Office{uniqueOfficesCount !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-white/90 shadow-xs text-indigo-600">
+                <Building2 className="h-5 w-5" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/** Approved */}
-        <Card className="rounded-lg hover:shadow-lg transition">
+        {/* 2. Awaiting Procurement Review */}
+        <Card className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50/70 to-amber-100/40 hover:shadow-md transition">
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
-              <div>
-                <div className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                  Approved
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-800">
+                    Awaiting Review
+                  </p>
+                  {pendingCount > 0 && (
+                    <Badge variant="outline" className="border-amber-300 bg-amber-100/60 text-amber-900 text-[10px] px-1.5 py-0 font-medium">
+                      Action Required
+                    </Badge>
+                  )}
                 </div>
-                <div className="mt-4 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-md bg-violet-50 flex items-center justify-center shadow-sm">
-                    <CheckCircle className="h-6 w-6 text-violet-600" />
-                  </div>
-                  <div>
-                    <div className="text-3xl font-extrabold text-violet-700">{submittedPRs.filter((pr) => getDisplayStatus(pr) === 'approved').length}</div>
-                    <div className="text-xs text-muted-foreground mt-1">Approved PRs</div>
-                  </div>
+                <div className="text-2xl font-semibold text-amber-950">
+                  {pendingCount} PR{pendingCount !== 1 ? 's' : ''}
                 </div>
+                <p className="text-xs text-amber-800/80 font-normal pt-1">
+                  ₱{pendingAmount.toLocaleString()} pending decision
+                </p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-white/90 shadow-xs text-amber-600">
+                <Clock className="h-5 w-5" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/** Returned */}
-        <Card className="rounded-lg hover:shadow-lg transition">
+        {/* 3. Approved for Execution */}
+        <Card className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50/70 to-emerald-100/40 hover:shadow-md transition">
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
-              <div>
-                <div className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                  Returned
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-800">
+                  Approved for Execution
+                </p>
+                <div className="text-2xl font-semibold text-emerald-950">
+                  {approvedCount} PR{approvedCount !== 1 ? 's' : ''}
                 </div>
-                <div className="mt-4 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-md bg-rose-50 flex items-center justify-center shadow-sm">
-                    <AlertCircle className="h-6 w-6 text-rose-600" />
-                  </div>
-                  <div>
-                    <div className="text-3xl font-extrabold text-rose-700">{submittedPRs.filter((pr) => getDisplayStatus(pr) === 'returned').length}</div>
-                    <div className="text-xs text-muted-foreground mt-1">Returned PRs</div>
-                  </div>
-                </div>
+                <p className="text-xs text-emerald-800/80 font-normal pt-1">
+                  ₱{approvedAmount.toLocaleString()} ready for BAC / PO
+                </p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-white/90 shadow-xs text-emerald-600">
+                <CheckCircle className="h-5 w-5" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/** Total Amount */}
-        <Card className="rounded-lg hover:shadow-lg transition">
+        {/* 4. Workflow Distribution */}
+        <Card className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50/70 to-purple-100/40 hover:shadow-md transition">
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
-              <div>
-                <div className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Wallet className="h-4 w-4 text-muted-foreground" />
-                  Total Amount
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wider text-purple-800">
+                  PR Distribution
+                </p>
+                <div className="text-lg font-semibold text-purple-950 pt-0.5">
+                  {nonCseCount} Non-CSE <span className="text-xs text-purple-500 font-normal">•</span> {outOfStockCount} CSE
                 </div>
-                <div className="mt-4 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-md bg-violet-50 flex items-center justify-center shadow-sm">
-                    <Wallet className="h-6 w-6 text-violet-600" />
-                  </div>
-                  <div>
-                    <div className="text-3xl font-extrabold text-violet-700">₱{submittedPRs.reduce((sum, pr) => sum + pr.totalAmount, 0).toLocaleString()}</div>
-                    <div className="text-xs text-muted-foreground mt-1">Total amount in submitted PRs</div>
-                  </div>
-                </div>
+                <p className="text-xs text-purple-800/80 font-normal pt-1">
+                  {returnedCount} Returned for revision
+                </p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-white/90 shadow-xs text-purple-600">
+                <Layers className="h-5 w-5" />
               </div>
             </div>
           </CardContent>
@@ -307,7 +396,12 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
           <CardTitle>Purchase Requests</CardTitle>
         </CardHeader>
         <CardContent>
-          {submittedPRs.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              <span>Loading purchase requests...</span>
+            </div>
+          ) : submittedPRs.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-muted-foreground">No PRs to review</p>
             </div>
@@ -317,11 +411,12 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>PR Number</TableHead>
+                    <TableHead>Requesting Office</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Total Amount</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Submitted</TableHead>
+                    <TableHead>Date Submitted</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -329,7 +424,25 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
                   {pagedPRs.map((pr) => (
                     <TableRow key={pr.id}>
                       <TableCell className="font-medium">
-                        {pr.headerDetails.prNumber}
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">
+                          {pr.headerDetails.prNumber}
+                        </div>
+                        {pr.type === 'out-of-stock' && (
+                          <div className="mt-1">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] font-semibold px-1.5 py-0 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
+                            >
+                              {(() => {
+                                const { aprNumber } = resolveRelationalAPR(pr)
+                                return aprNumber ? `APR: ${aprNumber}` : 'Sourced from APR'
+                              })()}
+                            </Badge>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                        {pr.headerDetails.officeName || officesMap.get(pr.headerDetails.officeId || '') || 'General Administration'}
                       </TableCell>
                       <TableCell className="text-sm">
                         <Badge color={TYPE_BADGE_COLOR[pr.type] || 'default'} variant="outline" className="capitalize">
@@ -350,8 +463,17 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
                           {STATUS_BADGE_CONFIG[getDisplayStatus(pr)].label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(pr.createdAt).toLocaleDateString()}
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        {(() => {
+                          const raw = pr.dateSubmitted || pr.headerDetails.date || pr.createdAt
+                          if (!raw) return '—'
+                          try {
+                            const d = new Date(raw)
+                            return isNaN(d.getTime()) ? raw : format(d, 'MMM dd, yyyy')
+                          } catch {
+                            return raw
+                          }
+                        })()}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
@@ -361,16 +483,27 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {/* Order: View Details, Approve, Return */}
+                            {/* Order: View Details, View Signed Document (if approved), Approve, Return */}
                             <DropdownMenuItem onClick={() => onViewDetails(pr)}>
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
 
+                            {pr.signedPdfUrl && (
+                              <DropdownMenuItem
+                                onClick={() => openSignedDocument(pr.signedPdfUrl, 'Signed PR Document')}
+                                className="flex items-center text-purple-700 dark:text-purple-400 cursor-pointer"
+                              >
+                                <FileText className="h-4 w-4 mr-2 text-purple-600 dark:text-purple-400" />
+                                View Signed Document
+                              </DropdownMenuItem>
+                            )}
+
                             {pr.status === 'submitted' && (
                               <>
                                 <DropdownMenuItem
-                                  onClick={() => {
+                                  onSelect={(e) => {
+                                    e.preventDefault()
                                     setSelectedPR(pr)
                                     setApproveOpen(true)
                                   }}
@@ -380,7 +513,8 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
                                 </DropdownMenuItem>
 
                                 <DropdownMenuItem
-                                  onClick={() => {
+                                  onSelect={(e) => {
+                                    e.preventDefault()
                                     setSelectedPR(pr)
                                     setReturnOpen(true)
                                   }}
@@ -441,7 +575,7 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
           setApproveOpen(open)
           if (!open) setSelectedPR(null)
         }}
-        onApprove={async (_signedPdfUrl) => {
+        onApprove={async (signedPdfUrl) => {
           if (!selectedPR) return
           try {
             await statusMutation.mutateAsync({
@@ -449,9 +583,16 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
               queryParams: { id: selectedPR.id },
               payload: { prId: selectedPR.id, newStatus: 'Approved' }
             })
-            toast({ title: 'Purchase Request approved', description: `${selectedPR.headerDetails.prNumber} approved successfully.` })
+            updatePurchaseRequest(selectedPR.id, {
+              status: 'approved',
+              signedPdfUrl,
+              remarks: undefined,
+              updatedAt: new Date().toISOString()
+            })
+            toast.success(`${selectedPR.headerDetails.prNumber} approved successfully.`)
           } catch (error) {
-            toast({ title: 'Approval failed', description: 'Failed to approve PR', variant: 'destructive' })
+            toast.error('Failed to approve PR')
+            throw error
           }
         }}
       />
@@ -471,9 +612,15 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
               queryParams: { id: selectedPR.id },
               payload: { prId: selectedPR.id, newStatus: 'Returned', remarks }
             })
-            toast({ title: 'Purchase Request returned', description: `${selectedPR.headerDetails.prNumber} was returned.` })
+            updatePurchaseRequest(selectedPR.id, {
+              status: 'returned',
+              remarks,
+              updatedAt: new Date().toISOString()
+            })
+            toast.success(`${selectedPR.headerDetails.prNumber} was returned.`)
           } catch (error) {
-            toast({ title: 'Return failed', description: 'Failed to return PR', variant: 'destructive' })
+            toast.error('Failed to return PR')
+            throw error
           }
         }}
       />

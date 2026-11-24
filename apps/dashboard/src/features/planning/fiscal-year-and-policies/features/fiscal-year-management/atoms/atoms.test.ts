@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Unit tests for Fiscal Year Management atoms
  * Using Vitest + Jotai testing patterns
@@ -17,14 +18,20 @@ import {
   cleanupFiscalYearAtomsAtom,
 } from './index';
 
-// ============================================
-// Dialog Atom Tests
-// ============================================
+const storageMap = new Map<string, string>();
+const localStorageMock = {
+  getItem: (key: string) => storageMap.get(key) ?? null,
+  setItem: (key: string, value: string) => storageMap.set(key, String(value)),
+  removeItem: (key: string) => storageMap.delete(key),
+  clear: () => storageMap.clear(),
+  length: 0,
+  key: (i: number) => Array.from(storageMap.keys())[i] ?? null,
+};
+Object.defineProperty(window, 'localStorage', { value: localStorageMock, writable: true });
 
 describe('Fiscal Year Dialog Atoms', () => {
   beforeEach(() => {
-    // Clear localStorage before each test
-    localStorage.clear();
+    storageMap.clear();
   });
 
   it('should initialize dialog as closed', () => {

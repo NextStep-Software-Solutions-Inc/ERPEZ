@@ -6,7 +6,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { FileText, Download, CheckCircle, AlertCircle } from 'lucide-react'
+import { FileText, Download, CheckCircle, AlertCircle, Trophy, TrendingDown, Tag, Sparkles } from 'lucide-react'
 
 interface BidDetailsViewerProps {
   open: boolean
@@ -14,14 +14,22 @@ interface BidDetailsViewerProps {
   itemCode: string
   itemDescription: string
   itemABC: number
+  unitABC?: number
+  quantity?: number
   supplierName: string
   bidDetails: {
     unitBid: number | null
     totalBid: number | null
+    brand?: string | null
+    model?: string | null
+    color?: string | null
+    rank?: number | null
+    score?: number | null
     qualityScore?: number
     calculatedQualityPriceRatio?: number
-    remarks?: string
-    offerDocumentUrl?: string
+    remarks?: string | null
+    offerDocumentUrl?: string | null
+    brochureFileUrl?: string | null
     isWinner?: boolean
   }
 }
@@ -32,10 +40,16 @@ export function BidDetailsViewer({
   itemCode,
   itemDescription,
   itemABC,
+  unitABC,
+  quantity,
   supplierName,
   bidDetails,
 }: BidDetailsViewerProps) {
-  const exceedsABC = bidDetails.totalBid && bidDetails.totalBid > itemABC
+  const exceedsABC = bidDetails.totalBid && itemABC > 0 && bidDetails.totalBid > itemABC
+  const savings = bidDetails.totalBid && itemABC > 0 ? itemABC - bidDetails.totalBid : 0
+  const savingsPercent = itemABC > 0 ? (savings / itemABC) * 100 : 0
+  const isPositiveSavings = savings >= 0
+  const brochureUrl = bidDetails.offerDocumentUrl || bidDetails.brochureFileUrl
 
   const handleDownload = (url: string, fileName: string) => {
     const link = document.createElement('a')
@@ -48,94 +62,141 @@ export function BidDetailsViewer({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Bid Details - {supplierName}</DialogTitle>
-          <DialogDescription>
-            {itemCode} - {itemDescription}
+          <div className="flex items-center gap-2">
+            <DialogTitle className="text-xl">Bid Details - {supplierName}</DialogTitle>
+            {bidDetails.isWinner && (
+              <Badge className="bg-amber-500 hover:bg-amber-600 text-white gap-1">
+                <Trophy className="w-3 h-3" />
+                Awarded Winner
+              </Badge>
+            )}
+          </div>
+          <DialogDescription className="text-sm text-gray-600">
+            Item {itemCode} • {itemDescription}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Bid Summary Cards */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Item ABC */}
-            <div className="border rounded-lg p-4 space-y-2 bg-blue-50">
-              <p className="text-xs font-medium text-gray-600">Approved Budget (ABC)</p>
-              <p className="text-2xl font-bold text-blue-900">
-                ₱{itemABC.toLocaleString()}
+        <div className="space-y-5 py-2">
+          {/* Item & ABC Summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {quantity && (
+              <div className="border rounded-lg p-3 bg-gray-50">
+                <p className="text-[11px] font-medium text-gray-500 uppercase">Quantity</p>
+                <p className="text-lg font-bold text-gray-900">{quantity} units</p>
+              </div>
+            )}
+            {unitABC && (
+              <div className="border rounded-lg p-3 bg-gray-50">
+                <p className="text-[11px] font-medium text-gray-500 uppercase">Unit ABC</p>
+                <p className="text-lg font-bold text-gray-900">₱{unitABC.toLocaleString()}</p>
+              </div>
+            )}
+            <div className="border rounded-lg p-3 bg-blue-50 border-blue-200">
+              <p className="text-[11px] font-medium text-blue-800 uppercase">Approved ABC (Total)</p>
+              <p className="text-lg font-bold text-blue-950">₱{itemABC.toLocaleString()}</p>
+            </div>
+            <div className="border rounded-lg p-3 bg-gray-50">
+              <p className="text-[11px] font-medium text-gray-500 uppercase">Award Status</p>
+              <p className="text-sm font-semibold mt-1">
+                {bidDetails.isWinner ? (
+                  <span className="text-amber-700 flex items-center gap-1 font-bold">
+                    <Trophy className="w-4 h-4 text-amber-500" />
+                    Awarded
+                  </span>
+                ) : (
+                  <span className="text-gray-500">Not Awarded</span>
+                )}
               </p>
-            </div>
-
-            {/* Unit Bid */}
-            <div className="border rounded-lg p-4 space-y-2 bg-gray-50">
-              <p className="text-xs font-medium text-gray-600">Unit Price</p>
-              {bidDetails.unitBid ? (
-                <p className="text-2xl font-bold text-gray-900">
-                  ₱{bidDetails.unitBid.toLocaleString()}
-                </p>
-              ) : (
-                <p className="text-xl font-bold text-gray-400">No Bid</p>
-              )}
-            </div>
-
-            {/* Total Bid */}
-            <div className={`border rounded-lg p-4 space-y-2 ${
-              exceedsABC ? 'bg-red-50' : 'bg-green-50'
-            }`}>
-              <p className="text-xs font-medium text-gray-600">Total Bid Amount</p>
-              {bidDetails.totalBid ? (
-                <div className="space-y-2">
-                  <p className={`text-2xl font-bold ${
-                    exceedsABC ? 'text-red-900' : 'text-green-900'
-                  }`}>
-                    ₱{bidDetails.totalBid.toLocaleString()}
-                  </p>
-                  {exceedsABC && (
-                    <div className="flex items-center gap-1">
-                      <AlertCircle className="w-4 h-4 text-red-600" />
-                      <span className="text-xs text-red-600 font-medium">Exceeds ABC</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-xl font-bold text-gray-400">No Bid</p>
-              )}
-            </div>
-
-            {/* Status */}
-            <div className="border rounded-lg p-4 space-y-2 bg-amber-50">
-              <p className="text-xs font-medium text-gray-600">Status</p>
-              {bidDetails.isWinner ? (
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-amber-600" />
-                  <Badge className="bg-amber-600">Winner</Badge>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-600">Not Selected</p>
-              )}
             </div>
           </div>
 
-          {/* Additional Details */}
-          {(bidDetails.qualityScore !== undefined || bidDetails.calculatedQualityPriceRatio !== undefined) && (
-            <div className="border rounded-lg p-4 space-y-3 bg-purple-50">
-              <p className="text-sm font-medium text-gray-700">Evaluation Scores</p>
-              <div className="grid grid-cols-2 gap-3">
-                {bidDetails.qualityScore !== undefined && (
+          {/* Quoted Specifications (Brand, Model, Color) */}
+          {(bidDetails.brand || bidDetails.model || bidDetails.color) && (
+            <div className="border rounded-lg p-4 bg-slate-50 space-y-2 border-slate-200">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                <Tag className="w-3.5 h-3.5 text-slate-500" />
+                Quoted Product Specifications
+              </div>
+              <div className="grid grid-cols-3 gap-4 pt-1">
+                <div>
+                  <p className="text-xs text-gray-500">Brand</p>
+                  <p className="text-sm font-semibold text-gray-900">{bidDetails.brand || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Model / Series</p>
+                  <p className="text-sm font-semibold text-gray-900">{bidDetails.model || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Color / Finish</p>
+                  <p className="text-sm font-semibold text-gray-900">{bidDetails.color || '-'}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Pricing & Savings */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="border rounded-lg p-4 bg-gray-50 space-y-1">
+              <p className="text-xs font-medium text-gray-500 uppercase">Quoted Unit Price</p>
+              <p className="text-xl font-bold text-gray-900">
+                {bidDetails.unitBid ? `₱${bidDetails.unitBid.toLocaleString()}` : '-'}
+              </p>
+            </div>
+
+            <div className={`border rounded-lg p-4 space-y-1 ${exceedsABC ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-gray-600 uppercase">Total Bid Amount</p>
+                {exceedsABC && (
+                  <Badge variant="outline" className="text-[10px] bg-red-100 text-red-700 border-red-300">
+                    Over ABC
+                  </Badge>
+                )}
+              </div>
+              <p className={`text-xl font-bold ${exceedsABC ? 'text-red-900' : 'text-green-900'}`}>
+                {bidDetails.totalBid ? `₱${bidDetails.totalBid.toLocaleString()}` : '-'}
+              </p>
+            </div>
+
+            <div className={`border rounded-lg p-4 space-y-1 ${isPositiveSavings ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+              <p className="text-xs font-medium text-gray-600 uppercase">
+                {isPositiveSavings ? 'Budget Savings' : 'Budget Excess'}
+              </p>
+              <p className={`text-xl font-bold flex items-center gap-1 ${isPositiveSavings ? 'text-emerald-700' : 'text-red-700'}`}>
+                {isPositiveSavings && <TrendingDown className="w-4 h-4" />}
+                ₱{Math.abs(savings).toLocaleString()}
+                <span className="text-xs font-normal">({savingsPercent.toFixed(1)}%)</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Evaluation & Scoring */}
+          {(bidDetails.rank != null || bidDetails.score != null || bidDetails.qualityScore != null) && (
+            <div className="border rounded-lg p-4 space-y-3 bg-purple-50/70 border-purple-200">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-purple-900 uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                BAC Evaluation & Ranking
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                {bidDetails.rank != null && bidDetails.rank > 0 && (
                   <div>
-                    <p className="text-xs text-gray-600">Quality Score</p>
-                    <p className="text-lg font-bold text-purple-900">
-                      {bidDetails.qualityScore}%
-                    </p>
+                    <p className="text-xs text-gray-600">Calculated Rank</p>
+                    <Badge variant="outline" className="text-xs font-bold text-emerald-800 bg-emerald-50 border-emerald-300 mt-1">
+                      Rank {bidDetails.rank}
+                    </Badge>
                   </div>
                 )}
-                {bidDetails.calculatedQualityPriceRatio !== undefined && (
+                {bidDetails.score != null && (
                   <div>
-                    <p className="text-xs text-gray-600">Quality-Price Ratio</p>
-                    <p className="text-lg font-bold text-purple-900">
-                      {bidDetails.calculatedQualityPriceRatio.toFixed(2)}
-                    </p>
+                    <p className="text-xs text-gray-600">Price / Total Score</p>
+                    <p className="text-lg font-bold text-purple-950">{bidDetails.score}%</p>
+                  </div>
+                )}
+                {bidDetails.qualityScore != null && (
+                  <div>
+                    <p className="text-xs text-gray-600">Technical / Quality Score</p>
+                    <p className="text-lg font-bold text-purple-950">{bidDetails.qualityScore}/100</p>
                   </div>
                 )}
               </div>
@@ -144,55 +205,52 @@ export function BidDetailsViewer({
 
           {/* Remarks */}
           {bidDetails.remarks && (
-            <div className="border rounded-lg p-4 space-y-2 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700">Remarks</p>
-              <p className="text-sm text-gray-600">{bidDetails.remarks}</p>
+            <div className="border rounded-lg p-4 space-y-1 bg-gray-50">
+              <p className="text-xs font-semibold text-gray-600 uppercase">Remarks / Award Justification</p>
+              <p className="text-sm text-gray-700">{bidDetails.remarks}</p>
             </div>
           )}
 
-          {/* Offer Document */}
-          {bidDetails.offerDocumentUrl ? (
-            <div className="border rounded-lg p-4 space-y-3 bg-blue-50">
-              <p className="text-sm font-medium text-gray-700">Brochure</p>
+          {/* Brochure & Catalog Attachment */}
+          {brochureUrl ? (
+            <div className="border rounded-lg p-4 space-y-3 bg-blue-50/60 border-blue-200">
+              <p className="text-xs font-semibold text-blue-900 uppercase">Technical Specifications & Brochure</p>
               <div className="flex items-center gap-3 bg-white p-3 rounded border border-blue-100">
-                <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                <FileText className="w-6 h-6 text-blue-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
-                    {supplierName} - {itemCode} Offer
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {supplierName} - {itemCode} Technical Brochure
                   </p>
-                  <p className="text-xs text-gray-500">
-                    {bidDetails.offerDocumentUrl.split('/').pop()}
+                  <p className="text-xs text-gray-500 truncate">
+                    {brochureUrl.split('/').pop()}
                   </p>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => window.open(bidDetails.offerDocumentUrl, '_blank')}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  View brochure
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    handleDownload(
-                      bidDetails.offerDocumentUrl!,
-                      `${itemCode}-${supplierName}-brochure.pdf`
-                    )
-                  }
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download
-                </Button>
+                <div className="flex gap-2 shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs gap-1"
+                    onClick={() => window.open(brochureUrl, '_blank')}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    View
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs gap-1"
+                    onClick={() => handleDownload(brochureUrl, `${itemCode}-${supplierName}-brochure.pdf`)}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Download
+                  </Button>
+                </div>
               </div>
             </div>
           ) : (
-            <div className="border rounded-lg p-4 bg-gray-50 text-center">
-              <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-600">No brochure available</p>
+            <div className="border rounded-lg p-4 bg-gray-50 text-center text-xs text-gray-500">
+              <FileText className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+              No electronic brochure attached for this quotation
             </div>
           )}
         </div>

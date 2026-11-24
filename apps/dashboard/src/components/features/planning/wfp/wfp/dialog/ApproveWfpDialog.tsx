@@ -14,7 +14,11 @@ import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 
 const useUpdateWfpStatus = createMutationHookFromTemplate(updateWFPStatusRequest)
 
-export default function ApproveWfpDialog() {
+interface ApproveWfpDialogProps {
+  onSuccess?: () => void
+}
+
+export default function ApproveWfpDialog({ onSuccess }: ApproveWfpDialogProps = {}) {
   const [dialogState, setDialogState] = useAtom(approveDialogAtom)
   const { mutateAsync, isPending } = useUpdateWfpStatus()
   const queryClient = useQueryClient()
@@ -37,8 +41,10 @@ export default function ApproveWfpDialog() {
 
       toast.success('WFP approved successfully!')
       setDialogState({ isOpen: false, selectedId: null })
-    } catch (error) {
-      toast.error('Failed to approve WFP.')
+      onSuccess?.()
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || 'Failed to approve WFP.'
+      toast.error(message)
     }
   }
 

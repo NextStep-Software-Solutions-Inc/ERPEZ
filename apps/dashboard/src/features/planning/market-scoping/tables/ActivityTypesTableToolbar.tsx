@@ -38,9 +38,7 @@ export function ActivityTypesTableToolbar({
         <Input
           placeholder="Search by type, label, or description..."
           value={filter.searchTerm}
-          onChange={(e) =>
-            setFilter({ ...filter, searchTerm: e.target.value })
-          }
+          onChange={(e) => setFilter({ ...filter, searchTerm: e.target.value })}
           className="pl-10 max-w-sm"
         />
       </div>
@@ -49,7 +47,10 @@ export function ActivityTypesTableToolbar({
       <Select
         value={filter.statusFilter}
         onValueChange={(value) =>
-          setFilter({ ...filter, statusFilter: value as 'all' | 'active' | 'inactive' })
+          setFilter({
+            ...filter,
+            statusFilter: value as 'all' | 'active' | 'inactive',
+          })
         }
       >
         <SelectTrigger className="w-48">
@@ -65,11 +66,7 @@ export function ActivityTypesTableToolbar({
       {/* Action Buttons - Grouped on the right */}
       <div className="ml-auto flex gap-2">
         {onCreateNew && (
-          <Button
-            size="sm"
-            onClick={onCreateNew}
-            className="gap-2"
-          >
+          <Button size="sm" onClick={onCreateNew} className="gap-2">
             <Plus className="h-4 w-4" />
             New Activity Type
           </Button>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { ApproveBacResolutionForm } from '../forms/ApproveBacResolutionForm'
-import type { ApproveBacResolutionPayload } from '../types'
+import { ApproveBacResolutionForm, type ApproveBacResolutionFormValues } from '../forms/ApproveBacResolutionForm'
+
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ interface ApproveBacResolutionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   bacResolutionId: string
-  onApprove: (values: ApproveBacResolutionPayload) => Promise<void> | void
+  onApprove: (values: ApproveBacResolutionFormValues) => Promise<void> | void
 }
 
 export function ApproveBacResolutionDialog({
@@ -21,7 +21,8 @@ export function ApproveBacResolutionDialog({
   const [isDirty, setIsDirty] = useState(false)
   const [showDiscardWarning, setShowDiscardWarning] = useState(false)
   const [showApproveConfirm, setShowApproveConfirm] = useState(false)
-  const [pendingValues, setPendingValues] = useState<ApproveBacResolutionPayload | null>(null)
+  const [pendingValues, setPendingValues] = useState<ApproveBacResolutionFormValues | null>(null)
+
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && isDirty) {
@@ -32,10 +33,11 @@ export function ApproveBacResolutionDialog({
     onOpenChange(nextOpen)
   }
 
-  const handleSubmit = (values: ApproveBacResolutionPayload) => {
+  const handleSubmit = (values: ApproveBacResolutionFormValues) => {
     setPendingValues(values)
     setShowApproveConfirm(true)
   }
+
 
   const handleConfirmApprove = async () => {
     if (pendingValues) {

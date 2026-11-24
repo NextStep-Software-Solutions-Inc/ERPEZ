@@ -1,5 +1,5 @@
 import { CheckCircle2, XCircle, Upload, ClipboardList } from 'lucide-react'
-import type { DAStatus } from '../types/daItemTypes'
+import type { DAStatus } from '../types/direct-contracting-item-type'
 
 export const STATUS_CONFIG: Record<
   DAStatus,

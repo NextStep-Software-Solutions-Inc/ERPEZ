@@ -61,6 +61,7 @@ export function AddAPPItemDialog() {
 
   const [formData, setFormData] = useState<AddAPPItemFormData>({
     ppmpItemId: '',
+    itemNameOverride: '',
     procurementModeId: '',
     fundSourceId: '',
     officeId: '',
@@ -80,6 +81,7 @@ export function AddAPPItemDialog() {
     if (open) {
       setFormData({
         ppmpItemId: '',
+        itemNameOverride: '',
         procurementModeId: '',
         fundSourceId: '',
         officeId: '',
@@ -174,12 +176,6 @@ export function AddAPPItemDialog() {
       return
     }
 
-    const effectiveRemarks = formData.remarks
-      ? formData.generalDescription && formData.remarks !== formData.generalDescription
-        ? `${formData.generalDescription}\n${formData.remarks}`
-        : formData.remarks
-      : formData.generalDescription || ''
-
     setSaving(true)
     const payload = {
       appId: appId,
@@ -188,7 +184,11 @@ export function AddAPPItemDialog() {
       fundSourceId: effectiveFundSourceId,
       officeId: effectiveOfficeId,
       papCode: formData.papCode || '',
-      remarks: effectiveRemarks,
+      remarks: formData.remarks || '',
+      itemNameOverride: formData.itemNameOverride?.trim() || null,
+      generalDescription: formData.generalDescription?.trim() || null,
+      startOfProcurementOverride: formData.procurementStartDate ? `${formData.procurementStartDate}T00:00:00.000Z` : null,
+      endOfProcurementOverride: formData.procurementEndDate ? `${formData.procurementEndDate}T00:00:00.000Z` : null,
       isEarlyProcurementActivity: formData.isEarlyProcurementActivity,
       isOutsourced: formData.isOutsourced,
       bidEvaluationCriteria: formData.bidEvaluationCriteria,
@@ -199,14 +199,10 @@ export function AddAPPItemDialog() {
       const response = await api.post('/app-items', payload)
       if (response.data?.succeeded !== false) {
         toast.success('APP Item added successfully')
-        queryClient.invalidateQueries({
-          queryKey: [`/apps/${appId}`]
-        })
-        queryClient.invalidateQueries({
-          queryKey: [`/apps/${appId}/available-ppmp-items`]
-        })
-        queryClient.invalidateQueries({
-          queryKey: [getAPPDetailRequest.endpoint, appId]
+        void queryClient.invalidateQueries({
+          predicate: (query) =>
+            typeof query.queryKey[0] === 'string' &&
+            (query.queryKey[0].startsWith('/apps') || query.queryKey[0].startsWith('/ppmps')),
         })
         setOpen(false)
       } else {

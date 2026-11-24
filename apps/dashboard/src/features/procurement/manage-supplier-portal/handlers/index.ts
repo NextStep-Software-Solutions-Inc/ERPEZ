@@ -3,3 +3,7 @@ export { getSupplierApplicationsRequest } from './getSupplierApplicationsRequest
 export { updateApplicationEvaluationRequest } from './updateApplicationEvaluationRequest'
 export { getApplicationDocumentsRequest } from './getApplicationDocumentsRequest'
 export { downloadDocumentRequest } from './downloadDocumentRequest'
+export { getRFQsRequest } from './getRFQsRequest'
+export { getRFQByIdRequest } from './getRFQByIdRequest'
+export { getRFQSupplierBidsRequest } from './getRFQSupplierBidsRequest'
+export { evaluateRFQSupplierBidRequest } from './evaluateRFQSupplierBidRequest'

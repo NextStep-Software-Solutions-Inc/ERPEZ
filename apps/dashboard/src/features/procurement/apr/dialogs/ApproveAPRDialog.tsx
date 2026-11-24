@@ -14,12 +14,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import type { APRMaster } from '../types'
 
 interface ApproveAPRDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  apr: APRMaster | null
+  apr: any | null
   isSubmitting?: boolean
   onConfirm?: (file?: File) => void | Promise<void>
 }
@@ -35,6 +34,9 @@ export function ApproveAPRDialog({
   const [isDragging, setIsDragging] = useState(false)
 
   if (!apr) return null
+
+  const itemsCount = apr.consolidatedItems?.length ?? apr.itemCount ?? apr.totalItemsCount ?? 0
+  const totalAmount = apr.totalAmount ?? 0
 
   const handleFileSelect = (file: File) => {
     if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
@@ -105,16 +107,20 @@ export function ApproveAPRDialog({
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Total Items:</span>
-              <span className="font-medium">{apr.consolidatedItems.length}</span>
+              <span className="font-medium">{itemsCount}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Total Amount:</span>
-              <span className="font-medium">{apr.totalAmount.toLocaleString()}</span>
+              <span className="font-medium">
+                ₱{new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalAmount)}
+              </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Fiscal Year:</span>
-              <span className="font-medium">{apr.fiscalYear}</span>
-            </div>
+            {apr.fiscalYear && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Fiscal Year:</span>
+                <span className="font-medium">{apr.fiscalYear}</span>
+              </div>
+            )}
           </div>
 
           {/* File Upload */}

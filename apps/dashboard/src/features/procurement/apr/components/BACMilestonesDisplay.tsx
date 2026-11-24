@@ -95,7 +95,7 @@ export function BACMilestonesDisplay({
               <span className="text-muted-foreground">{m.label}:</span>
               <span className="font-medium">{formatDate(m.value)}</span>
               {isPastDate(m.value) && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="outline" className="text-xs">
                   Past
                 </Badge>
               )}
@@ -141,7 +141,7 @@ export function BACMilestonesDisplay({
  * Inline BAC Milestones Display
  * For compact display in tables or lists
  */
-export function BACMilestonesInline({ milestones, compact }: { milestones?: APRMilestones; compact?: boolean }) {
+export function BACMilestonesInline({ milestones, compact: _compact }: { milestones?: APRMilestones; compact?: boolean }) {
   if (!milestones) return <span className="text-xs text-muted-foreground">No milestones</span>
 
   const count = [

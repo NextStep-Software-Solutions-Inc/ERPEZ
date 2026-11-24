@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useForm } from '@tanstack/react-form'
+import { useEffect } from 'react'
+import { useForm, useStore } from '@tanstack/react-form'
 import { positionConfig } from '@/config/position.config'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,44 +31,108 @@ export type UpdatePositionFormValues = Record<string, unknown>
 
 interface UpdatePositionFormProps {
   positionId: string
+  position?: Position | null
   onUpdated: () => void
   onClose: () => void
   isDirtyCallback?: (isDirty: boolean) => void
 }
 
+export function resolveGradeNumber(
+  salaryGrade: Position['salaryGrade'] | undefined,
+  salaryGradesList: Array<{ id: string; gradeNumber: number; name: string }>,
+): number | undefined {
+  if (!salaryGrade) return undefined
+
+  if (typeof salaryGrade === 'object') {
+    if (typeof salaryGrade.gradeNumber === 'number') {
+      return salaryGrade.gradeNumber
+    }
+    const match = salaryGradesList.find((sg) => sg.id === salaryGrade.id)
+    if (match) return match.gradeNumber
+    const num = Number(salaryGrade.name?.replace('SG-', '')?.replace('Salary Grade ', ''))
+    return !isNaN(num) && num > 0 ? num : undefined
+  }
+
+  if (typeof salaryGrade === 'string') {
+    const match = salaryGradesList.find((sg) => sg.id === salaryGrade || sg.name === salaryGrade)
+    if (match) return match.gradeNumber
+    const num = Number(salaryGrade.replace('SG-', '').replace('Salary Grade ', ''))
+    return !isNaN(num) && num > 0 ? num : undefined
+  }
+
+  return undefined
+}
+
+export function resolveStepNumber(
+  step: Position['step'] | undefined,
+  stepsList: Array<{ id: string; name: string; stepNumber?: number }>,
+): number | undefined {
+  if (!step) return undefined
+
+  if (typeof step === 'object') {
+    if (typeof step.stepNumber === 'number') {
+      return step.stepNumber
+    }
+    const match = stepsList.find((st) => st.id === step.id)
+    if (match) {
+      if (typeof match.stepNumber === 'number') return match.stepNumber
+      const num = Number(match.name.replace('Step ', ''))
+      return !isNaN(num) && num > 0 ? num : undefined
+    }
+    const num = Number(step.name?.replace('Step ', ''))
+    return !isNaN(num) && num > 0 ? num : undefined
+  }
+
+  if (typeof step === 'string') {
+    const match = stepsList.find((st) => st.id === step || st.name === step)
+    if (match) {
+      if (typeof match.stepNumber === 'number') return match.stepNumber
+      const num = Number(match.name.replace('Step ', ''))
+      return !isNaN(num) && num > 0 ? num : undefined
+    }
+    const num = Number(step.replace('Step ', ''))
+    return !isNaN(num) && num > 0 ? num : undefined
+  }
+
+  return undefined
+}
+
 export function UpdatePositionForm({
   positionId,
+  position: positionProp,
   onUpdated,
   onClose,
   isDirtyCallback,
 }: UpdatePositionFormProps) {
   const positionQuery = usePosition(positionId)
-  const position: Position | null = positionQuery.data ?? null
+  const position: Position | null = positionProp ?? positionQuery.data ?? null
   const updateMutation = useUpdatePosition()
 
-  const { data: positionTypesResponse } = usePositionTypes({ pathParams: {}, queryParams: {} })
+  const { data: positionTypesResponse } = usePositionTypes({ pathParams: {}, queryParams: { pageSize: 1000, sorts: 'name' } })
   const positionTypes = positionTypesResponse?.data ?? []
 
   type PositionOption = { id: string; name: string }
-  const positionOptions: PositionOption[] =
+  const positionOptions: PositionOption[] = (
     positionTypes.length > 0
       ? positionTypes.map((pt) => ({ id: pt.id, name: pt.name }))
       : positionConfig.positionTypes.map((p) => ({ id: p.value, name: p.label }))
+  ).sort((a, b) => a.name.localeCompare(b.name))
 
-  const { data: plantillaTypesResponse } = usePlantillaTypes({ pathParams: {}, queryParams: {} })
+  const { data: plantillaTypesResponse } = usePlantillaTypes({ pathParams: {}, queryParams: { pageSize: 1000, sorts: 'name' } })
   const plantillaTypes = plantillaTypesResponse?.data ?? []
 
   type PlantillaTypeOption = { id: string; label: string }
-  const plantillaTypeOptions: PlantillaTypeOption[] =
+  const plantillaTypeOptions: PlantillaTypeOption[] = (
     plantillaTypes.length > 0
       ? plantillaTypes.map((pt) => ({ id: pt.id, label: pt.name }))
       : positionConfig.plantillaTypes.map((p) => ({ id: p.value, label: p.label }))
+  ).sort((a, b) => a.label.localeCompare(b.label))
 
-  const { data: salaryGradesResponse } = useSalaryGrades({ pathParams: {}, queryParams: {} })
+  const { data: salaryGradesResponse } = useSalaryGrades({ pathParams: {}, queryParams: { pageSize: 1000, sorts: 'gradeNumber' } })
   const salaryGrades = salaryGradesResponse?.data ?? []
 
   type SalaryGradeOption = { id: string; value: number; label: string }
-  const salaryGradeOptions: SalaryGradeOption[] =
+  const salaryGradeOptions: SalaryGradeOption[] = (
     salaryGrades.length > 0
       ? salaryGrades.map((sg) => ({
           id: sg.id,
@@ -76,36 +140,41 @@ export function UpdatePositionForm({
           label: sg.name,
         }))
       : positionConfig.salaryGrades.map((sg) => ({ id: sg.value.toString(), value: sg.value, label: sg.label }))
+  ).sort((a, b) => a.value - b.value)
 
-  const { data: stepsResponse } = useSteps({ pathParams: {}, queryParams: {} })
+  const { data: stepsResponse } = useSteps({ pathParams: {}, queryParams: { pageSize: 1000, sorts: 'stepNumber' } })
   const steps = stepsResponse?.data ?? []
 
   type StepOption = { id: string; value: number; label: string }
-  const stepOptions: StepOption[] =
+  const stepOptions: StepOption[] = (
     steps.length > 0
       ? steps.map((s) => ({
           id: s.id,
-          value: Number(s.name.replace('Step ', '')) || 0,
+          value: (s as any).stepNumber ?? (Number(s.name.replace('Step ', '')) || 0),
           label: s.name,
         }))
       : positionConfig.steps.map((s) => ({ id: s.value.toString(), value: s.value, label: s.label }))
+  ).sort((a, b) => a.value - b.value)
 
-  const { data: orgUnitsResponse } = useOffices({ pathParams: {}, queryParams: { pageSize: 1000 } })
-  const fetchedOrgUnits = orgUnitsResponse?.data ?? []
+  const { data: orgUnitsResponse } = useOffices({ pathParams: {}, queryParams: { pageSize: 1000, sorts: 'name' } })
+  const fetchedOrgUnits = [...(orgUnitsResponse?.data ?? [])].sort((a, b) => a.name.localeCompare(b.name))
+
+  const initialGradeNumber = resolveGradeNumber(position?.salaryGrade, salaryGrades)
+  const initialStepNumber = resolveStepNumber(position?.step, steps)
 
   const defaultValues = {
-    title: '',
-    code: '',
-    type: '' as string,
-    plantillaType: '' as string,
-    plantillaItem: '',
-    salaryGrade: undefined as number | undefined,
-    step: undefined as number | undefined,
-    authorizedFTE: undefined as number | undefined,
-    officeId: '',
-    functionalTitle: '',
-    jobDescription: '',
-    preferredQualifications: '',
+    title: position?.title || '',
+    code: position?.code || '',
+    type: position?.positionTypeId || (position as any)?.positionType?.id || '',
+    plantillaType: position?.plantillaTypeId || (position as any)?.plantillaType?.id || '',
+    plantillaItem: position?.itemNumber || '',
+    salaryGrade: initialGradeNumber,
+    step: initialStepNumber,
+    authorizedFTE: position?.authorizedFTE ?? (position as any)?.fte ?? 1,
+    officeId: position?.orgUnitId || (position as any)?.office?.id || '',
+    functionalTitle: position?.functionalTitle || '',
+    jobDescription: position?.jobDescription || '',
+    preferredQualifications: position?.qualifications || '',
   }
 
   const form = useForm({
@@ -124,13 +193,20 @@ export function UpdatePositionForm({
         positionTypeId: value.type,
         plantillaTypeId: value.plantillaType,
         salaryGradeId:
-          salaryGrades.find((sg) => sg.gradeNumber === value.salaryGrade)?.id || '',
+          salaryGrades.find((sg) => sg.gradeNumber === value.salaryGrade || sg.id === value.salaryGrade)?.id ||
+          salaryGrades.find((sg) => sg.gradeNumber === Number(value.salaryGrade))?.id ||
+          (typeof position?.salaryGrade === 'object' ? position.salaryGrade?.id : '') ||
+          '',
         stepId:
-          steps
-            .find((st) =>
-              Number(st.name.replace('Step ', '')) === value.step
-            )
-            ?.id || '',
+          steps.find(
+            (st) =>
+              (st as any).stepNumber === value.step ||
+              (st as any).stepNumber === Number(value.step) ||
+              Number(st.name.replace('Step ', '')) === value.step ||
+              st.id === value.step
+          )?.id ||
+          (typeof position?.step === 'object' ? position.step?.id : '') ||
+          '',
         officeId: value.officeId,
       }
 
@@ -143,65 +219,23 @@ export function UpdatePositionForm({
     },
   })
 
-  // populate immediately with whatever data we have from the position
-  // so the user sees something right away; some fields (salary grade/step)
-  // will be filled again later when the lookup tables arrive.
+  // Synchronize form when position or lookup data becomes available
   useEffect(() => {
     if (!position) return
 
-    form.reset({
-      title: position.title,
-      code: position.code,
-      type: position.positionTypeId || '',
-      plantillaType: position.plantillaTypeId || '',
-      plantillaItem: '',
-      salaryGrade: undefined,
-      step: undefined,
-      authorizedFTE: position.authorizedFTE,
-      officeId: position.orgUnitId,
-      functionalTitle: position.functionalTitle || '',
-      jobDescription: position.jobDescription || '',
-      preferredQualifications: position.qualifications || '',
-    })
-  }, [position, form])
-
-  // once lookup data is available we can translate ids into numbers
-  // and populate the remaining dropdowns correctly (select labels show).
-  useEffect(() => {
-    if (!position) return
-    if (
-      positionTypes.length === 0 ||
-      plantillaTypes.length === 0 ||
-      salaryGrades.length === 0 ||
-      steps.length === 0 ||
-      fetchedOrgUnits.length === 0
-    ) {
-      return
-    }
-
-    const gradeId =
-      typeof position.salaryGrade === 'string'
-        ? position.salaryGrade
-        : position.salaryGrade?.id
-    const gradeNumber = salaryGrades.find((sg) => sg.id === gradeId)?.gradeNumber
-
-    const stepId =
-      typeof position.step === 'string' ? position.step : position.step?.id
-    const stepNumber =
-      stepId && steps.length
-        ? steps.find((st) => st.id === stepId)?.name.replace('Step ', '')
-        : undefined
+    const gradeNumber = resolveGradeNumber(position.salaryGrade, salaryGrades)
+    const stepNumber = resolveStepNumber(position.step, steps)
 
     form.reset({
-      title: position.title,
-      code: position.code,
-      type: position.positionTypeId || '',
-      plantillaType: position.plantillaTypeId || '',
-      plantillaItem: '',
+      title: position.title || '',
+      code: position.code || '',
+      type: position.positionTypeId || (position as any)?.positionType?.id || '',
+      plantillaType: position.plantillaTypeId || (position as any)?.plantillaType?.id || '',
+      plantillaItem: position.itemNumber || '',
       salaryGrade: gradeNumber,
       step: stepNumber,
-      authorizedFTE: position.authorizedFTE,
-      officeId: position.orgUnitId,
+      authorizedFTE: position.authorizedFTE ?? (position as any)?.fte ?? 1,
+      officeId: position.orgUnitId || (position as any)?.office?.id || '',
       functionalTitle: position.functionalTitle || '',
       jobDescription: position.jobDescription || '',
       preferredQualifications: position.qualifications || '',
@@ -216,52 +250,55 @@ export function UpdatePositionForm({
     form,
   ])
 
-  // validity logic identical to create
-  const [isFormValid, setIsFormValid] = useState(false)
-  useEffect(() => {
-    const v = form.state.values as any
-    const hasTitle = typeof v.title === 'string' && v.title.trim() !== ''
-    const hasCode = typeof v.code === 'string' && v.code.trim() !== ''
-    const hasType = typeof v.type === 'string' && v.type !== ''
-    const hasPlantillaType = typeof v.plantillaType === 'string' && v.plantillaType !== ''
-    const needsPlantillaItem =
-      hasPlantillaType &&
-      !positionConfig.optionalPlantillaTypes.includes(v.plantillaType)
-    const hasPlantillaItem =
-      !needsPlantillaItem ||
-      (typeof v.plantillaItem === 'string' && v.plantillaItem.trim() !== '')
-    const hasSalaryGrade =
-      typeof v.salaryGrade === 'number' && v.salaryGrade >= 1 && v.salaryGrade <= 33
-    const hasStep = typeof v.step === 'number' && v.step >= 1 && v.step <= 8
-    const hasFTE =
-      typeof v.authorizedFTE === 'number' && v.authorizedFTE >= 0.5
-    const hasOffice = typeof v.officeId === 'string' && v.officeId !== ''
-    const hasFunctional =
-      typeof v.functionalTitle === 'string' && v.functionalTitle.trim() !== ''
-    const hasJobDesc =
-      typeof v.jobDescription === 'string' && v.jobDescription.trim() !== ''
-    const hasQualifications =
-      typeof v.preferredQualifications === 'string' && v.preferredQualifications.trim() !== ''
-
-    setIsFormValid(
-      hasTitle &&
-      hasCode &&
-      hasType &&
-      hasPlantillaType &&
-      hasPlantillaItem &&
-      hasSalaryGrade &&
-      hasStep &&
-      hasFTE &&
-      hasOffice &&
-      hasFunctional &&
-      hasJobDesc &&
-      hasQualifications
-    )
-  }, [form.state.values])
+  const formValues = useStore(form.store, (state) => state.values as any)
+  const isDirty = useStore(form.store, (state) => state.isDirty)
 
   useEffect(() => {
-    isDirtyCallback?.(form.state.isDirty)
-  }, [form.state.isDirty, isDirtyCallback])
+    isDirtyCallback?.(isDirty)
+  }, [isDirty, isDirtyCallback])
+
+  const hasTitle = typeof formValues.title === 'string' && formValues.title.trim() !== ''
+  const hasCode = typeof formValues.code === 'string' && formValues.code.trim() !== ''
+  const hasType = typeof formValues.type === 'string' && formValues.type !== ''
+  const hasPlantillaType = typeof formValues.plantillaType === 'string' && formValues.plantillaType !== ''
+  const selectedPlantillaType = plantillaTypes.find((pt) => pt.id === formValues.plantillaType)
+  const plantillaTypeName = selectedPlantillaType?.name?.toLowerCase() || ''
+  const isPlantillaTypeOptional =
+    positionConfig.optionalPlantillaTypes.includes(formValues.plantillaType) ||
+    plantillaTypeName.includes('job order') ||
+    plantillaTypeName.includes('cos') ||
+    plantillaTypeName.includes('contract of service')
+  const needsPlantillaItem = hasPlantillaType && !isPlantillaTypeOptional
+  const hasPlantillaItem =
+    !needsPlantillaItem ||
+    (typeof formValues.plantillaItem === 'string' && formValues.plantillaItem.trim() !== '')
+  const hasSalaryGrade =
+    typeof formValues.salaryGrade === 'number' && formValues.salaryGrade >= 1 && formValues.salaryGrade <= 33
+  const hasStep = typeof formValues.step === 'number' && formValues.step >= 1 && formValues.step <= 8
+  const hasFTE =
+    typeof formValues.authorizedFTE === 'number' && formValues.authorizedFTE >= 0.5
+  const hasOffice = typeof formValues.officeId === 'string' && formValues.officeId !== ''
+  const hasFunctional =
+    typeof formValues.functionalTitle === 'string' && formValues.functionalTitle.trim() !== ''
+  const hasJobDesc =
+    typeof formValues.jobDescription === 'string' && formValues.jobDescription.trim() !== ''
+  const hasQualifications =
+    typeof formValues.preferredQualifications === 'string' && formValues.preferredQualifications.trim() !== ''
+
+  const isFormValid = Boolean(
+    hasTitle &&
+    hasCode &&
+    hasType &&
+    hasPlantillaType &&
+    hasPlantillaItem &&
+    hasSalaryGrade &&
+    hasStep &&
+    hasFTE &&
+    hasOffice &&
+    hasFunctional &&
+    hasJobDesc &&
+    hasQualifications
+  )
 
   // if position not loaded yet show spinner
   if (positionQuery.isLoading) {
@@ -364,7 +401,7 @@ export function UpdatePositionForm({
                 onValueChange={(value) => field.handleChange(value as any)}
               >
                 <SelectTrigger className="h-10 border-default-200 focus:border-primary focus:ring-primary/20 transition-all rounded-md">
-                  <SelectValue placeholder="Select salary grade" />
+                  <SelectValue placeholder="Select plantilla type" />
                 </SelectTrigger>
                 <SelectContent>
                   {plantillaTypeOptions.map((type, idx) => (
@@ -382,7 +419,13 @@ export function UpdatePositionForm({
           name="plantillaItem"
           children={(field) => {
             const plantillaType = form.getFieldValue('plantillaType')
-            const isOptional = positionConfig.optionalPlantillaTypes.includes(plantillaType as string)
+            const selectedType = plantillaTypes.find((pt) => pt.id === plantillaType)
+            const typeName = selectedType?.name?.toLowerCase() || ''
+            const isOptional =
+              positionConfig.optionalPlantillaTypes.includes(plantillaType as string) ||
+              typeName.includes('job order') ||
+              typeName.includes('cos') ||
+              typeName.includes('contract of service')
             const isDisabled = isOptional
             return (
               <div className="space-y-2">

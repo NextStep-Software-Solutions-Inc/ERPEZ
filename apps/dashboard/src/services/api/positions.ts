@@ -30,22 +30,44 @@ export interface StepApi {
   createdAt: string
 }
 
+export interface OfficeApi {
+  id: string
+  name: string
+  code?: string
+}
+
+export interface PositionTypeApi {
+  id: string
+  name: string
+  code?: string
+}
+
+export interface PlantillaTypeApi {
+  id: string
+  name: string
+  code?: string
+}
+
 export interface PositionApiResponse {
   id: string
   title: string
   functionalTitle?: string
   code: string
+  itemNumber?: string
   jobDescription?: string
   qualifications?: string
   fte: number
   operationalStatus: string
   positionTypeId?: string
+  positionType?: PositionTypeApi
   plantillaTypeId?: string
+  plantillaType?: PlantillaTypeApi
   salaryGradeId?: string
   salaryGrade?: SalaryGradeApi
   stepId?: string
   step?: StepApi
-  officeId: string
+  officeId?: string
+  office?: OfficeApi
   createdAt?: string
 }
 
@@ -63,12 +85,14 @@ export interface SalaryGradeRef {
   id: string
   name: string
   code?: string
+  gradeNumber?: number
 }
 
 export interface StepRef {
   id: string
   name: string
   code?: string
+  stepNumber?: number
 }
 
 export interface Position {
@@ -113,34 +137,48 @@ function mapPositionApiToPosition(apiPosition: PositionApiResponse): Position {
   // derive salary grade reference if full object is available
   const salaryGrade: SalaryGradeRef | string | undefined =
     apiPosition.salaryGrade
-      ? { id: apiPosition.salaryGrade.id, name: apiPosition.salaryGrade.name, code: apiPosition.salaryGrade.code }
+      ? {
+          id: apiPosition.salaryGrade.id,
+          name: apiPosition.salaryGrade.name,
+          code: apiPosition.salaryGrade.code,
+          gradeNumber: apiPosition.salaryGrade.gradeNumber,
+        }
       : apiPosition.salaryGradeId
         ? apiPosition.salaryGradeId
         : undefined
 
   const step: StepRef | string | undefined =
     apiPosition.step
-      ? { id: apiPosition.step.id, name: apiPosition.step.name, code: apiPosition.step.code }
+      ? {
+          id: apiPosition.step.id,
+          name: apiPosition.step.name,
+          code: apiPosition.step.code,
+          stepNumber: apiPosition.step.stepNumber,
+        }
       : apiPosition.stepId
+
+  const positionTypeId = apiPosition.positionTypeId || apiPosition.positionType?.id
+  const plantillaTypeId = apiPosition.plantillaTypeId || apiPosition.plantillaType?.id
+  const orgUnitId = apiPosition.officeId || apiPosition.office?.id || ''
 
   return {
     id: apiPosition.id,
     code: apiPosition.code,
     title: apiPosition.title,
-    functionalTitle: apiPosition.functionalTitle,
-    jobDescription: apiPosition.jobDescription,
-    qualifications: apiPosition.qualifications,
+    functionalTitle: apiPosition.functionalTitle || '',
+    jobDescription: apiPosition.jobDescription || '',
+    qualifications: apiPosition.qualifications || '',
     salaryGrade,
     authorizedFTE: apiPosition.fte || 1,
-    orgUnitId: apiPosition.officeId,
-    positionTypeId: apiPosition.positionTypeId,
-    plantillaTypeId: apiPosition.plantillaTypeId,
-    plantillaNumber: apiPosition.plantillaTypeId ? `PL-${apiPosition.id.substring(0, 8)}` : undefined,
+    orgUnitId,
+    positionTypeId,
+    plantillaTypeId,
+    plantillaNumber: plantillaTypeId ? `PL-${apiPosition.id.substring(0, 8)}` : undefined,
     status,
-    itemNumber: undefined,
+    itemNumber: apiPosition.itemNumber || undefined,
     stepIncrement: 1,
     step,
-    isPlantilla: !!apiPosition.plantillaTypeId,
+    isPlantilla: Boolean(plantillaTypeId),
     createdAt: apiPosition.createdAt,
     updatedAt: apiPosition.createdAt,
   }
@@ -152,7 +190,7 @@ function mapPositionApiToPosition(apiPosition: PositionApiResponse): Position {
  */
 export async function fetchPositionsFromApi(): Promise<Position[]> {
   try {
-    const response = await api.get<PositionsApiPayload>('/positions')
+    const response = await api.get<PositionsApiPayload>('/positions?pageSize=1000')
 
     if (response.data && response.data.succeeded && response.data.data && Array.isArray(response.data.data)) {
       return response.data.data.map(mapPositionApiToPosition)
@@ -173,7 +211,7 @@ export async function fetchPositionsByOrgUnitFromApi(orgUnitId: string): Promise
   try {
     const filter = `officeId%3D%3D${orgUnitId}`
     const response = await api.get<PositionsApiPayload>(
-      `/positions?Filters=${filter}`
+      `/positions?Filters=${filter}&pageSize=1000`
     )
 
     if (response.data && response.data.succeeded && response.data.data && Array.isArray(response.data.data)) {
@@ -192,7 +230,7 @@ export async function fetchPositionsByOrgUnitFromApi(orgUnitId: string): Promise
  */
 export async function fetchVacantPositionsFromApi(): Promise<Position[]> {
   try {
-    const response = await api.get<PositionsApiPayload>('/positions?Filters=operationalStatus%3D%3DVacant')
+    const response = await api.get<PositionsApiPayload>('/positions?Filters=operationalStatus%3D%3DVacant&pageSize=1000')
 
     if (response.data && response.data.succeeded && response.data.data && Array.isArray(response.data.data)) {
       return response.data.data.map(mapPositionApiToPosition)
@@ -210,10 +248,11 @@ export async function fetchVacantPositionsFromApi(): Promise<Position[]> {
  */
 export async function fetchPositionByIdFromApi(id: string): Promise<Position | null> {
   try {
-    const response = await api.get<PositionApiResponse>(`/positions/${id}`)
+    const response = await api.get<{ succeeded: boolean; data: PositionApiResponse }>(`/positions/${id}`)
 
-    if (response.data) {
-      return mapPositionApiToPosition(response.data)
+    const posData = (response.data as any)?.data ?? response.data
+    if (posData) {
+      return mapPositionApiToPosition(posData as PositionApiResponse)
     }
 
     return null
@@ -228,13 +267,19 @@ export async function fetchPositionByIdFromApi(id: string): Promise<Position | n
  */
 export async function createPositionInApi(positionData: Partial<PositionApiResponse>): Promise<Position> {
   try {
-    const response = await api.post<PositionApiResponse>(
+    const response = await api.post<{ succeeded: boolean; data: string | PositionApiResponse }>(
       '/positions',
-      payload
+      positionData
     )
 
     if (response.data) {
-      return mapPositionApiToPosition(response.data)
+      const data = response.data.data
+      if (typeof data === 'string') {
+        const fetched = await fetchPositionByIdFromApi(data)
+        if (fetched) return fetched
+      } else if (data) {
+        return mapPositionApiToPosition(data as PositionApiResponse)
+      }
     }
 
     throw new Error('Failed to create position')
@@ -252,16 +297,14 @@ export async function updatePositionInApi(
   positionData: Partial<PositionApiResponse>
 ): Promise<Position> {
   try {
-    const response = await api.put<PositionApiResponse>(
-      `/positions/${id}`,
-      payload
-    )
+    await api.put(`/positions/${id}`, positionData)
+    const updated = await fetchPositionByIdFromApi(id)
+    if (updated) return updated
 
-    if (response.data) {
-      return mapPositionApiToPosition(response.data)
-    }
-
-    throw new Error('Failed to update position')
+    return {
+      id,
+      ...positionData,
+    } as any
   } catch (error) {
     console.error(`Failed to update position ${id} via API:`, error)
     throw error
@@ -280,4 +323,3 @@ export async function deletePositionFromApi(id: string): Promise<boolean> {
     throw error
   }
 }
-

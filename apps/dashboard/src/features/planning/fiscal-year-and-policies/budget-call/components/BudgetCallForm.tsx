@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,6 +16,7 @@ import { pascalCaseToWords } from '@/utils/formatters'
 import { getFiscalYearsRequest } from '@/features/planning/fiscal-year-and-policies/fiscal-year-management/handlers/getFiscalYearsRequest'
 import { createBudgetCallRequest } from '@/lib/fiscal-year-and-policies/requests/createBudgetCallRequest'
 import { updateBudgetCallRequest } from '@/lib/fiscal-year-and-policies/requests/updateBudgetCallRequest'
+import { changeBudgetCallStatusRequest } from '@/lib/fiscal-year-and-policies/requests/changeBudgetCallStatusRequest'
 import type {
   BudgetCall,
   BudgetCallWithLegacy,
@@ -30,6 +32,7 @@ interface BudgetCallFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   budgetCall?: BudgetCall
+  defaultFiscalYearId?: string
 }
 
 const BUDGET_CALL_TYPES = [
@@ -48,10 +51,14 @@ const useCreateBudgetCall = createMutationHookFromTemplate(
 const useUpdateBudgetCall = createMutationHookFromTemplate(
   updateBudgetCallRequest,
 )
+const useChangeBudgetCallStatus = createMutationHookFromTemplate(
+  changeBudgetCallStatusRequest,
+)
 export function BudgetCallForm({
   open,
   onOpenChange,
   budgetCall,
+  defaultFiscalYearId,
 }: BudgetCallFormProps) {
   const queryClient = useQueryClient()
   const isEditing = !!budgetCall
@@ -70,6 +77,7 @@ export function BudgetCallForm({
 
   const createMutation = useCreateBudgetCall()
   const updateMutation = useUpdateBudgetCall()
+  const changeStatusMutation = useChangeBudgetCallStatus()
 
   useEffect(() => {
     if (budgetCall && open) {
@@ -85,13 +93,18 @@ export function BudgetCallForm({
 
       setType(budgetCallWithLegacy.type ?? 'InitialProposal')
       setErrors({})
-    } else if (!open) {
+    } else if (open) {
+      setFiscalYearId(defaultFiscalYearId || '')
+      setType('')
+      setSubmissionDeadline('')
+      setErrors({})
+    } else {
       setFiscalYearId('')
       setType('')
       setSubmissionDeadline('')
       setErrors({})
     }
-  }, [budgetCall, open])
+  }, [budgetCall, open, defaultFiscalYearId])
 
   const handleClose = () => {
     onOpenChange(false)
@@ -99,6 +112,49 @@ export function BudgetCallForm({
     setType('')
     setSubmissionDeadline('')
     setErrors({})
+  }
+
+  const handleUpdateAndActivate = async () => {
+    if (!budgetCall) return
+
+    const newErrors: { [key: string]: string } = {}
+    if (!type) newErrors.type = 'Type is required'
+    if (!submissionDeadline)
+      newErrors.submissionDeadline = 'Submission deadline is required'
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+
+    const dlDate = new Date(submissionDeadline)
+    const payloadSubmissionDeadline = dlDate.toISOString()
+
+    try {
+      await updateMutation.mutateAsync({
+        pathParams: { id: budgetCall.id },
+        payload: {
+          type: type || undefined,
+          submissionDeadline: payloadSubmissionDeadline,
+        },
+      })
+
+      await changeStatusMutation.mutateAsync({
+        pathParams: { id: budgetCall.id },
+        payload: { status: 'Active' },
+      })
+
+      toast.success('Budget call updated and activated successfully')
+      void queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey[0]
+          return typeof key === 'string' && key.startsWith('/budget-calls')
+        },
+      })
+      handleClose()
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update and activate budget call')
+    }
   }
 
   const onSubmit = (e: React.FormEvent) => {
@@ -163,6 +219,7 @@ export function BudgetCallForm({
             fiscalYearId,
             type,
             submissionDeadline: payloadSubmissionDeadline,
+            status: 'Active',
           },
         },
         {
@@ -192,24 +249,43 @@ export function BudgetCallForm({
     <ResponsiveDialogDashtail
       open={open}
       onOpenChange={onOpenChange}
-      title={isEditing ? 'Edit Budget Call' : 'Create Budget Call'}
+      title={isEditing ? 'Edit Budget Call' : 'Initiate Budget Call'}
       description={
         isEditing
           ? 'Update the budget call deadline'
-          : 'Create a new budget call for a fiscal year'
+          : 'Initiate and activate a budget call for a fiscal year'
       }
       size="sm"
       footer={
-        <div className="flex gap-2">
+        <div className="flex gap-2 justify-end w-full">
           <Button type="button" variant="outline" onClick={handleClose}>
             Cancel
           </Button>
+          {isEditing && budgetCall?.status === 'Draft' && (
+            <Button
+              type="button"
+              className="gap-1.5"
+              disabled={
+                createMutation.isPending ||
+                updateMutation.isPending ||
+                changeStatusMutation.isPending
+              }
+              onClick={handleUpdateAndActivate}
+            >
+              <Play className="h-3.5 w-3.5" />
+              Update & Activate
+            </Button>
+          )}
           <Button
             type="submit"
             form="budget-call-form"
-            disabled={createMutation.isPending || updateMutation.isPending}
+            disabled={
+              createMutation.isPending ||
+              updateMutation.isPending ||
+              changeStatusMutation.isPending
+            }
           >
-            {isEditing ? 'Update' : 'Create'}
+            {isEditing ? 'Update' : 'Activate'}
           </Button>
         </div>
       }

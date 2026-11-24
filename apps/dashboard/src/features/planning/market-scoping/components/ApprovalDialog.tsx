@@ -85,11 +85,14 @@ export function ApprovalDialog({
         {action === 'approve' && (
           <div className="space-y-4 my-2">
             <div>
-              <Label className="text-sm font-medium">Upload Signed Document *</Label>
+              <Label className="text-sm font-medium">
+                Upload Signed Document *
+              </Label>
               <p className="text-xs text-muted-foreground mb-2">
-                Please attach the signed Market Scoping PDF or document before approving.
+                Please attach the signed Market Scoping PDF or document before
+                approving.
               </p>
-              
+
               <div className="border-2 border-dashed border-muted-foreground/25 hover:border-indigo-500/50 transition-colors rounded-lg p-4 text-center cursor-pointer relative bg-muted/30">
                 <input
                   type="file"
@@ -104,10 +107,15 @@ export function ApprovalDialog({
                 <div className="flex flex-col items-center justify-center gap-1.5 py-2">
                   <Upload className="w-8 h-8 text-indigo-500" />
                   {signedFile ? (
-                    <div className="flex items-center gap-2 text-indigo-600 font-medium text-sm">
-                      <FileText className="w-4 h-4" />
-                      <span>{signedFile.name}</span>
-                      <span className="text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-indigo-600 font-medium text-sm max-w-full px-2 overflow-hidden">
+                      <FileText className="w-4 h-4 shrink-0 text-indigo-500" />
+                      <span
+                        className="truncate max-w-[220px] sm:max-w-[260px]"
+                        title={signedFile.name}
+                      >
+                        {signedFile.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">
                         ({(signedFile.size / 1024).toFixed(1)} KB)
                       </span>
                     </div>
@@ -116,7 +124,9 @@ export function ApprovalDialog({
                       <p className="text-sm font-medium text-foreground">
                         Click to select or drag & drop signed document
                       </p>
-                      <p className="text-xs text-muted-foreground">PDF, DOCX, or Image (max 10MB)</p>
+                      <p className="text-xs text-muted-foreground">
+                        PDF, DOCX, or Image (max 10MB)
+                      </p>
                     </>
                   )}
                 </div>
@@ -130,7 +140,9 @@ export function ApprovalDialog({
           <div className="space-y-4 my-2">
             <div>
               <Label htmlFor="action-reason">
-                {action === 'return' ? 'Return Remarks / Revision Notes *' : 'Reason for Rejection *'}
+                {action === 'return'
+                  ? 'Return Remarks / Revision Notes *'
+                  : 'Reason for Rejection *'}
               </Label>
               <Textarea
                 id="action-reason"
@@ -159,8 +171,8 @@ export function ApprovalDialog({
               action === 'reject'
                 ? 'bg-red-600 hover:bg-red-700 text-white'
                 : action === 'return'
-                ? 'bg-orange-600 hover:bg-orange-700 text-white'
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
             }
           >
             {action === 'approve' && (

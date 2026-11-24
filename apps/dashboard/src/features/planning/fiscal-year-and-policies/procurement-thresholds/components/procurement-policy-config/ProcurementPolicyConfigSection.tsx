@@ -310,7 +310,7 @@ export function ProcurementPolicyConfigSection() {
       </CardHeader>
 
       <CardContent className="pt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-6 items-start min-w-0 w-full">
           {/* ── Sidebar Filters ──────────────────────────────────── */}
           <SidebarFilters
             filters={filterState.filters}
@@ -328,31 +328,33 @@ export function ProcurementPolicyConfigSection() {
           />
 
           {/* ── Table ────────────────────────────────────────────── */}
-          <ProcurementPolicyConfigTable
-            configs={configs}
-            modes={modes}
-            thresholds={thresholds}
-            fiscalYears={fiscalYears}
-            isLoading={isLoadingConfigs}
-            isSaving={updateMutation.isPending}
-            currentPage={paginationState.currentPage}
-            pageSize={paginationState.pageSize}
-            totalPages={totalPages}
-            editingId={editState.editingId}
-            editValues={editState.editValues}
-            onPageChange={(page) =>
-              setPaginationState((p) => ({ ...p, currentPage: page }))
-            }
-            onPageSizeChange={(size) =>
-              setPaginationState({ pageSize: size, currentPage: 1 })
-            }
-            onEdit={handleInlineEditStart}
-            onDelete={handleDelete}
-            onSave={handleInlineEditSave}
-            onCancelEdit={editState.cancelEdit}
-            onUpdateEditValue={editState.updateEditValue}
-            onBulkDelete={handleBulkDelete}
-          />
+          <div className="min-w-0 w-full">
+            <ProcurementPolicyConfigTable
+              configs={configs}
+              modes={modes}
+              thresholds={thresholds}
+              fiscalYears={fiscalYears}
+              isLoading={isLoadingConfigs}
+              isSaving={updateMutation.isPending}
+              currentPage={paginationState.currentPage}
+              pageSize={paginationState.pageSize}
+              totalPages={totalPages}
+              editingId={editState.editingId}
+              editValues={editState.editValues}
+              onPageChange={(page) =>
+                setPaginationState((p) => ({ ...p, currentPage: page }))
+              }
+              onPageSizeChange={(size) =>
+                setPaginationState({ pageSize: size, currentPage: 1 })
+              }
+              onEdit={handleInlineEditStart}
+              onDelete={handleDelete}
+              onSave={handleInlineEditSave}
+              onCancelEdit={editState.cancelEdit}
+              onUpdateEditValue={editState.updateEditValue}
+              onBulkDelete={handleBulkDelete}
+            />
+          </div>
         </div>
       </CardContent>
 

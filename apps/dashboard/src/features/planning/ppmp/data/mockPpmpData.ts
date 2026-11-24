@@ -1,4 +1,4 @@
-﻿/**
+/**
  * PPMP Mock Data Fixtures
  * Provides in-memory data for development/testing before real APIs are available.
  * All IDs are deterministic so handlers can reference them reliably.
@@ -1568,7 +1568,7 @@ export const mockPpmpDatabase: PPMP[] = [
                 marketScopingCostEstimate: null,
                 projectType: 'Goods',
                 sizeSpecification: 'A4, 70 GSM, 500 sheets per ream',
-                preProcurementConference: null,
+                preProcurementConference: false,
                 procurementStart: '01/2026',
                 procurementEnd: '10/2026',
                 expectedDelivery: '11/2026',

@@ -1,4 +1,5 @@
-﻿export * from './ApproveNoticeOfAwardDialog'
+export * from './ApproveNoticeOfAwardDialog'
 export * from './CreateNoticeOfAwardDialog'
+export * from './LogConformeDialog'
 export * from './ReturnNoticeOfAwardDialog'
 export * from './SelectConsolidatedPrDialog'

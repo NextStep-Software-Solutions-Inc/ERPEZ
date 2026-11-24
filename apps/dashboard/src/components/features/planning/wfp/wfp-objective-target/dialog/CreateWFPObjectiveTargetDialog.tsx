@@ -54,7 +54,11 @@ export default function CreateWFPObjectiveTargetDialog({ onCreated, wfpObjective
           onSuccess: () => {
             void queryClient.invalidateQueries({
               predicate: (query) => query.queryKey.some(key => 
-                typeof key === 'string' && (key.includes('/wfp-objective-activities') || key.includes('/wfp-objectives'))
+                typeof key === 'string' && (
+                  key.includes('/wfp-objective-activities') ||
+                  key.includes('/wfp-objectives') ||
+                  key.includes('/wfps')
+                )
               ),
             })
             onCreated?.(data)

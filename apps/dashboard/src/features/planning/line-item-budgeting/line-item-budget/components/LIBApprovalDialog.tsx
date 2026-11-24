@@ -1,4 +1,4 @@
-﻿import {
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -12,7 +12,7 @@
 interface LIBApprovalDialogProps {
   open: boolean
   libName: string
-  action: 'approve' | 'reject'
+  action: 'approve' | 'return' | 'reject'
   onConfirm: () => void
   onCancel: () => void
   isLoading?: boolean
@@ -33,26 +33,30 @@ export const LIBApprovalDialog = ({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {isApprove ? 'Approve LIB?' : 'Reject LIB?'}
+            {isApprove ? 'Approve Line-Item Budget?' : 'Return Line-Item Budget?'}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {isApprove
               ? `Are you sure you want to approve "${libName}"? This action will update the LIB status to Approved.`
-              : `Are you sure you want to reject "${libName}"? This action will require resubmission.`}
+              : `Are you sure you want to return "${libName}"? This action will set the status to Returned so the end-user can revise and resubmit.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+        <AlertDialogFooter className="gap-2 sm:gap-0">
           <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             disabled={isLoading}
             className={
               isApprove
-                ? 'bg-green-600 hover:bg-green-700'
-                : 'bg-orange-600 hover:bg-orange-700'
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white font-medium'
+                : 'bg-amber-600 hover:bg-amber-700 text-white font-medium'
             }
           >
-            {isLoading ? 'Processing...' : isApprove ? 'Approve' : 'Reject'}
+            {isLoading
+              ? 'Processing...'
+              : isApprove
+                ? 'Approve LIB'
+                : 'Return LIB'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

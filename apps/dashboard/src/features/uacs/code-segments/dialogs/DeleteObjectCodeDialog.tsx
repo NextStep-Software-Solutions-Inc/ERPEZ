@@ -1,7 +1,11 @@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { useState } from 'react'
 import { toast } from 'sonner'
 import type { ObjectCode } from '../types/objectCodeTypes'
+import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
+import { deleteObjectCodeRequest } from '../handlers/deleteObjectCodeRequest'
+import { getObjectCodesRequest } from '../handlers/getObjectCodesRequest'
+
+const useDeleteObjectCode = createMutationHookFromTemplate(deleteObjectCodeRequest)
 
 interface DeleteObjectCodeDialogProps {
   open: boolean
@@ -16,21 +20,30 @@ export function DeleteObjectCodeDialog({
   objectCode,
   onSuccess,
 }: DeleteObjectCodeDialogProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const queryClient = useQueryClient()
+  const { mutateAsync, isPending } = useDeleteObjectCode()
 
   const handleConfirm = async () => {
     if (!objectCode?.id) return
 
-    setIsLoading(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800))
+      await mutateAsync({
+        pathParams: { id: objectCode.id },
+      })
       toast.success(`Object Code "${objectCode.name}" deleted successfully!`)
+
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === getObjectCodesRequest.endpoint ||
+          (typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith(getObjectCodesRequest.endpoint)),
+      })
+
       onOpenChange(false)
       onSuccess?.(objectCode.id)
     } catch (err) {
-      toast.error('Failed to delete object code.')
-    } finally {
-      setIsLoading(false)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete object code.'
+      toast.error(errorMessage)
+      console.error(err)
     }
   }
 
@@ -44,16 +57,17 @@ export function DeleteObjectCodeDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="flex justify-end gap-3">
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
-            disabled={isLoading}
+            disabled={isPending}
             className="bg-destructive hover:bg-destructive/90"
           >
-            {isLoading ? 'Deleting...' : 'Delete'}
+            {isPending ? 'Deleting...' : 'Delete'}
           </AlertDialogAction>
         </div>
       </AlertDialogContent>
     </AlertDialog>
   )
 }
+

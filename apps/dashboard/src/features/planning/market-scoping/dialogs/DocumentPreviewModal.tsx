@@ -14,7 +14,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Download, ExternalLink, FileCheck, FileText, Image as ImageIcon, File, Loader2, AlertTriangle } from 'lucide-react'
+import {
+  Download,
+  ExternalLink,
+  FileCheck,
+  FileText,
+  Image as ImageIcon,
+  File,
+  Loader2,
+  AlertTriangle,
+} from 'lucide-react'
 import type { FileAttachment } from '../types/marketScopingTypes'
 import api from '@/services/api'
 
@@ -24,15 +33,32 @@ interface DocumentPreviewModalProps {
   attachment: FileAttachment | null
 }
 
-const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
+const IMAGE_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/gif',
+  'image/webp',
+]
 const PDF_TYPES = ['application/pdf']
 
-function isImageFile(fileType?: string, fileName?: string, blobType?: string): boolean {
+function isImageFile(
+  fileType?: string,
+  fileName?: string,
+  blobType?: string,
+): boolean {
   if (blobType && blobType.startsWith('image/')) return true
-  return IMAGE_TYPES.includes(fileType || '') || /\.(png|jpe?g|gif|webp)$/i.test(fileName || '')
+  return (
+    IMAGE_TYPES.includes(fileType || '') ||
+    /\.(png|jpe?g|gif|webp)$/i.test(fileName || '')
+  )
 }
 
-function isPdfFile(fileType?: string, fileName?: string, blobType?: string): boolean {
+function isPdfFile(
+  fileType?: string,
+  fileName?: string,
+  blobType?: string,
+): boolean {
   if (blobType === 'application/pdf') return true
   return PDF_TYPES.includes(fileType || '') || /\.pdf$/i.test(fileName || '')
 }
@@ -78,23 +104,29 @@ export function DocumentPreviewModal({
 
     // Attempt to fetch binary blob using candidate file IDs
     const fetchFileBlob = async () => {
-      const candidateIds = [attachment.fileUrl, attachment.id].filter(Boolean) as string[]
+      const candidateIds = [attachment.fileUrl, attachment.id].filter(
+        (id): id is string => Boolean(id),
+      )
       let fileBlob: Blob | null = null
 
       setIsLoadingBlob(true)
       setFileNotFound(false)
       try {
         for (let candidate of candidateIds) {
-          if (candidate.startsWith('blob:') || candidate.startsWith('data:')) continue
+          if (candidate.startsWith('blob:') || candidate.startsWith('data:'))
+            continue
           if (candidate.includes('/files/download/')) {
             candidate = candidate.split('/files/download/').pop() || candidate
           }
           if (!candidate || candidate.includes('/v2/')) continue
 
           try {
-            const response = await api.get<Blob>(`/files/download/${candidate}`, {
-              responseType: 'blob',
-            })
+            const response = await api.get<Blob>(
+              `/files/download/${candidate}`,
+              {
+                responseType: 'blob',
+              },
+            )
             if (response.data && response.data.size > 0) {
               fileBlob = response.data
               break
@@ -148,7 +180,9 @@ export function DocumentPreviewModal({
       return
     }
 
-    const candidateIds = [attachment.fileUrl, attachment.id].filter(Boolean) as string[]
+    const candidateIds = [attachment.fileUrl, attachment.id].filter(
+      (id): id is string => Boolean(id),
+    )
     for (let candidate of candidateIds) {
       if (candidate.includes('/files/download/')) {
         candidate = candidate.split('/files/download/').pop() || candidate
@@ -183,7 +217,7 @@ export function DocumentPreviewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[880px] w-[92vw] max-h-[90vh] flex flex-col p-0 overflow-hidden bg-background border rounded-xl shadow-xl">
+      <DialogContent className="max-w-[880px] w-[92vw] max-h-[90vh] flex flex-col p-0 overflow-hidden bg-background border rounded-xl shadow-xl [&>button:last-child]:top-3.5 [&>button:last-child]:right-3.5 [&>button:last-child]:z-20 [&>button:last-child]:bg-slate-100/80 [&>button:last-child]:hover:bg-slate-200 [&>button:last-child]:rounded-full [&>button:last-child]:p-1 text-slate-500 [&>button:last-child]:hover:text-slate-900 [&>button:last-child]:transition-all">
         {/* Header */}
         <DialogHeader className="p-4 px-6 border-b bg-muted/30 flex flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-3 min-w-0 pr-4">
@@ -197,7 +231,10 @@ export function DocumentPreviewModal({
               )}
             </div>
             <div className="min-w-0">
-              <DialogTitle className="text-base font-bold text-foreground truncate" title={fileName}>
+              <DialogTitle
+                className="text-base font-bold text-foreground truncate"
+                title={fileName}
+              >
                 {fileName}
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground mt-0.5 truncate">
@@ -206,7 +243,7 @@ export function DocumentPreviewModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 pr-10">
             {activeUrl && (
               <Button
                 onClick={handleOpenExternal}
@@ -236,7 +273,9 @@ export function DocumentPreviewModal({
           {isLoadingBlob ? (
             <div className="flex flex-col items-center justify-center space-y-3 py-12">
               <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-              <p className="text-sm font-medium text-muted-foreground">Loading document preview...</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Loading document preview...
+              </p>
             </div>
           ) : canRenderPdf && activeUrl ? (
             <iframe
@@ -283,7 +322,9 @@ export function DocumentPreviewModal({
                         File not found in storage
                       </p>
                       <p className="text-xs text-amber-800 leading-relaxed">
-                        This attachment entry exists in the database, but the physical file is missing from file storage (common for seed/test data).
+                        This attachment entry exists in the database, but the
+                        physical file is missing from file storage (common for
+                        seed/test data).
                       </p>
                     </div>
                   </div>
@@ -295,7 +336,10 @@ export function DocumentPreviewModal({
                         Spreadsheet / Document File
                       </p>
                       <p className="text-xs text-blue-800 leading-relaxed">
-                        Non-PDF/Image files (such as Excel `.xlsx` or Word `.docx` spreadsheets) cannot be rendered inline by the browser. Click <strong>Download</strong> to view the file.
+                        Non-PDF/Image files (such as Excel `.xlsx` or Word
+                        `.docx` spreadsheets) cannot be rendered inline by the
+                        browser. Click <strong>Download</strong> to view the
+                        file.
                       </p>
                     </div>
                   </div>
@@ -315,7 +359,13 @@ export function DocumentPreviewModal({
                       File Type
                     </span>
                     <div className="rounded-md border bg-muted/10 p-2.5 text-xs font-medium text-foreground">
-                      {fileType || detectedBlobType || (fileName.endsWith('.xlsx') ? 'Excel Spreadsheet' : fileName.endsWith('.docx') ? 'Word Document' : 'Data Attachment')}
+                      {fileType ||
+                        detectedBlobType ||
+                        (fileName.endsWith('.xlsx')
+                          ? 'Excel Spreadsheet'
+                          : fileName.endsWith('.docx')
+                            ? 'Word Document'
+                            : 'Data Attachment')}
                     </div>
                   </div>
                 </div>

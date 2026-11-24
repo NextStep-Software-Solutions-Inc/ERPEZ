@@ -1,3 +1,5 @@
-export * from './EditMilestoneDialog'
 export * from './GenerateScheduleDialog'
+export * from './EditMilestoneDialog'
 export * from './ConfirmScheduleDialog'
+export * from './LockScheduleDialog'
+export * from './MilestoneCompletionConfirmDialog'

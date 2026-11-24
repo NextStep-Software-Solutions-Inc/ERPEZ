@@ -15,6 +15,7 @@ import {
   aprTotalAmountAtom,
 } from '../atoms'
 import { APRConsolidationFilter } from '../components/APRConsolidationFilter'
+import type { ConsolidatedAPRItem } from '../types'
 import {
   Dialog,
   DialogContent,
@@ -37,7 +38,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 // Mock PPMP/APP items for demo
-const MOCK_AVAILABLE_ITEMS = [
+const MOCK_AVAILABLE_ITEMS: ConsolidatedAPRItem[] = [
   {
     id: '1',
     itemCode: 'GOODS-001',
@@ -52,9 +53,12 @@ const MOCK_AVAILABLE_ITEMS = [
     appId: 'app-1',
     itemCategory: 'Goods',
     allotmentClass: 'MOOE' as const,
-    sourceFiscalYear: 2024,
+    sourceFiscalYear: 2026,
     sourceCategory: 'Office Equipment',
     sourceMonth: 'January',
+    appLineItemId: 'app-item-1',
+    appApprovedQuantity: 50,
+    appApprovedBudget: 125000,
   },
   {
     id: '2',
@@ -70,9 +74,12 @@ const MOCK_AVAILABLE_ITEMS = [
     appId: 'app-2',
     itemCategory: 'Services',
     allotmentClass: 'CO' as const,
-    sourceFiscalYear: 2024,
+    sourceFiscalYear: 2026,
     sourceCategory: 'Maintenance',
     sourceMonth: 'February',
+    appLineItemId: 'app-item-2',
+    appApprovedQuantity: 1,
+    appApprovedBudget: 50000,
   },
 ]
 
@@ -127,6 +134,8 @@ export function AddAgencyAPPDialog() {
       setIsPending(false)
     }
   }
+
+  if (!open) return null
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

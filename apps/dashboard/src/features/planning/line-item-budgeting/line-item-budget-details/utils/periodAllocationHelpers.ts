@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Utilities for period-based budget allocation (Quarterly/Monthly)
  */
 
@@ -188,10 +188,13 @@ export function generateAllocationSummary(
 }
 
 /**
- * Format date to ISO string (for API submission)
+ * Format date to ISO string preserving the local calendar date (for API submission)
  */
 export function formatDateToISO(date: Date): string {
-  return date.toISOString()
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}T00:00:00.000Z`
 }
 
 /**
@@ -225,4 +228,274 @@ export function validatePeriodBudgetSum(
   }
 
   return { valid: true }
+}
+
+export interface ProjectPeriodConfig {
+  key: string // Year-aware key, e.g. "Q2-2026", "2026-06"
+  label: string // e.g. "Q2 2026", "June 2026"
+  dateRangeLabel: string // e.g. "Jun 15 – Jun 30, 2026"
+  startDate: Date // Clamped start date
+  endDate: Date // Clamped end date
+  rawCalStartDate: Date // Normal calendar start date
+  rawCalEndDate: Date // Normal calendar end date
+  isFirstPeriodClamped: boolean
+  isLastPeriodClamped: boolean
+}
+
+/**
+ * Generate every Quarterly or Monthly period that intersects the WFP/project window.
+ * Supports multi-year ranges.
+ * Clamps only the first and final periods to project boundaries.
+ * Interior periods retain normal calendar boundaries.
+ */
+export function generateProjectPeriods(
+  timelineType: 'quarterly' | 'monthly',
+  projectStartDate: Date | string,
+  projectEndDate: Date | string,
+): ProjectPeriodConfig[] {
+  const pStart =
+    typeof projectStartDate === 'string'
+      ? new Date(projectStartDate)
+      : projectStartDate
+  const pEnd =
+    typeof projectEndDate === 'string'
+      ? new Date(projectEndDate)
+      : projectEndDate
+
+  if (
+    !pStart ||
+    !pEnd ||
+    isNaN(pStart.getTime()) ||
+    isNaN(pEnd.getTime()) ||
+    pStart > pEnd
+  ) {
+    return []
+  }
+
+  const periods: ProjectPeriodConfig[] = []
+  const startYear = pStart.getFullYear()
+  const endYear = pEnd.getFullYear()
+
+  if (timelineType === 'quarterly') {
+    const startQ = Math.floor(pStart.getMonth() / 3) // 0..3
+    const endQ = Math.floor(pEnd.getMonth() / 3) // 0..3
+
+    for (let year = startYear; year <= endYear; year++) {
+      const qFrom = year === startYear ? startQ : 0
+      const qTo = year === endYear ? endQ : 3
+
+      for (let q = qFrom; q <= qTo; q++) {
+        const calStart = new Date(year, q * 3, 1)
+        const calEnd = new Date(year, q * 3 + 3, 0) // last day of quarter
+
+        // Clamping to project boundaries
+        const effectiveStart =
+          calStart < pStart ? new Date(pStart.getTime()) : calStart
+        const effectiveEnd = calEnd > pEnd ? new Date(pEnd.getTime()) : calEnd
+
+        const qNumber = q + 1
+        const key = `Q${qNumber}-${year}`
+        const label = `Q${qNumber} ${year}`
+
+        const startFmt = effectiveStart.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        })
+        const endFmt = effectiveEnd.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })
+        const dateRangeLabel = `${startFmt} – ${endFmt}`
+
+        periods.push({
+          key,
+          label,
+          dateRangeLabel,
+          startDate: effectiveStart,
+          endDate: effectiveEnd,
+          rawCalStartDate: calStart,
+          rawCalEndDate: calEnd,
+          isFirstPeriodClamped: effectiveStart.getTime() !== calStart.getTime(),
+          isLastPeriodClamped: effectiveEnd.getTime() !== calEnd.getTime(),
+        })
+      }
+    }
+  } else if (timelineType === 'monthly') {
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ]
+
+    const startM = pStart.getMonth() // 0..11
+    const endM = pEnd.getMonth() // 0..11
+
+    for (let year = startYear; year <= endYear; year++) {
+      const mFrom = year === startYear ? startM : 0
+      const mTo = year === endYear ? endM : 11
+
+      for (let m = mFrom; m <= mTo; m++) {
+        const calStart = new Date(year, m, 1)
+        const calEnd = new Date(year, m + 1, 0) // last day of month
+
+        // Clamping to project boundaries
+        const effectiveStart =
+          calStart < pStart ? new Date(pStart.getTime()) : calStart
+        const effectiveEnd = calEnd > pEnd ? new Date(pEnd.getTime()) : calEnd
+
+        const monthPadded = String(m + 1).padStart(2, '0')
+        const key = `${year}-${monthPadded}`
+        const label = `${monthNames[m]} ${year}`
+
+        const startFmt = effectiveStart.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        })
+        const endFmt = effectiveEnd.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })
+        const dateRangeLabel = `${startFmt} – ${endFmt}`
+
+        periods.push({
+          key,
+          label,
+          dateRangeLabel,
+          startDate: effectiveStart,
+          endDate: effectiveEnd,
+          rawCalStartDate: calStart,
+          rawCalEndDate: calEnd,
+          isFirstPeriodClamped: effectiveStart.getTime() !== calStart.getTime(),
+          isLastPeriodClamped: effectiveEnd.getTime() !== calEnd.getTime(),
+        })
+      }
+    }
+  }
+
+  return periods
+}
+
+/**
+ * Filter and convert non-zero project allocations into PeriodDetails
+ */
+export function generateProjectPeriodDetails(
+  periods: ProjectPeriodConfig[],
+  allocations: Record<string, number>,
+): PeriodDetails[] {
+  return periods
+    .map((p) => {
+      const budget = allocations[p.key] || 0
+      return {
+        period: p.label,
+        startDate: p.startDate,
+        endDate: p.endDate,
+        budget,
+      }
+    })
+    .filter((d) => d.budget > 0)
+}
+
+export const STANDARD_QUARTERS = [
+  {
+    id: 'Q1',
+    label: 'Q1 (Jan – Mar)',
+    startMonth: 0,
+    startDay: 1,
+    endMonth: 2,
+    endDay: 31,
+  },
+  {
+    id: 'Q2',
+    label: 'Q2 (Apr – Jun)',
+    startMonth: 3,
+    startDay: 1,
+    endMonth: 5,
+    endDay: 30,
+  },
+  {
+    id: 'Q3',
+    label: 'Q3 (Jul – Sep)',
+    startMonth: 6,
+    startDay: 1,
+    endMonth: 8,
+    endDay: 30,
+  },
+  {
+    id: 'Q4',
+    label: 'Q4 (Oct – Dec)',
+    startMonth: 9,
+    startDay: 1,
+    endMonth: 11,
+    endDay: 31,
+  },
+] as const
+
+export interface CoveredQuarter {
+  id: string
+  key: string
+  label: string
+  year: number
+  startMonth: number
+  startDay: number
+  endMonth: number
+  endDay: number
+  startDate: string
+  endDate: string
+}
+
+export function getCoveredQuarters(
+  startDateStr: string,
+  endDateStr: string,
+): CoveredQuarter[] {
+  if (!startDateStr) return []
+  const start = new Date(startDateStr)
+  const end = endDateStr ? new Date(endDateStr) : start
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return []
+
+  const startYear = start.getFullYear()
+  const endYear = end.getFullYear()
+  const startQ = Math.floor(start.getMonth() / 3) + 1
+  const endQ = Math.floor(end.getMonth() / 3) + 1
+
+  const result: CoveredQuarter[] = []
+
+  for (let y = startYear; y <= endYear; y++) {
+    const qFrom = y === startYear ? startQ : 1
+    const qTo = y === endYear ? endQ : 4
+    for (let q = qFrom; q <= qTo; q++) {
+      const def = STANDARD_QUARTERS[q - 1]
+      const s = new Date(Date.UTC(y, def.startMonth, def.startDay))
+        .toISOString()
+        .split('T')[0]
+      const e = new Date(Date.UTC(y, def.endMonth, def.endDay))
+        .toISOString()
+        .split('T')[0]
+
+      result.push({
+        id: `Q${q}`,
+        key: `${y}-Q${q}`,
+        label: `Q${q} (${def.label.replace(/^Q\d\s*\(?/, '').replace(/\)$/, '')})`,
+        year: y,
+        startMonth: def.startMonth,
+        startDay: def.startDay,
+        endMonth: def.endMonth,
+        endDay: def.endDay,
+        startDate: s,
+        endDate: e,
+      })
+    }
+  }
+
+  return result
 }

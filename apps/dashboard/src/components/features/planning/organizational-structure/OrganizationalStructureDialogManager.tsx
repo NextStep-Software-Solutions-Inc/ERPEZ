@@ -7,6 +7,7 @@ import UpdateOfficeDialog from './dialog/UpdateOfficeDialog'
 import DeleteOfficeDialog from './dialog/DeleteOfficeDialog'
 import CreatePositionDialog from './dialog/CreatePositionDialog'
 import UpdatePositionDialog from './dialog/UpdatePositionDialog'
+import DeletePositionDialog from './dialog/DeletePositionDialog'
 import CreatePersonnelDialog from './dialog/CreatePersonnelDialog'
 import UpdatePersonnelDialog from './dialog/UpdatePersonnelDialog'
 import PMTBodyDialog from './dialog/PMTBodyDialog'
@@ -16,6 +17,7 @@ import {
   deleteOfficeDialogAtom,
   createPositionDialogAtom,
   updatePositionDialogAtom,
+  deletePositionDialogAtom,
   createPersonnelDialogAtom,
   updatePersonnelDialogAtom,
   pmtBodyDialogAtom,
@@ -55,6 +57,8 @@ export default function OrganizationalStructureDialogManager() {
   const setCreatePositionDialog = useSetAtom(createPositionDialogAtom)
   const updatePositionDialog = useAtomValue(updatePositionDialogAtom)
   const setUpdatePositionDialog = useSetAtom(updatePositionDialogAtom)
+  const deletePositionDialog = useAtomValue(deletePositionDialogAtom)
+  const setDeletePositionDialog = useSetAtom(deletePositionDialogAtom)
 
   // Personnel dialogs
   const createPersonnelDialog = useAtomValue(createPersonnelDialogAtom)
@@ -75,21 +79,32 @@ export default function OrganizationalStructureDialogManager() {
           setCreateOfficeDialog({ ...createOfficeDialog, isOpen: open })
         }
       />
-      {updateOfficeDialog.isOpen && (
+      {updateOfficeDialog.isOpen && updateOfficeDialog.selectedId && (
         <UpdateOfficeDialog
           open={updateOfficeDialog.isOpen}
           onOpenChange={(open) =>
-            setUpdateOfficeDialog({ ...updateOfficeDialog, isOpen: open })
+            setUpdateOfficeDialog({
+              ...updateOfficeDialog,
+              isOpen: open,
+              selectedId: open ? updateOfficeDialog.selectedId : null,
+            })
           }
-          unit={null}
+          unitId={updateOfficeDialog.selectedId}
         />
       )}
-      <DeleteOfficeDialog
-        open={deleteOfficeDialog.isOpen}
-        onOpenChange={(open) =>
-          setDeleteOfficeDialog({ ...deleteOfficeDialog, isOpen: open })
-        }
-      />
+      {deleteOfficeDialog.isOpen && deleteOfficeDialog.selectedId && (
+        <DeleteOfficeDialog
+          open={deleteOfficeDialog.isOpen}
+          onOpenChange={(open) =>
+            setDeleteOfficeDialog({
+              ...deleteOfficeDialog,
+              isOpen: open,
+              selectedId: open ? deleteOfficeDialog.selectedId : null,
+            })
+          }
+          unitId={deleteOfficeDialog.selectedId}
+        />
+      )}
 
       {/* Position Dialogs */}
       <CreatePositionDialog
@@ -98,13 +113,32 @@ export default function OrganizationalStructureDialogManager() {
           setCreatePositionDialog({ ...createPositionDialog, isOpen: open })
         }
       />
-      <UpdatePositionDialog
-        open={updatePositionDialog.isOpen}
-        onOpenChange={(open) =>
-          setUpdatePositionDialog({ ...updatePositionDialog, isOpen: open })
-        }
-        positionId={updatePositionDialog.selectedId || undefined}
-      />
+      {updatePositionDialog.isOpen && updatePositionDialog.selectedId && (
+        <UpdatePositionDialog
+          open={updatePositionDialog.isOpen}
+          onOpenChange={(open) =>
+            setUpdatePositionDialog({
+              ...updatePositionDialog,
+              isOpen: open,
+              selectedId: open ? updatePositionDialog.selectedId : null,
+            })
+          }
+          positionId={updatePositionDialog.selectedId}
+        />
+      )}
+      {deletePositionDialog.isOpen && deletePositionDialog.selectedId && (
+        <DeletePositionDialog
+          open={deletePositionDialog.isOpen}
+          onOpenChange={(open) =>
+            setDeletePositionDialog({
+              ...deletePositionDialog,
+              isOpen: open,
+              selectedId: open ? deletePositionDialog.selectedId : null,
+            })
+          }
+          positionId={deletePositionDialog.selectedId}
+        />
+      )}
 
       {/* Personnel Dialogs */}
       <CreatePersonnelDialog
@@ -113,13 +147,19 @@ export default function OrganizationalStructureDialogManager() {
           setCreatePersonnelDialog({ ...createPersonnelDialog, isOpen: open })
         }
       />
-      <UpdatePersonnelDialog
-        open={updatePersonnelDialog.isOpen}
-        onOpenChange={(open) =>
-          setUpdatePersonnelDialog({ ...updatePersonnelDialog, isOpen: open })
-        }
-        personnelId={updatePersonnelDialog.selectedId || undefined}
-      />
+      {updatePersonnelDialog.isOpen && updatePersonnelDialog.selectedId && (
+        <UpdatePersonnelDialog
+          open={updatePersonnelDialog.isOpen}
+          onOpenChange={(open) =>
+            setUpdatePersonnelDialog({
+              ...updatePersonnelDialog,
+              isOpen: open,
+              selectedId: open ? updatePersonnelDialog.selectedId : null,
+            })
+          }
+          personnelId={updatePersonnelDialog.selectedId}
+        />
+      )}
 
       {/* PMT Body Dialog */}
       <PMTBodyDialog

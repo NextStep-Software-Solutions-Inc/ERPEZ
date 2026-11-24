@@ -80,6 +80,7 @@ export type RatingScaleLevelResponse = {
 
 /**
  * API rating scale template response item
+ * Matches ERPEZ.Application.Features.Planning.RatingScaleTemplate.Dtos.RatingScaleTemplateResponse
  */
 export type RatingScaleTemplateResponse = {
   id: string
@@ -89,11 +90,11 @@ export type RatingScaleTemplateResponse = {
   isDefault: boolean
   generalRatingScaleId: string | null
   createdAt: string
-  updatedAt?: string | null
   createdBy: string | null
-  usageCount?: number | null
-  ratingScaleLevels: RatingScaleLevelResponse[] | null
   RatingScaleLevels?: RatingScaleLevelResponse[] | null
+  ratingScaleLevels?: RatingScaleLevelResponse[] | null
+  updatedAt?: string | null
+  usageCount?: number | null
 }
 
 /**

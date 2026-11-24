@@ -16,10 +16,11 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Calendar, Building2 } from 'lucide-react'
-import type { Department } from '../types'
+import type { Department, FiscalYearOption } from '../types'
 
 interface DashboardFiltersProps {
   fiscalYear: number
+  fiscalYears?: FiscalYearOption[]
   departmentId: string | null
   departments: Department[]
   showDepartmentFilter: boolean
@@ -27,29 +28,19 @@ interface DashboardFiltersProps {
   onDepartmentChange: (departmentId: string | null) => void
 }
 
-/**
- * Generate fiscal year options (last 5 + current + next 5 years)
- */
-function generateFiscalYearOptions(): number[] {
-  const currentYear = new Date().getFullYear()
-  const years: number[] = []
-
-  for (let i = -5; i <= 5; i++) {
-    years.push(currentYear + i)
-  }
-
-  return years
-}
-
 export function DashboardFilters({
   fiscalYear,
+  fiscalYears = [],
   departmentId,
   departments,
   showDepartmentFilter,
   onFiscalYearChange,
   onDepartmentChange,
 }: DashboardFiltersProps) {
-  const fiscalYearOptions = generateFiscalYearOptions()
+  // If fiscalYears are supplied from DB, use them; otherwise fallback to [fiscalYear]
+  const availableYears = fiscalYears.length > 0
+    ? fiscalYears.map((fy) => fy.year).sort((a, b) => b - a)
+    : [fiscalYear]
 
   return (
     <div className="flex flex-wrap items-end gap-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
@@ -69,7 +60,7 @@ export function DashboardFilters({
             <SelectValue placeholder="Select fiscal year" />
           </SelectTrigger>
           <SelectContent>
-            {fiscalYearOptions.map((year) => (
+            {availableYears.map((year) => (
               <SelectItem key={year} value={year.toString()}>
                 FY {year}
               </SelectItem>
@@ -98,31 +89,13 @@ export function DashboardFilters({
               <SelectItem value="all">All Departments</SelectItem>
               {departments.map((dept) => (
                 <SelectItem key={dept.id} value={dept.id}>
-                  {dept.name} ({dept.code})
+                  {dept.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
       )}
-
-      {/* Filter Summary (helpful for users) */}
-      <div className="flex-1 min-w-[200px]">
-        <div className="text-xs text-gray-500 mb-1">Active Filters</div>
-        <div className="flex items-center gap-2 text-sm text-gray-700">
-          <span className="font-semibold">FY {fiscalYear}</span>
-          {showDepartmentFilter && (
-            <>
-              <span className="text-gray-400">•</span>
-              <span>
-                {departmentId
-                  ? departments.find((d) => d.id === departmentId)?.name || 'Selected Department'
-                  : 'All Departments'}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
     </div>
   )
 }

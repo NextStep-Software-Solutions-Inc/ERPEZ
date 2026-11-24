@@ -1,27 +1,54 @@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { getOfficeTypesRequest } from '../handlers/getOfficeTypesRequest'
+import { getOrganizationsRequest } from '../handlers/getOrganizationsRequest'
+import { getCategoriesRequest } from '../handlers/getCategoriesRequest'
+import { getAdministrativeLevelsRequest } from '../handlers/getAdministrativeLevelsRequest'
 
 interface BasicOfficeSectionProps {
   form: any
   isLoading?: boolean
 }
 
+const useOfficeTypes = createQueryHookFromTemplate(getOfficeTypesRequest)
+const useOrganizations = createQueryHookFromTemplate(getOrganizationsRequest)
+const useCategories = createQueryHookFromTemplate(getCategoriesRequest)
+const useAdministrativeLevels = createQueryHookFromTemplate(getAdministrativeLevelsRequest)
+
 export default function BasicOfficeSection({
   form,
   isLoading = false,
 }: BasicOfficeSectionProps) {
+  const { data: officeTypesData, isLoading: officeTypesLoading } = useOfficeTypes({ pathParams: {}, queryParams: {} })
+  const { data: organizationsData, isLoading: orgsLoading } = useOrganizations({ pathParams: {}, queryParams: {} })
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategories({ pathParams: {}, queryParams: {} })
+  const { data: adminLevelsData, isLoading: adminLevelsLoading } = useAdministrativeLevels({ pathParams: {}, queryParams: {} })
+
+  const officeTypes = officeTypesData?.data ?? []
+  const organizations = organizationsData?.data ?? []
+  const categories = categoriesData?.data ?? []
+  const adminLevels = adminLevelsData?.data ?? []
+
   return (
     <div className="grid gap-6">
-      {/* First Row: Office Name & Description */}
-      <div className="grid grid-cols-1 gap-6">
+      {/* Row: Office Name & Code */}
+      <div className="grid grid-cols-2 gap-4">
         {/* Office Name */}
         <form.Field
           name="name"
           children={(field: any) => (
             <div className="grid gap-2">
               <Label htmlFor={field.name}>
-                Office <span className="text-destructive">*</span>
+                Office Name <span className="text-destructive">*</span>
               </Label>
               <Input
                 id={field.name}
@@ -30,87 +57,37 @@ export default function BasicOfficeSection({
                 onChange={(e) => field.handleChange(e.target.value)}
                 placeholder="Enter Office Name"
                 disabled={isLoading}
-                className={
-                  field.state.meta.errors.length > 0 ? 'border-destructive' : ''
-                }
+                className={field.state.meta.errors.length > 0 ? 'border-destructive' : ''}
                 required
               />
               {field.state.meta.errors.length > 0 && (
-                <p className="text-sm text-destructive">
-                  {field.state.meta.errors[0]?.message}
-                </p>
+                <p className="text-sm text-destructive">{field.state.meta.errors[0]?.message}</p>
               )}
             </div>
           )}
         />
 
-        {/* Description */}
+        {/* Office Code */}
         <form.Field
-          name="description"
-          children={(field: any) => (
-            <div className="grid gap-2">
-              <Label htmlFor={field.name}>Description</Label>
-              <Textarea
-                id={field.name}
-                value={field.state.value ?? ''}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                placeholder="Enter Office Description"
-                rows={4}
-                disabled={isLoading}
-              />
-            </div>
-          )}
-        />
-      </div>
-
-      {/* Second Row: Office Head & Email */}
-      <div className="grid grid-cols-1 gap-6">
-        {/* Office Head */}
-        <form.Field
-          name="officeHead"
+          name="code"
           children={(field: any) => (
             <div className="grid gap-2">
               <Label htmlFor={field.name}>
-                Office Head <span className="text-destructive">*</span>
+                Office Code <span className="text-destructive">*</span>
               </Label>
               <Input
                 id={field.name}
                 value={field.state.value}
                 onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                placeholder="Enter Office Head Name"
+                onChange={(e) => field.handleChange(e.target.value.toUpperCase())}
+                placeholder="e.g. DICT-HQ"
                 disabled={isLoading}
-                className={
-                  field.state.meta.errors.length > 0 ? 'border-destructive' : ''
-                }
+                className={field.state.meta.errors.length > 0 ? 'border-destructive' : ''}
                 required
               />
-            </div>
-          )}
-        />
-
-        {/* Email */}
-        <form.Field
-          name="email"
-          children={(field: any) => (
-            <div className="grid gap-1">
-              <Label htmlFor={field.name}>
-                Email <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                type="email"
-                id={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                placeholder="Enter Email"
-                disabled={isLoading}
-                className={
-                  field.state.meta.errors.length > 0 ? 'border-destructive' : ''
-                }
-                required
-              />
+              {field.state.meta.errors.length > 0 && (
+                <p className="text-sm text-destructive">{field.state.meta.errors[0]?.message}</p>
+              )}
             </div>
           )}
         />
@@ -129,91 +106,161 @@ export default function BasicOfficeSection({
               value={field.state.value}
               onBlur={field.handleBlur}
               onChange={(e) => field.handleChange(e.target.value)}
-              placeholder="Enter Office Address"
+              placeholder="Enter full office address"
               disabled={isLoading}
-              className={
-                field.state.meta.errors.length > 0 ? 'border-destructive' : ''
-              }
+              className={field.state.meta.errors.length > 0 ? 'border-destructive' : ''}
               required
+            />
+            {field.state.meta.errors.length > 0 && (
+              <p className="text-sm text-destructive">{field.state.meta.errors[0]?.message}</p>
+            )}
+          </div>
+        )}
+      />
+
+      {/* Description */}
+      <form.Field
+        name="description"
+        children={(field: any) => (
+          <div className="grid gap-2">
+            <Label htmlFor={field.name}>Description</Label>
+            <Textarea
+              id={field.name}
+              value={field.state.value ?? ''}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+              placeholder="Enter office description"
+              rows={3}
+              disabled={isLoading}
             />
           </div>
         )}
       />
 
-      {/* Country & Postal Code */}
-      <div className="grid grid-cols-2 gap-6">
+      {/* Row: Office Type & Organization */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Office Type */}
         <form.Field
-          name="country"
+          name="officeTypeId"
           children={(field: any) => (
             <div className="grid gap-2">
-              <Label htmlFor={field.name}>
-                Country <span className="text-destructive">*</span>
+              <Label>
+                Office Type <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                placeholder="Enter Country"
-                disabled={isLoading}
-                className={
-                  field.state.meta.errors.length > 0 ? 'border-destructive' : ''
-                }
-                required
-              />
+              <Select
+                value={field.state.value || ''}
+                onValueChange={(v) => field.handleChange(v)}
+                disabled={isLoading || officeTypesLoading}
+              >
+                <SelectTrigger className={field.state.meta.errors.length > 0 ? 'border-destructive' : ''}>
+                  <SelectValue placeholder={officeTypesLoading ? 'Loading...' : 'Select Office Type'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {officeTypes.map((t: any) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {field.state.meta.errors.length > 0 && (
+                <p className="text-sm text-destructive">{field.state.meta.errors[0]?.message}</p>
+              )}
             </div>
           )}
         />
 
+        {/* Organization */}
         <form.Field
-          name="postalCode"
+          name="organizationId"
           children={(field: any) => (
             <div className="grid gap-2">
-              <Label htmlFor={field.name}>
-                Postal Code <span className="text-destructive">*</span>
+              <Label>
+                Organization <span className="text-muted-foreground text-xs font-normal">(optional)</span>
               </Label>
-              <Input
-                id={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                placeholder="Enter Postal Code"
-                disabled={isLoading}
-                className={
-                  field.state.meta.errors.length > 0 ? 'border-destructive' : ''
-                }
-                required
-              />
+              <Select
+                value={field.state.value || ''}
+                onValueChange={(v) => field.handleChange(v)}
+                disabled={isLoading || orgsLoading}
+              >
+                <SelectTrigger className={field.state.meta.errors.length > 0 ? 'border-destructive' : ''}>
+                  <SelectValue placeholder={orgsLoading ? 'Loading...' : 'Select Organization'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {organizations.map((o: any) => (
+                    <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {field.state.meta.errors.length > 0 && (
+                <p className="text-sm text-destructive">{field.state.meta.errors[0]?.message}</p>
+              )}
             </div>
           )}
         />
       </div>
 
-      {/* Contact Number & Responsibility Center Code */}
-      <div className="grid grid-cols-2 gap-6">
+      {/* Row: Category & Administrative Level */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Category */}
         <form.Field
-          name="contactNumber"
+          name="categoryId"
           children={(field: any) => (
             <div className="grid gap-2">
-              <Label htmlFor={field.name}>
-                Contact Number <span className="text-destructive">*</span>
+              <Label>
+                Category <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                placeholder="Enter Contact Number"
-                disabled={isLoading}
-                className={
-                  field.state.meta.errors.length > 0 ? 'border-destructive' : ''
-                }
-                required
-              />
+              <Select
+                value={field.state.value || ''}
+                onValueChange={(v) => field.handleChange(v)}
+                disabled={isLoading || categoriesLoading}
+              >
+                <SelectTrigger className={field.state.meta.errors.length > 0 ? 'border-destructive' : ''}>
+                  <SelectValue placeholder={categoriesLoading ? 'Loading...' : 'Select Category'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((c: any) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {field.state.meta.errors.length > 0 && (
+                <p className="text-sm text-destructive">{field.state.meta.errors[0]?.message}</p>
+              )}
             </div>
           )}
         />
 
+        {/* Administrative Level */}
+        <form.Field
+          name="administrativeLevelId"
+          children={(field: any) => (
+            <div className="grid gap-2">
+              <Label>
+                Administrative Level <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={field.state.value || ''}
+                onValueChange={(v) => field.handleChange(v)}
+                disabled={isLoading || adminLevelsLoading}
+              >
+                <SelectTrigger className={field.state.meta.errors.length > 0 ? 'border-destructive' : ''}>
+                  <SelectValue placeholder={adminLevelsLoading ? 'Loading...' : 'Select Admin Level'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {adminLevels.map((l: any) => (
+                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {field.state.meta.errors.length > 0 && (
+                <p className="text-sm text-destructive">{field.state.meta.errors[0]?.message}</p>
+              )}
+            </div>
+          )}
+        />
+      </div>
+
+      {/* Row: Responsibility Center Code & Budget Cost Center */}
+      <div className="grid grid-cols-2 gap-4">
         <form.Field
           name="responsibilityCenterCode"
           children={(field: any) => (
@@ -224,11 +271,25 @@ export default function BasicOfficeSection({
                 value={field.state.value ?? ''}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
-                placeholder="Enter Responsibility Center Code"
+                placeholder="e.g. RC-001"
                 disabled={isLoading}
-                className={
-                  field.state.meta.errors.length > 0 ? 'border-destructive' : ''
-                }
+              />
+            </div>
+          )}
+        />
+
+        <form.Field
+          name="budgetCostCenter"
+          children={(field: any) => (
+            <div className="grid gap-2">
+              <Label htmlFor={field.name}>Budget Cost Center</Label>
+              <Input
+                id={field.name}
+                value={field.state.value ?? ''}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="e.g. CC-001"
+                disabled={isLoading}
               />
             </div>
           )}

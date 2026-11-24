@@ -8,7 +8,12 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useAtom, useSetAtom, useAtomValue } from 'jotai'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TemplateTable } from '@/components/TemplateTable'
 import {
@@ -56,7 +61,7 @@ export default function ManageParametersPage() {
           sortOrder: item.sortOrder,
           isActive: item.isActive,
           createdDate: new Date(),
-        }))
+        })),
       )
     }
   }, [data, apiParameters, setParameters])
@@ -123,13 +128,19 @@ export default function ManageParametersPage() {
         <CardHeader>
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="space-y-1">
-              <CardTitle className="text-3xl">NGPA Evaluation Parameters</CardTitle>
+              <CardTitle className="text-3xl">
+                NGPA Evaluation Parameters
+              </CardTitle>
               <CardDescription className="text-base">
-                Manage the evaluation parameters used in market scoping assessments
+                Manage the evaluation parameters used in market scoping
+                assessments
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="h-fit px-3 py-1 font-semibold">
+              <Badge
+                variant="outline"
+                className="h-fit px-3 py-1 font-semibold"
+              >
                 <span>{filteredParameters.length} Parameters</span>
               </Badge>
             </div>

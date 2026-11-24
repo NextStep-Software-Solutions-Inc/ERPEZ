@@ -3,9 +3,9 @@ import {
   type APIResponse,
   type QueryBlueprintFromTemplate,
   type QueryKey,
+  type QueryParams,
 } from "erpez-shared-lib";
 import { type TenantDetails } from "../type/Tenant";
-import type { QueryParams } from "erpez-shared-lib/dist/types/Blueprint";
 
 const endpoint = "/tenants/:id";
 

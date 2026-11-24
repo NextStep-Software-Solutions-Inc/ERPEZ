@@ -160,7 +160,7 @@ export function CeilingManagementTab() {
       queryParams: { pageSize: 200 }, // warn: silently truncates if ceiling count exceeds 200
     })
 
-  const { data: masterBudgetsResponse } = useAgencyMasterBudgets({
+  const { data: masterBudgetsResponse, isLoading: isMasterBudgetsLoading } = useAgencyMasterBudgets({
     pathParams: {},
     queryParams: { pageSize: 100 }, // warn: silently truncates if master budget count exceeds 100
   })
@@ -320,7 +320,9 @@ export function CeilingManagementTab() {
     const agencyMasterBudget = masterBudgets.find(
       (mb) =>
         mb.fundSource?.code === formData.fundCluster &&
-        String(mb.fiscalYear?.year) === formData.fiscalYear,
+        (String(mb.fiscalYear?.year) === String(formData.fiscalYear) ||
+          mb.fiscalYearId === formData.fiscalYearId ||
+          mb.fiscalYear?.id === formData.fiscalYear),
     )
 
     if (!agencyMasterBudget && !editingRow) {
@@ -814,16 +816,16 @@ export function CeilingManagementTab() {
                             </p>
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono text-sm min-w-[120px]">
+                        <TableCell className="text-sm min-w-[120px]">
                           ₱{row.ps.toLocaleString()}
                         </TableCell>
-                        <TableCell className="font-mono text-sm min-w-[120px]">
+                        <TableCell className="text-sm min-w-[120px]">
                           ₱{row.mooe.toLocaleString()}
                         </TableCell>
-                        <TableCell className="font-mono text-sm min-w-[120px]">
+                        <TableCell className="text-sm min-w-[120px]">
                           ₱{row.co.toLocaleString()}
                         </TableCell>
-                        <TableCell className="font-bold font-mono min-w-[140px] text-base">
+                        <TableCell className="font-bold min-w-[140px] text-base">
                           ₱{row.total.toLocaleString()}
                         </TableCell>
                         <TableCell className="min-w-[100px]">
@@ -919,6 +921,7 @@ export function CeilingManagementTab() {
         projects={officeOptions}
         fiscalYears={fiscalYearOptions}
         agencyMasterBudgets={masterBudgets}
+        isMasterBudgetsLoading={isMasterBudgetsLoading}
         existingCeilings={officeCeilings}
         editingCeilingId={editingRow?.id}
         isEdit={!!editingRow}

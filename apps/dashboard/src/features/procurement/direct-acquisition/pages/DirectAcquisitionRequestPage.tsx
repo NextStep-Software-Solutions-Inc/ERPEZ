@@ -11,10 +11,11 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { MoreVertical, Eye, Trash2, ShoppingCart, Plus, Search, Send, CheckCircle2, RotateCcw } from 'lucide-react'
-import { useDirectAcquisitionStore } from '../store/directAcquisitionStore'
+import { MoreVertical, Eye, Trash2, ShoppingCart, Plus, Search, Send, CheckCircle2, RotateCcw, Loader2 } from 'lucide-react'
 import { CreateDirectAcquisitionModal } from '../components/CreateDirectAcquisitionModal'
 import { DirectAcquisitionDetailsPage } from '../components/DirectAcquisitionDetailsPage'
+import { useDirectAcquisitions, useDirectAcquisitionsSummary, useDeleteDirectAcquisition } from '../handlers'
+import type { DirectAcquisition } from '../store/directAcquisitionStore'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/use-toast'
 
@@ -22,20 +23,25 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   draft: { label: 'DRAFT', className: 'bg-gray-100 text-gray-700 border-gray-300' },
   purchase_entry: { label: 'PURCHASE ENTRY', className: 'bg-blue-50 text-blue-800 border-blue-300' },
   for_disbursement: { label: 'FOR DISBURSEMENT', className: 'bg-amber-50 text-amber-800 border-amber-300' },
+  approved: { label: 'APPROVED', className: 'bg-emerald-50 text-emerald-800 border-emerald-300' },
   returned: { label: 'RETURNED', className: 'bg-red-50 text-red-800 border-red-300' },
 }
 
 export function DirectAcquisitionRequestPage() {
-  const { entries, removeEntry } = useDirectAcquisitionStore()
+  const { data: daList, isLoading } = useDirectAcquisitions({})
+  const { data: summaryData } = useDirectAcquisitionsSummary({})
+  const deleteMutation = useDeleteDirectAcquisition()
   const { toast } = useToast()
   const [createOpen, setCreateOpen] = useState(false)
   const [viewing, setViewing] = useState<string | null>(null)
 
-  // --- Filters / KPI state kept at page level ---
+  // Filters / pagination state
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [page, setPage] = useState(1)
   const pageSize = 8
+
+  const entries: DirectAcquisition[] = daList ?? []
 
   if (viewing) {
     const entry = entries.find((e) => e.id === viewing)
@@ -56,16 +62,24 @@ export function DirectAcquisitionRequestPage() {
   })
 
   const counts = {
-    total: entries.length,
-    draft: entries.filter((e) => e.status === 'draft').length,
-    purchase_entry: entries.filter((e) => e.status === 'purchase_entry').length,
-    for_disbursement: entries.filter((e) => e.status === 'for_disbursement').length,
-    returned: entries.filter((e) => e.status === 'returned').length,
+    total: summaryData?.total ?? entries.length,
+    draft: summaryData?.draft ?? entries.filter((e) => e.status === 'draft').length,
+    purchase_entry: summaryData?.purchaseEntry ?? entries.filter((e) => e.status === 'purchase_entry').length,
+    for_disbursement: summaryData?.forDisbursement ?? entries.filter((e) => e.status === 'for_disbursement').length,
+    returned: summaryData?.returned ?? entries.filter((e) => e.status === 'returned').length,
   }
 
-  const handleRemove = (id: string) => {
-    removeEntry(id)
-    toast({ title: 'Removed', description: 'Direct acquisition request removed.' })
+  const handleRemove = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync({ pathParams: { id } })
+      toast({ title: 'Removed', description: 'Direct acquisition request removed successfully.' })
+    } catch (error: any) {
+      toast({
+        title: 'Delete Failed',
+        description: error?.message || 'Failed to remove Direct Acquisition.',
+        variant: 'destructive',
+      })
+    }
   }
 
   return (
@@ -77,20 +91,19 @@ export function DirectAcquisitionRequestPage() {
             <div className="space-y-1">
               <CardTitle className="text-3xl">Direct Acquisition Request</CardTitle>
               <CardDescription className="text-base">
-                Manage streamlined direct purchases under RA 12009 — no bidding, no BAC resolution required.
+                Manage streamlined direct purchases under RA 12009 (ABC ≤ ₱200,000) — no bidding or quotation procedures required.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="h-fit px-3 py-1 font-semibold">
-                <ShoppingCart className="h-3.5 w-3.5 mr-1.5" /> Direct Acquisition
+                <ShoppingCart className="h-3.5 w-3.5 mr-1.5" /> Direct Acquisition (RA 12009)
               </Badge>
-              {/* Create Request button removed from header */}
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      {/* Single unified card — summary widgets + status tiles + table */}
+      {/* Unified Dashboard Card */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -149,7 +162,7 @@ export function DirectAcquisitionRequestPage() {
             </Card>
           </div>
 
-          {/* Toolbar + Table + Pagination extracted into small components */}
+          {/* Toolbar */}
           <TableToolbar
             search={search}
             setSearch={(s: string) => {
@@ -164,14 +177,21 @@ export function DirectAcquisitionRequestPage() {
             onCreate={() => setCreateOpen(true)}
           />
 
-          <DirectAcquisitionTable
-            entries={filtered}
-            page={page}
-            setPage={setPage}
-            pageSize={pageSize}
-            onView={(id: string) => setViewing(id)}
-            onRemove={handleRemove}
-          />
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+              <p className="text-sm text-muted-foreground">Loading direct acquisitions...</p>
+            </div>
+          ) : (
+            <DirectAcquisitionTable
+              entries={filtered}
+              page={page}
+              setPage={setPage}
+              pageSize={pageSize}
+              onView={(id: string) => setViewing(id)}
+              onRemove={handleRemove}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -179,8 +199,6 @@ export function DirectAcquisitionRequestPage() {
     </div>
   )
 }
-
-/* -------------------- Small extracted components -------------------- */
 
 function TableToolbar({
   search,
@@ -215,6 +233,7 @@ function TableToolbar({
           <SelectItem value="draft">Draft</SelectItem>
           <SelectItem value="purchase_entry">Purchase Entry</SelectItem>
           <SelectItem value="for_disbursement">For Disbursement</SelectItem>
+          <SelectItem value="approved">Approved</SelectItem>
           <SelectItem value="returned">Returned</SelectItem>
         </SelectContent>
       </Select>
@@ -233,7 +252,7 @@ function DirectAcquisitionTable({
   onView,
   onRemove,
 }: {
-  entries: any[]
+  entries: DirectAcquisition[]
   page: number
   setPage: (p: number) => void
   pageSize: number
@@ -292,7 +311,7 @@ function DirectAcquisitionTable({
             {paged.map((entry) => {
               const cfg = STATUS_CONFIG[entry.status] || STATUS_CONFIG.draft
               return (
-                <TableRow key={entry.id} className="hover:bg-muted/40">
+                <TableRow key={entry.id} className="hover:bg-muted/40 cursor-pointer" onClick={() => onView(entry.id)}>
                   <TableCell onClick={(e) => e.stopPropagation()} className="w-12">
                     <Checkbox checked={selectedIds.includes(entry.id)} onCheckedChange={(v) => toggleRowSelect(entry.id, !!v)} aria-label={`Select ${entry.daNumber}`} />
                   </TableCell>

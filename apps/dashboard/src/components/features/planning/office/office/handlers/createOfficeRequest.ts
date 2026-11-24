@@ -8,16 +8,7 @@ import api from '@/services/api'
 
 const endpoint = '/offices'
 
-export type CreateOfficePayload = Omit<OfficeFormType, never> & {
-  clusterId?: string | null
-  officeHead: string
-  name: string
-  description?: string | null
-  address: string
-  email: string
-  contactNumber: string
-  responsibilityCenterCode?: string | null
-}
+export type CreateOfficePayload = OfficeFormType
 
 export const createOfficeRequest: MutationBlueprintFromTemplate<
   typeof endpoint,

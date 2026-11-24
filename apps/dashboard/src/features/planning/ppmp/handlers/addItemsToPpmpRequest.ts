@@ -1,13 +1,13 @@
-﻿/**
+/**
  * Handler: Batch-add catalog items as line items inside an IoE block
  */
 
+import type { CatalogItem, PPMP, PPMPLineItem } from '../types'
 import {
   mockPpmpDatabase,
   mockCseCatalogItems,
   mockNonCseCatalogItems,
 } from '../data/mockPpmpData'
-import type { PPMP, PPMPLineItem } from '../types'
 import { createEmptyMonthlyQuantities } from '../types'
 import { getSuggestedMoP, assertPpmpWritable } from '../lib/ppmpUtils'
 
@@ -15,14 +15,13 @@ interface AddItemsData {
   ppmpId: string
   ioEBlockId: string
   catalogItemIds: string[]
+  items?: CatalogItem[]
 }
 
 export const addItemsToPpmpRequest = {
   endpoint: '/ppmps/:id/items',
   key: null,
   fetcher: async (params: { data: AddItemsData }): Promise<PPMP> => {
-    await new Promise((r) => setTimeout(r, 400))
-
     const ppmp = mockPpmpDatabase.find((p) => p.id === params.data.ppmpId)
     if (!ppmp) throw new Error('PPMP not found.')
     assertPpmpWritable(ppmp)
@@ -37,7 +36,9 @@ export const addItemsToPpmpRequest = {
         // Skip if item is already in this IoE block
         if (ioEBlock.items.some((i) => i.catalogItemId === catalogId)) continue
 
-        const catalogItem = allCatalog.find((c) => c.id === catalogId)
+        const catalogItem =
+          params.data.items?.find((c) => c.id === catalogId) ??
+          allCatalog.find((c) => c.id === catalogId)
         if (!catalogItem) continue
 
         const quantities = createEmptyMonthlyQuantities()

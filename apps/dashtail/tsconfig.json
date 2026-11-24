@@ -13,6 +13,7 @@
     "incremental": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "module": "esnext",
     "resolveJsonModule": true,
     "isolatedModules": true,

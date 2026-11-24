@@ -80,6 +80,10 @@ export function mapBackendRFQToFrontend(dto: any): RFQ {
     deadline: dto.deadline || '',
     deliveryPeriod: dto.deliveryPeriod || '',
     modeOfProcurement: dto.modeOfProcurementName || '',
+    modeOfProcurementId: dto.modeOfProcurementId,
+    modeOfProcurementName: dto.modeOfProcurementName,
+    consolidatedPRId: dto.consolidatedPRId,
+    consolidatedPRNumber: dto.consolidatedPRNumber,
     status: mapStatusEnumToString(dto.status),
     createdAt: dto.date ? new Date(dto.date).toISOString() : new Date().toISOString(),
     items: (dto.items || []).map(
@@ -132,6 +136,7 @@ export function mapBackendRFQListItemToFrontend(dto: any): RFQ {
     deliveryPeriod: dto.deliveryPeriod || '',
     modeOfProcurement: dto.modeOfProcurementName || '',
     status: mapStatusEnumToString(dto.status),
+    remarks: dto.remarks || '',
     createdAt: dto.deadline ? new Date(dto.deadline).toISOString() : new Date().toISOString(),
     items: [],
     suppliers: [],

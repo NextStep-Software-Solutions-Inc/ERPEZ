@@ -10,16 +10,25 @@ import { useState, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Gavel } from 'lucide-react'
-import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import {
+  createQueryHookFromTemplate,
+  createMutationHookFromTemplate,
+  useQueryClient,
+} from 'erpez-shared-lib'
 import { getAOBListRequest } from '../handlers/getAOBListRequest'
+import { approveAOBRequest } from '../handlers/approveAOBRequest'
+import { returnAOBRequest } from '../handlers/returnAOBRequest'
 import { ApproveAOBDialog } from '../dialogs/ApproveAOBDialog'
-import { ReturnAOBDialog } from '../dialogs/ReturnAOBDialog'
+import { ReturnAOBDialog, type ReturnReason } from '../dialogs/ReturnAOBDialog'
 import { AdminAOBsManagementTable } from './AdminAOBsManagementTable'
 import type { AOB } from '../types'
 import { AOBStatisticsCards } from './AOBStatisticsCards'
 import { calculateStatistics } from '../utils/statistics'
+import { toast } from 'sonner'
 
 const useAOBList = createQueryHookFromTemplate(getAOBListRequest)
+const useApproveAOB = createMutationHookFromTemplate(approveAOBRequest)
+const useReturnAOB = createMutationHookFromTemplate(returnAOBRequest)
 
 interface ManageAOBListPageProps {
   onViewDetails?: (aob: AOB) => void
@@ -30,9 +39,11 @@ export function ManageAOBListPage({ onViewDetails }: ManageAOBListPageProps) {
   const [approveDialogOpen, setApproveDialogOpen] = useState(false)
   const [returnDialogOpen, setReturnDialogOpen] = useState(false)
 
-  // Fetch AOB list with mock data fallback
-  // TODO: Confirm if getAOBListRequest returns org-wide results or scopes to authenticated user.
-  // Currently hardcoded to pageSize: 100. If endpoint scopes to current user, managers will only see their own AOBs.
+  const queryClient = useQueryClient()
+  const { mutateAsync: approveAOB } = useApproveAOB()
+  const { mutateAsync: returnAOB } = useReturnAOB()
+
+  // Fetch AOB list
   const { data: apiResponse, isLoading, isFetching } = useAOBList({
     pathParams: {},
     queryParams: {
@@ -67,32 +78,49 @@ export function ManageAOBListPage({ onViewDetails }: ManageAOBListPageProps) {
     if (!selectedAOB) return
 
     try {
-      console.log('AOB Approved:', selectedAOB.aobNumber, 'File:', data.approvalDocument.name, 'By:', data.approvedBy)
+      await approveAOB({
+        pathParams: { id: selectedAOB.id },
+        payload: {
+          approvedBy: data.approvedBy,
+          remarks: data.approvalRemarks,
+        },
+      })
 
-      // Close dialog and reset
+      void queryClient.invalidateQueries({
+        queryKey: [getAOBListRequest.endpoint],
+      })
+
+      toast.success(`AOB "${selectedAOB.aobNumber}" approved successfully`)
       setApproveDialogOpen(false)
       setSelectedAOB(null)
-
-      // TODO: Call approval mutation when backend API is ready
-      // Optionally refresh list
     } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Error approving AOB'
+      toast.error(msg)
       console.error('Error approving AOB:', error)
     }
   }
 
-  const handleConfirmReturn = async (data: { reason: string; remarks?: string }) => {
+  const handleConfirmReturn = async (data: { reason: ReturnReason; remarks: string }) => {
     if (!selectedAOB) return
 
     try {
-      console.log('AOB Returned:', selectedAOB.aobNumber, 'Reason:', data.reason, 'Remarks:', data.remarks)
+      await returnAOB({
+        pathParams: { id: selectedAOB.id },
+        payload: {
+          remarks: `[${data.reason}] ${data.remarks}`,
+        },
+      })
 
-      // Close dialog and reset
+      void queryClient.invalidateQueries({
+        queryKey: [getAOBListRequest.endpoint],
+      })
+
+      toast.success(`AOB "${selectedAOB.aobNumber}" returned to BAC Secretariat`)
       setReturnDialogOpen(false)
       setSelectedAOB(null)
-
-      // TODO: Call return mutation when backend API is ready
-      // Optionally refresh list
     } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Error returning AOB'
+      toast.error(msg)
       console.error('Error returning AOB:', error)
     }
   }

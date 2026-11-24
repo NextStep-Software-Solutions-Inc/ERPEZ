@@ -48,11 +48,15 @@ export default function OPCRTab() {
   const viewingOPCRId = search.opcrId
 
   const handleViewOPCR = (opcr: OPCR) => {
+    const fyId =
+      typeof opcr.fiscalYear === 'object' && opcr.fiscalYear
+        ? opcr.fiscalYear.id
+        : undefined
     navigate({
       search: (prev) => ({
         ...prev,
         opcrId: opcr.id,
-        fiscalYearId: opcr.fiscalYear.id,
+        fiscalYearId: fyId || prev.fiscalYearId,
       }),
     })
   }
@@ -142,9 +146,7 @@ export default function OPCRTab() {
                 Manage Office Performance Commitment and Review records
               </p>
             </div>
-            <CreateOPCRDialog
-              existingFiscalYears={opcrs.map((o) => o.fiscalYear.year)}
-            />
+            <CreateOPCRDialog />
           </div>
 
           <OPCRToolbar

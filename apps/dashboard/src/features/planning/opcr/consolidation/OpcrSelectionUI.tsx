@@ -356,7 +356,10 @@ export default function OpcrSelectionUI() {
                       )}
                     </h3>
                     <p className="text-xs text-slate-600 mt-1">
-                      {opcr.officeName} • FY {opcr.fiscalYear.year}
+                      {opcr.officeName} • FY{' '}
+                      {typeof opcr.fiscalYear === 'number'
+                        ? opcr.fiscalYear
+                        : opcr.fiscalYear?.year}
                     </p>
                   </div>
                 </div>

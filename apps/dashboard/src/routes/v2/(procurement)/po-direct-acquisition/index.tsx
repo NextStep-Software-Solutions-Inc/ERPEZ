@@ -1,10 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { PurchaseOrdersDirectAcquisitionPage } from '@/features/procurement/purchase-orders/pages'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/v2/(procurement)/po-direct-acquisition/')({
-  component: PoDirectAcquisitionRoute,
+  beforeLoad: () => {
+    throw redirect({
+      to: '/v2/purchase-orders',
+      search: { mode: 'direct-acquisition' },
+    })
+  },
+  component: () => null,
 })
-
-function PoDirectAcquisitionRoute() {
-  return <PurchaseOrdersDirectAcquisitionPage />
-}

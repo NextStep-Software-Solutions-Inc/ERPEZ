@@ -1,4 +1,4 @@
-﻿/**
+/**
  * IoeBlockAccordion
  * Renders one IoE (Item of Expenditure) block with expandable content.
  * Shows budget limit, total cost (green/red), Add Items button, and the schedule matrix table.
@@ -61,6 +61,7 @@ import { cn } from '@/lib/utils'
 interface IoeBlockAccordionProps {
   block: PPMPIoEBlock
   ppmpId: string
+  activityName?: string
   onScheduleChange: (itemId: string, month: Month, value: number) => void
   onDeleteItem: (itemId: string) => void
   onDeleteBlock: (blockId: string) => Promise<void> | void
@@ -71,6 +72,7 @@ interface IoeBlockAccordionProps {
 export function IoeBlockAccordion({
   block,
   ppmpId,
+  activityName,
   onScheduleChange,
   onDeleteItem,
   onDeleteBlock,
@@ -415,6 +417,9 @@ export function IoeBlockAccordion({
                           <th className="px-3 py-2 text-left font-medium min-w-[200px]">
                             Item / UoM
                           </th>
+                          <th className="px-2 py-2 text-left font-medium whitespace-nowrap min-w-[160px]">
+                            Activity Indicator
+                          </th>
                           <th className="px-2 py-2 text-left font-medium whitespace-nowrap">
                             Project Type
                           </th>
@@ -475,6 +480,7 @@ export function IoeBlockAccordion({
                             key={item.id}
                             item={item}
                             ppmpId={ppmpId}
+                            activityName={activityName}
                             onScheduleChange={onScheduleChange}
                             onDelete={onDeleteItem}
                             isReadOnly={isReadOnly}

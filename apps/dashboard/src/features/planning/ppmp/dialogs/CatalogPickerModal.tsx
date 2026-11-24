@@ -10,8 +10,11 @@ import { toast } from 'sonner'
 import {
   ChevronLeft,
   ChevronRight,
+  AlertCircle,
+  Loader2,
   LucidePackage,
   LucidePackageOpen,
+  MapPin,
   Package,
   RefreshCcw,
   Search,
@@ -25,13 +28,26 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import type { CatalogItem, CatalogType } from '../types'
 import { formatCurrency, getSuggestedMoP } from '../lib/ppmpUtils'
-import { mockCseCatalogItems } from '../data/mockPpmpData'
-import { activeCatalogItemsAtom } from '../catalog/atoms/catalogAtoms'
-import type { NonCSEItem } from '../catalog/types/catalog.types'
+import { useNonCSEItems } from '../catalog/hooks/useNonCSEItemQueries'
+import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
+import {
+  usePSDBMItems,
+  usePSDBMDepots,
+  useTriggerPSDBMSync,
+} from '@/features/procurement/psdbm/hooks'
+import { PSDBMCatalogMode } from '@/features/procurement/psdbm/types'
+import type { PSDBMItem } from '@/features/procurement/psdbm/types'
 import {
   catalogPickerModalOpenAtom,
   catalogPickerTabAtom,
@@ -58,7 +74,7 @@ interface CatalogCardItem extends CatalogItem {
   supplier?: string | null
 }
 
-type CatalogSourceItem = CatalogItem | NonCSEItem
+type CatalogSourceItem = CatalogItem | NONCSEItem
 
 interface TabFilters {
   categories: string[]
@@ -67,7 +83,7 @@ interface TabFilters {
   pageIndex: number
 }
 
-const PAGE_SIZE = 8
+const PAGE_SIZE = 25
 const DEFAULT_FILTERS: TabFilters = {
   categories: [],
   unitOfMeasures: [],
@@ -107,36 +123,103 @@ function tone(value: string): string {
   return tones[hash(value) % tones.length] ?? tones[0]!
 }
 
+function mapPsdbmItemToCatalogItem(item: PSDBMItem): CatalogItem {
+  const baseItem: CatalogItem = {
+    id: item.itemCode,
+    itemCode: item.itemCode,
+    name: item.description,
+    category: item.category || 'Uncategorized',
+    unitPrice: item.unitPrice,
+    unitOfMeasure: item.unit,
+    catalogType: 'cse',
+    defaultMoP: 'NP-53.5',
+    imageUrl: item.imageUrl,
+  }
+  return {
+    ...baseItem,
+    defaultMoP: getSuggestedMoP(baseItem, item.unitPrice),
+  }
+}
+
 function normalizeCatalogItem(
   item: CatalogSourceItem,
   catalogType: CatalogType,
 ): CatalogItem {
-  if ('unitPrice' in item) return item
+  if ('catalogType' in item && item.catalogType) return item as CatalogItem
 
-  const unitPrice = item.currentPrice
+  const raw = item as Record<string, unknown>
+  const unitPrice =
+    typeof raw.currentPrice === 'number'
+      ? raw.currentPrice
+      : typeof raw.unitPrice === 'number'
+        ? raw.unitPrice
+        : 0
+
+  const itemName =
+    typeof raw.name === 'string' && raw.name
+      ? raw.name
+      : typeof raw.description === 'string' && raw.description
+        ? raw.description
+        : 'Unnamed Item'
+
+  const category =
+    typeof raw.category === 'string' && raw.category
+      ? raw.category
+      : typeof raw.procurementCategoryName === 'string' &&
+          raw.procurementCategoryName
+        ? raw.procurementCategoryName
+        : typeof raw.remarks === 'string' && raw.remarks
+          ? raw.remarks
+          : 'General Goods'
+
+  const unitOfMeasure =
+    typeof raw.unitOfMeasure === 'string' && raw.unitOfMeasure
+      ? raw.unitOfMeasure
+      : typeof raw.uomName === 'string' && raw.uomName
+        ? raw.uomName
+        : 'unit'
+
+  const itemCode =
+    typeof raw.itemCode === 'string' && raw.itemCode
+      ? raw.itemCode
+      : typeof raw.productCode === 'string' && raw.productCode
+        ? raw.productCode
+        : typeof raw.uacsCode === 'string' && raw.uacsCode
+          ? raw.uacsCode
+          : String(raw.id || '')
+
+  const subtype =
+    typeof raw.subtype === 'string'
+      ? raw.subtype
+      : typeof raw.itemType === 'string'
+        ? raw.itemType
+        : typeof raw.procurementCategoryName === 'string'
+          ? raw.procurementCategoryName
+          : undefined
+
+  const imageUrl =
+    typeof raw.imageUrl === 'string' && raw.imageUrl
+      ? raw.imageUrl
+      : typeof raw.imageURL === 'string' && raw.imageURL
+        ? raw.imageURL
+        : undefined
+
+  const baseItem: CatalogItem = {
+    id: String(raw.id || itemCode),
+    name: itemName,
+    category,
+    unitPrice,
+    unitOfMeasure,
+    catalogType,
+    defaultMoP: catalogType === 'cse' ? 'NP-53.5' : 'NP-53.9',
+    itemCode,
+    subtype,
+    imageUrl,
+  }
 
   return {
-    id: item.id,
-    name: item.name,
-    category: item.category,
-    unitPrice,
-    unitOfMeasure: item.unitOfMeasure,
-    catalogType,
-    defaultMoP: getSuggestedMoP(
-      {
-        id: item.id,
-        name: item.name,
-        category: item.category,
-        unitPrice,
-        unitOfMeasure: item.unitOfMeasure,
-        catalogType,
-        defaultMoP: 'NP-53.9',
-        itemCode: item.uacsCode ?? item.id,
-      },
-      unitPrice,
-    ),
-    itemCode: item.uacsCode ?? item.id,
-    subtype: item.itemType,
+    ...baseItem,
+    defaultMoP: getSuggestedMoP(baseItem, unitPrice),
   }
 }
 
@@ -147,7 +230,10 @@ function buildCards(
   return items.map((item, index) => {
     const normalized = normalizeCatalogItem(item, catalogType)
     const base = normalized.unitPrice
-    const specification = 'specification' in item ? item.specification : null
+    const raw = item as Record<string, unknown>
+    const specification =
+      typeof raw.specification === 'string' ? raw.specification : null
+    const supplier = typeof raw.supplier === 'string' ? raw.supplier : null
     const psDbmPrice =
       catalogType === 'cse' ? base : Math.round(base * 0.97 * 100) / 100
     const agencyPrice =
@@ -159,7 +245,7 @@ function buildCards(
       psDbmPrice,
       agencyPrice,
       specification,
-      supplier: 'supplier' in item ? (item.supplier ?? null) : null,
+      supplier,
       itemCode: normalized.itemCode || `${catalogType}-${index}`,
     }
   })
@@ -167,29 +253,6 @@ function buildCards(
 
 function priceOf(item: CatalogCardItem, mode: PriceMode): number {
   return mode === 'ps-dbm' ? item.psDbmPrice : item.agencyPrice
-}
-
-function bandMatches(price: number, band: PriceBand): boolean {
-  if (band === 'all') return true
-  if (band === 'under-5k') return price < 5_000
-  if (band === '5k-25k') return price >= 5_000 && price <= 25_000
-  return price > 25_000
-}
-
-function inSearch(item: CatalogCardItem, query: string): boolean {
-  if (!query) return true
-  return [
-    item.name,
-    item.category,
-    item.itemCode,
-    item.unitOfMeasure,
-    item.supplier ?? '',
-    item.specification ?? '',
-    item.subtype ?? '',
-  ]
-    .join(' ')
-    .toLowerCase()
-    .includes(query)
 }
 
 function toggle(values: string[], next: string): string[] {
@@ -218,24 +281,106 @@ export function CatalogPickerModal({
   const [selected, setSelected] = useAtom(selectedCatalogItemsAtom)
   const targetIoEBlockId = useAtomValue(targetIoEBlockIdAtom)
   const clearTarget = useSetAtom(targetIoEBlockIdAtom)
-  const rawNonCseItems = useAtomValue(activeCatalogItemsAtom)
-
-  const [priceMode, setPriceMode] = useState<PriceMode>('ps-dbm')
-  const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(false)
-  const [isAdding, setIsAdding] = useState(false)
   const [filtersByTab, setFiltersByTab] = useState<
     Record<CatalogTab, TabFilters>
   >({
     cse: cloneFilters(),
     'non-cse': cloneFilters(),
   })
+  const currentFilters = filtersByTab[activeTab]
+  const normalizedSearch = search.trim().toLowerCase()
+
+  // Live Non-CSE Query from backend /non-cse-items
+  const { data: nonCseResponse, isLoading: isNonCseLoading } = useNonCSEItems({
+    pageSize: PAGE_SIZE,
+    page: currentFilters.pageIndex + 1,
+  })
+  const rawNonCseItems = useMemo(() => {
+    return nonCseResponse?.data || []
+  }, [nonCseResponse])
+
+  // Live CSE Query from PS-DBM
+  const [cseMode, setCseMode] = useState<PSDBMCatalogMode>(
+    PSDBMCatalogMode.REGIONAL,
+  )
+  const [selectedDepot, setSelectedDepot] = useState<string>('')
+
+  const { data: depotsData, isLoading: isDepotsLoading } = usePSDBMDepots({
+    enabled: open && activeTab === 'cse',
+  })
+
+  const depots = useMemo(() => {
+    const allDepots = depotsData?.data || []
+    if (cseMode === PSDBMCatalogMode.REGIONAL) {
+      return allDepots.filter(
+        (d) =>
+          d.mode?.toLowerCase() === 'regional' ||
+          (!d.mode && !d.name.includes('(LGU)') && !d.region?.includes('LGU')),
+      )
+    }
+    if (cseMode === PSDBMCatalogMode.LGU) {
+      return allDepots.filter(
+        (d) =>
+          d.mode?.toLowerCase() === 'lgu' ||
+          (!d.mode && (d.name.includes('(LGU)') || d.region?.includes('LGU'))),
+      )
+    }
+    return allDepots
+  }, [depotsData, cseMode])
+
+  const isDepotRequired = cseMode !== PSDBMCatalogMode.MAIN
+  const isReadyToFetchCse = !isDepotRequired || Boolean(selectedDepot)
+
+  const {
+    data: psdbmItemsData,
+    isLoading: isPsdbmLoading,
+    refetch: refetchPsdbm,
+  } = usePSDBMItems({
+    pathParams: { mode: cseMode },
+    queryParams: {
+      depot: (cseMode !== PSDBMCatalogMode.MAIN && selectedDepot) || undefined,
+      search: normalizedSearch || undefined,
+      category:
+        currentFilters.categories.length > 0
+          ? currentFilters.categories[0]
+          : undefined,
+      pageNumber: currentFilters.pageIndex + 1,
+      pageSize: PAGE_SIZE,
+    },
+    enabled: open && activeTab === 'cse' && isReadyToFetchCse,
+  })
+
+  const { mutateAsync: triggerSync, isPending: isSyncing } =
+    useTriggerPSDBMSync()
+
+  const lastSyncTime = useMemo(() => {
+    const timestamp = psdbmItemsData?.data?.lastSynchronizedAt
+    if (!timestamp) return null
+    try {
+      return new Date(timestamp).toLocaleString('en-PH', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+    } catch {
+      return null
+    }
+  }, [psdbmItemsData])
+
+  const cseCatalogItems = useMemo<CatalogItem[]>(() => {
+    const items = psdbmItemsData?.data?.items || []
+    return items.map(mapPsdbmItemToCatalogItem)
+  }, [psdbmItemsData])
+
+  const [priceMode, setPriceMode] = useState<PriceMode>('ps-dbm')
+  const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(false)
+  const [isAdding, setIsAdding] = useState(false)
 
   const catalogs = useMemo(
     () => ({
-      cse: buildCards(mockCseCatalogItems, 'cse'),
+      cse: buildCards(cseCatalogItems, 'cse'),
       'non-cse': buildCards(rawNonCseItems, 'non-cse'),
     }),
-    [rawNonCseItems],
+    [cseCatalogItems, rawNonCseItems],
   )
 
   const selectedIds = useMemo(
@@ -243,8 +388,6 @@ export function CatalogPickerModal({
     [selected],
   )
   const currentItems = catalogs[activeTab]
-  const currentFilters = filtersByTab[activeTab]
-  const normalizedSearch = search.trim().toLowerCase()
 
   const filterOptions = useMemo(() => {
     return {
@@ -257,31 +400,17 @@ export function CatalogPickerModal({
     }
   }, [currentItems])
 
-  const filteredItems = useMemo(() => {
-    return currentItems.filter((item) => {
-      if (!inSearch(item, normalizedSearch)) return false
-      if (
-        currentFilters.categories.length &&
-        !currentFilters.categories.includes(item.category)
-      )
-        return false
-      if (
-        currentFilters.unitOfMeasures.length &&
-        !currentFilters.unitOfMeasures.includes(item.unitOfMeasure)
-      )
-        return false
-      if (!bandMatches(priceOf(item, priceMode), currentFilters.priceBand))
-        return false
-      return true
-    })
-  }, [currentFilters, currentItems, normalizedSearch, priceMode])
+  const totalMatchingCount = useMemo(() => {
+    if (activeTab === 'cse') {
+      return psdbmItemsData?.data?.totalItems ?? 0
+    }
+    return nonCseResponse?.totalRows ?? (rawNonCseItems.length ?? 0)
+  }, [activeTab, psdbmItemsData, nonCseResponse, rawNonCseItems])
 
-  const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE))
-  const safePageIndex = Math.min(currentFilters.pageIndex, pageCount - 1)
-  const pageItems = filteredItems.slice(
-    safePageIndex * PAGE_SIZE,
-    safePageIndex * PAGE_SIZE + PAGE_SIZE,
-  )
+  const pageCount = Math.max(1, Math.ceil(totalMatchingCount / PAGE_SIZE))
+  const safePageIndex = Math.min(currentFilters.pageIndex, Math.max(0, pageCount - 1))
+  const pageItems = currentItems
+  const filteredItems = currentItems
 
   const selectedCount = selected.length
   const updateCurrentFilters = useCallback(
@@ -299,6 +428,50 @@ export function CatalogPickerModal({
     },
     [activeTab, setFiltersByTab],
   )
+
+  const handleSyncDepot = useCallback(async () => {
+    const target =
+      selectedDepot ||
+      (cseMode === PSDBMCatalogMode.MAIN ? 'Main Catalog' : 'Catalog')
+
+    const syncPromise = (async () => {
+      const response = await triggerSync({
+        pathParams: {},
+        payload: {
+          syncMode: 'Full',
+          depots: selectedDepot ? [selectedDepot] : undefined,
+          mode:
+            cseMode === PSDBMCatalogMode.REGIONAL
+              ? 'regional'
+              : cseMode === PSDBMCatalogMode.LGU
+                ? 'lgu'
+                : undefined,
+        },
+      })
+      await refetchPsdbm()
+      updateCurrentFilters({ pageIndex: 0 })
+      return response.data
+    })()
+
+    toast.promise(syncPromise, {
+      loading: `Connecting to PS-PhilGEPS and synchronizing ${target} warehouse stocks...`,
+      success: () =>
+        `Successfully synchronized ${target}! Items and stocks updated.`,
+      error: (err: unknown) => {
+        const errorObj = err as {
+          response?: { data?: { message?: string } }
+          message?: string
+        }
+        return `Sync failed: ${errorObj?.response?.data?.message || errorObj?.message || 'Please check backend logs.'}`
+      },
+    })
+
+    try {
+      await syncPromise
+    } catch (err) {
+      console.error('PSDBM sync error:', err)
+    }
+  }, [selectedDepot, cseMode, triggerSync, refetchPsdbm, updateCurrentFilters])
 
   const resetCurrentFilters = useCallback(() => {
     setSearch('')
@@ -327,6 +500,7 @@ export function CatalogPickerModal({
     setIsFiltersCollapsed(false)
     setFiltersByTab({ cse: cloneFilters(), 'non-cse': cloneFilters() })
     setActiveTab('cse')
+    setSelectedDepot('')
     setOpen(false)
     clearTarget(null)
   }, [
@@ -356,6 +530,7 @@ export function CatalogPickerModal({
           ppmpId,
           ioEBlockId: targetIoEBlockId,
           catalogItemIds: selected.map((item) => item.id),
+          items: selected,
         },
       })
       toast.success(
@@ -550,9 +725,10 @@ export function CatalogPickerModal({
                                 size="sm"
                                 onClick={resetCurrentFilters}
                                 className="h-8 gap-1 px-2 text-xs"
+                                title="Clear search and selected filters"
                               >
                                 <RefreshCcw className="h-3.5 w-3.5" />
-                                Reset
+                                Reset Filters
                               </Button>
                               <Button
                                 type="button"
@@ -572,6 +748,139 @@ export function CatalogPickerModal({
 
                       {!isFiltersCollapsed ? (
                         <div className="space-y-4 p-4">
+                          {tab === 'cse' && (
+                            <>
+                              <div className="space-y-2">
+                                <label className="text-xs font-medium text-muted-foreground">
+                                  PS-DBM Catalog Mode
+                                </label>
+                                <div className="grid grid-cols-3 gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCseMode(PSDBMCatalogMode.REGIONAL)
+                                      setSelectedDepot('')
+                                      updateCurrentFilters({ pageIndex: 0 })
+                                    }}
+                                    className={cn(
+                                      'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
+                                      cseMode === PSDBMCatalogMode.REGIONAL
+                                        ? 'border-primary bg-primary/10 text-foreground'
+                                        : 'border-border bg-background text-muted-foreground hover:text-foreground',
+                                    )}
+                                    title="Regional Depot"
+                                  >
+                                    Regional
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCseMode(PSDBMCatalogMode.LGU)
+                                      setSelectedDepot('')
+                                      updateCurrentFilters({ pageIndex: 0 })
+                                    }}
+                                    className={cn(
+                                      'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
+                                      cseMode === PSDBMCatalogMode.LGU
+                                        ? 'border-primary bg-primary/10 text-foreground'
+                                        : 'border-border bg-background text-muted-foreground hover:text-foreground',
+                                    )}
+                                    title="LGU Depot"
+                                  >
+                                    LGU
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCseMode(PSDBMCatalogMode.MAIN)
+                                      setSelectedDepot('')
+                                      updateCurrentFilters({ pageIndex: 0 })
+                                    }}
+                                    className={cn(
+                                      'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
+                                      cseMode === PSDBMCatalogMode.MAIN
+                                        ? 'border-primary bg-primary/10 text-foreground'
+                                        : 'border-border bg-background text-muted-foreground hover:text-foreground',
+                                    )}
+                                    title="Main (National Catalog)"
+                                  >
+                                    Main
+                                  </button>
+                                </div>
+                              </div>
+
+                              {isDepotRequired && (
+                                <div className="space-y-1.5">
+                                  <label className="text-xs font-medium text-muted-foreground">
+                                    {cseMode === PSDBMCatalogMode.REGIONAL
+                                      ? 'Regional Warehouse / Depot'
+                                      : 'LGU Location'}
+                                  </label>
+                                  <Select
+                                    value={selectedDepot}
+                                    onValueChange={(val) => {
+                                      setSelectedDepot(val)
+                                      updateCurrentFilters({ pageIndex: 0 })
+                                    }}
+                                    disabled={isDepotsLoading}
+                                  >
+                                    <SelectTrigger className="h-9 text-xs bg-background">
+                                      <SelectValue placeholder="Choose a depot to load warehouse stocks..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-56">
+                                      {depots.map((d) => (
+                                        <SelectItem
+                                          key={d.id}
+                                          value={d.name}
+                                          className="text-xs"
+                                        >
+                                          {d.name}{' '}
+                                          {d.region ? `(${d.region})` : ''}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {isReadyToFetchCse && (
+                                    <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
+                                      {lastSyncTime && filteredItems.length > 0 ? (
+                                        <span
+                                          className="truncate max-w-[125px]"
+                                          title={`Last Synced: ${lastSyncTime}`}
+                                        >
+                                          Synced: {lastSyncTime}
+                                        </span>
+                                      ) : (
+                                        <span>Catalog sync</span>
+                                      )}
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleSyncDepot}
+                                        disabled={isSyncing}
+                                        className="h-6 px-1.5 text-[10px] font-semibold text-primary hover:bg-primary/10 gap-1"
+                                      >
+                                        {isSyncing ? (
+                                          <>
+                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                            Syncing...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <RefreshCcw className="h-3 w-3" />
+                                            Sync PS-DBM
+                                          </>
+                                        )}
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              <Separator />
+                            </>
+                          )}
+
                           <div className="space-y-2">
                             <label className="text-xs font-medium text-muted-foreground">
                               Search
@@ -581,9 +890,10 @@ export function CatalogPickerModal({
                               <Input
                                 placeholder="Name, code, category, supplier…"
                                 value={search}
-                                onChange={(event) =>
+                                onChange={(event) => {
                                   setSearch(event.target.value)
-                                }
+                                  updateCurrentFilters({ pageIndex: 0 })
+                                }}
                                 className="pl-9"
                               />
                             </div>
@@ -776,10 +1086,113 @@ export function CatalogPickerModal({
                       </div>
                     </div>
 
-                    {(tab === activeTab
-                      ? filteredItems.length
-                      : tabFiltered.length) === 0 ? (
-                      <EmptyState message="Try widening the price band, clearing a category filter, or changing the search query." />
+                    {tab === activeTab && tab === 'cse' && !isReadyToFetchCse ? (
+                      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-14 text-center">
+                        <MapPin className="h-10 w-10 text-muted-foreground/40" />
+                        <p className="mt-3 text-sm font-medium text-foreground">
+                          Depot Selection Required
+                        </p>
+                        <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+                          Please select a{' '}
+                          {cseMode === PSDBMCatalogMode.REGIONAL
+                            ? 'regional warehouse depot'
+                            : 'LGU location'}{' '}
+                          in the side panel to view current stock and prices, or
+                          switch to Main Catalog.
+                        </p>
+                      </div>
+                    ) : tab === activeTab && tab === 'cse' && isPsdbmLoading ? (
+                      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-14 text-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="mt-3 text-sm font-medium text-foreground">
+                          Loading PS-DBM Catalog...
+                        </p>
+                        <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+                          Fetching latest items and prices from PS-PhilGEPS
+                          repository.
+                        </p>
+                      </div>
+                    ) : tab === activeTab && tab === 'non-cse' && isNonCseLoading ? (
+                      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-14 text-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="mt-3 text-sm font-medium text-foreground">
+                          Loading Agency Catalog...
+                        </p>
+                        <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+                          Fetching approved Non-CSE items from master catalog.
+                        </p>
+                      </div>
+                    ) : (tab === activeTab
+                        ? filteredItems.length
+                        : tabFiltered.length) === 0 ? (
+                      tab === activeTab &&
+                      tab === 'cse' &&
+                      isReadyToFetchCse &&
+                      !search.trim() &&
+                      currentFilters.categories.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed rounded-xl bg-muted/10 my-4">
+                          <div className="rounded-full bg-amber-500/10 p-3 mb-3 text-amber-600 dark:text-amber-400">
+                            <AlertCircle className="h-6 w-6" />
+                          </div>
+                          <h4 className="text-sm font-semibold text-foreground">
+                            {selectedDepot
+                              ? `Warehouse Stocks for ${selectedDepot} Not Synchronized`
+                              : 'PS-DBM Catalog Not Synchronized'}
+                          </h4>
+                          <p className="mt-1 max-w-md text-xs text-muted-foreground">
+                            {selectedDepot
+                              ? `No items are available locally for ${selectedDepot}. Click Sync PS-DBM Now to fetch real-time items, stocks, and pricing from PS-PhilGEPS.`
+                              : 'Click Sync PS-DBM Now to synchronize catalog items and pricing.'}
+                          </p>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={handleSyncDepot}
+                            disabled={isSyncing}
+                            className="mt-4 gap-1.5 h-8 text-xs font-semibold"
+                          >
+                            {isSyncing ? (
+                              <>
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                Syncing PS-DBM...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCcw className="h-3.5 w-3.5" />
+                                Sync PS-DBM Now
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      ) : tab === activeTab &&
+                        tab === 'cse' &&
+                        (search.trim() ||
+                          currentFilters.categories.length > 0) ? (
+                        <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed rounded-xl bg-muted/10 my-4">
+                          <div className="rounded-full bg-muted p-3 mb-3 text-muted-foreground">
+                            <Search className="h-6 w-6" />
+                          </div>
+                          <h4 className="text-sm font-semibold text-foreground">
+                            No Matching Items Found
+                          </h4>
+                          <p className="mt-1 max-w-md text-xs text-muted-foreground">
+                            No items match your active search or category
+                            filters. Try adjusting or clearing your filters.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={resetCurrentFilters}
+                            className="mt-4 gap-1.5 h-8 text-xs font-semibold"
+                          >
+                            <RefreshCcw className="h-3.5 w-3.5" />
+                            Reset Filters
+                          </Button>
+                        </div>
+                      ) : (
+                        <EmptyState message="Try widening the price band, clearing a category filter, or changing the search query." />
+                      )
                     ) : (
                       <>
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -814,11 +1227,33 @@ export function CatalogPickerModal({
                                   <div className="flex min-w-0 items-start gap-3">
                                     <div
                                       className={cn(
-                                        'flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-sm font-semibold text-foreground ring-1 ring-border',
+                                        'flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-sm font-semibold text-foreground ring-1 ring-border overflow-hidden relative',
                                         tone(item.id),
                                       )}
                                     >
-                                      <span>{item.thumbnailLabel}</span>
+                                      {item.imageUrl ? (
+                                        <>
+                                          <img
+                                            src={item.imageUrl}
+                                            alt={item.name}
+                                            className="h-full w-full object-contain"
+                                            onError={(e) => {
+                                              e.currentTarget.style.display = 'none'
+                                              const fallback = e.currentTarget
+                                                .nextElementSibling as HTMLElement | null
+                                              if (fallback) fallback.style.display = 'flex'
+                                            }}
+                                          />
+                                          <div
+                                            style={{ display: 'none' }}
+                                            className="h-full w-full flex items-center justify-center"
+                                          >
+                                            <span>{item.thumbnailLabel}</span>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <span>{item.thumbnailLabel}</span>
+                                      )}
                                     </div>
                                     <div className="min-w-0 space-y-1">
                                       <div className="line-clamp-2 text-sm font-semibold leading-tight text-foreground">

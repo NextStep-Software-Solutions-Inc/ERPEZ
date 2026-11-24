@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearch, useNavigate } from '@tanstack/react-router'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
@@ -15,7 +16,28 @@ export default function ManageRFQApprovalPage() {
   const { rfqs, fetchRFQs, changeRFQStatus } = useRFQStore()
   const { toast } = useToast()
   const [search, setSearch] = useState('')
-  const [viewing, setViewing] = useState<string | null>(null)
+  const searchParams = useSearch({ strict: false }) as { rfqId?: string }
+  const navigate = useNavigate()
+  const viewing = searchParams?.rfqId ?? null
+
+  const handleView = (id: string) => {
+    navigate({
+      to: '/v2/manage-rfq',
+      search: (prev: any) => ({ ...prev, rfqId: id }),
+    })
+  }
+
+  const handleBack = () => {
+    navigate({
+      to: '/v2/manage-rfq',
+      search: (prev: any) => {
+        const next = { ...prev }
+        delete next.rfqId
+        return next
+      },
+    })
+  }
+
   const [page, setPage] = useState(1)
   const pageSize = 8
 
@@ -24,10 +46,12 @@ export default function ManageRFQApprovalPage() {
   const [returnOpen, setReturnOpen] = useState(false)
   const [activeRFQ, setActiveRFQ] = useState<string | null>(null)
 
-  // Fetch RFQs for approval on mount / search change
+  // Fetch RFQs for approval on mount / search change / return from details
   useEffect(() => {
-    fetchRFQs({ pageNumber: 1, pageSize: 100, search: search || undefined })
-  }, [fetchRFQs, search])
+    if (!viewing) {
+      fetchRFQs({ pageNumber: 1, pageSize: 100, search: search || undefined })
+    }
+  }, [fetchRFQs, search, viewing])
 
   // Show 'issued' (For Approval), 'closed' (Approved), and 'draft' (Returned) RFQs
   const displayRFQs = rfqs.filter((r) => (r.status === 'submitted' || r.status === 'approved' || (r.status === 'returned' || (r.status === 'draft' && r.remarks))) && (
@@ -46,7 +70,7 @@ export default function ManageRFQApprovalPage() {
   const totalRFQs = statusCounts.forApproval + statusCounts.approved + statusCounts.returned
 
   if (viewing) {
-    return <RFQDetailsPage rfqId={viewing} onBack={() => setViewing(null)} />
+    return <RFQDetailsPage rfqId={viewing} onBack={handleBack} />
   }
 
   const openApprove = (id: string) => {
@@ -201,13 +225,19 @@ export default function ManageRFQApprovalPage() {
               <TableCell className="text-sm text-muted-foreground">{r.tracingNumber || '—'}</TableCell>
               <TableCell className="text-sm text-muted-foreground">{r.deadline ? new Date(r.deadline).toLocaleDateString() : '—'}</TableCell>
               <TableCell>
-               {r.status === 'approved' ? (
-                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">APPROVED</Badge>
-               ) : r.status === 'draft' && r.remarks ? (
-                 <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">RETURNED</Badge>
-               ) : (
-                 <Badge variant="outline">FOR APPROVAL</Badge>
-               )}
+                {r.status === 'approved' ? (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">APPROVED</Badge>
+                ) : r.status === 'returned' || (r.status === 'draft' && r.remarks) ? (
+                  <Badge
+                    variant="outline"
+                    className="bg-red-50 text-red-700 border-red-200 cursor-help"
+                    title={r.remarks ? `Return Reason: ${r.remarks}` : undefined}
+                  >
+                    RETURNED
+                  </Badge>
+                ) : (
+                  <Badge variant="outline">FOR APPROVAL</Badge>
+                )}
                </TableCell>
                <TableCell>
               <DropdownMenu>
@@ -215,7 +245,7 @@ export default function ManageRFQApprovalPage() {
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><MoreVertical className="h-4 w-4" /></Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setViewing(r.id)}>
+                <DropdownMenuItem onClick={() => handleView(r.id)}>
                   <Eye className="h-4 w-4 mr-2" /> View Details
                 </DropdownMenuItem>
 
@@ -242,7 +272,7 @@ export default function ManageRFQApprovalPage() {
 
         <div className="flex items-center justify-between px-6 py-4">
         <div className="text-sm text-muted-foreground">
-          {displayRFQs.length} RFQ(s) total ({displayRFQs.filter(r => r.status === 'submitted').length} pending approval, {displayRFQs.filter(r => r.status === 'approved').length} approved, {displayRFQs.filter(r => r.status === 'draft' && r.remarks).length} returned)
+          {displayRFQs.length} RFQ(s) total ({displayRFQs.filter(r => r.status === 'submitted').length} pending approval, {displayRFQs.filter(r => r.status === 'approved').length} approved, {displayRFQs.filter(r => r.status === 'returned' || (r.status === 'draft' && r.remarks)).length} returned)
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => setPage(Math.max(1, page - 1))}>Previous</Button>

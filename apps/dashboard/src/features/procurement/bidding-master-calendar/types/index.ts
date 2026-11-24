@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   BiddingScheduleStatus,
   MilestoneExecutionStatus,
   ProcurementCategory,
@@ -20,6 +20,8 @@ export type BiddingMasterCalendarDrawerTab =
   | 'linked-actions'
   | 'all-projects'
 
+export type ProcurementModeAbbr = 'PB' | 'DA' | 'DC' | 'RFQ'
+
 export interface BiddingMasterCalendarEvent {
   id: string
   bacResolutionId: string
@@ -28,6 +30,7 @@ export interface BiddingMasterCalendarEvent {
   scheduleStatus: BiddingScheduleStatus
   fiscalYear: string
   procurementCategory: ProcurementCategory
+  procurementMode?: string | null
   projectNames: string[]
   primaryProjectName: string
   officeLabel: string
@@ -46,6 +49,29 @@ export interface BiddingMasterCalendarEvent {
   isDueSoon: boolean
   isOverdue: boolean
   isProvisional?: boolean
+  startDate?: string
+  endDate?: string
+}
+
+export interface BiddingMasterCalendarResolutionOption {
+  id: string
+  number: string
+  title: string
+}
+
+export interface BiddingMasterCalendarIntervalBar {
+  id: string
+  eventId: string
+  bacResolutionId: string
+  milestoneKey: string
+  milestoneName: string
+  startDate: Date
+  endDate: Date
+  startCol: number // 1 to 7
+  span: number // 1 to 7
+  isStartEdge: boolean
+  isEndEdge: boolean
+  event: BiddingMasterCalendarEvent
 }
 
 export interface BiddingMasterCalendarConflictGroup {
@@ -83,6 +109,7 @@ export interface BiddingMasterCalendarDayBucket {
 
 export interface BiddingMasterCalendarFilters {
   searchTerm: string
+  bacResolutionId?: string | null
   milestoneKeys: string[]
   procurementCategories: ProcurementCategory[]
   offices: string[]
@@ -90,6 +117,7 @@ export interface BiddingMasterCalendarFilters {
   fiscalYears: string[]
   dateRangeStart: string | null
   dateRangeEnd: string | null
+  procurementModes?: ProcurementModeAbbr[]
 }
 
 export interface BiddingMasterCalendarSummaryMetrics {
@@ -104,6 +132,7 @@ export interface BiddingMasterCalendarSummaryMetrics {
 export const DEFAULT_BIDDING_MASTER_CALENDAR_FILTERS: BiddingMasterCalendarFilters =
   {
     searchTerm: '',
+    bacResolutionId: null,
     milestoneKeys: [],
     procurementCategories: [],
     offices: [],
@@ -111,4 +140,5 @@ export const DEFAULT_BIDDING_MASTER_CALENDAR_FILTERS: BiddingMasterCalendarFilte
     fiscalYears: [],
     dateRangeStart: null,
     dateRangeEnd: null,
+    procurementModes: [],
   }

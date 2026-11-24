@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Combobox } from '@/components/ui/combobox'
+import { ObjectCodeCombobox } from '@/components/ui/object-code-combobox'
 import type { ItemMasterFormData } from '../../types'
 import { getObjectCodesRequest } from '../handlers/getObjectCodesRequest'
 import { getUnspscCodesRequest } from '../handlers/getUnspscCodesRequest'
@@ -29,8 +30,6 @@ interface ItemMasterFormProps {
   initialData?: ItemMasterFormData
   isLoading?: boolean
 }
-
-// Mock UACS data - in real app, would come from API
 
 export function ItemMasterForm({
   onSubmit,
@@ -67,7 +66,7 @@ export function ItemMasterForm({
   const { data: objectCodesResponse, isLoading: isObjectCodesLoading } =
     useObjectCodesQuery({
       pathParams: {},
-      queryParams: {},
+      queryParams: { pageSize: 5000 },
     })
   const { data: unspscCodesResponse, isLoading: isUnspscCodesLoading } =
     useUnspscCodesQuery({
@@ -79,17 +78,20 @@ export function ItemMasterForm({
     queryParams: {},
   })
 
+  const activeObjectCodes = useMemo(
+    () => objectCodesResponse?.data?.filter((item) => item.isActive) ?? [],
+    [objectCodesResponse?.data],
+  )
+
   const objectCodeOptions = useMemo<Array<LookupOption>>(
     () =>
-      objectCodesResponse?.data
-        ?.filter((item) => item.isActive)
-        .map((item) => ({
-          id: item.id,
-          code: item.code,
-          name: item.name,
-          isActive: item.isActive,
-        })) ?? [],
-    [objectCodesResponse?.data],
+      activeObjectCodes.map((item) => ({
+        id: item.id,
+        code: item.code,
+        name: item.name,
+        isActive: item.isActive,
+      })),
+    [activeObjectCodes],
   )
 
   const uomOptions = useMemo<Array<LookupOption>>(
@@ -103,11 +105,6 @@ export function ItemMasterForm({
           isActive: item.isActive,
         })) ?? [],
     [uomsResponse?.data],
-  )
-
-  const objectCodeComboOptions = useMemo(
-    () => objectCodeOptions.map((item) => ({ value: item.id, label: `${item.code} - ${item.name}` })),
-    [objectCodeOptions],
   )
 
   const unspscOptions = useMemo<Array<LookupOption>>(
@@ -320,28 +317,35 @@ export function ItemMasterForm({
         <Label htmlFor="uacsCode">
           Object Code <span className="text-red-500">*</span>
         </Label>
-        <Combobox
-          options={objectCodeComboOptions}
+        <ObjectCodeCombobox
+          options={activeObjectCodes}
           value={formData.objectCodeId || ''}
-          onValueChange={(value) => {
-            const selectedObjectCode = objectCodeOptions.find(
-              (item) => item.id === value,
-            )
-            if (!selectedObjectCode) return
-
-            setFormData({
-              ...formData,
-              objectCodeId: selectedObjectCode.id,
-              objectCodeName: selectedObjectCode.name,
-              uacsCode: selectedObjectCode.code,
-            })
+          onValueChange={(value, selectedItem) => {
+            if (!value || !selectedItem) {
+              setFormData((prev) => ({
+                ...prev,
+                objectCodeId: '',
+                objectCodeName: '',
+                uacsCode: '',
+              }))
+              return
+            }
+            setFormData((prev) => ({
+              ...prev,
+              objectCodeId: selectedItem.id,
+              objectCodeName: selectedItem.name,
+              uacsCode: selectedItem.code || '',
+            }))
           }}
-          placeholder={isObjectCodesLoading ? 'Loading object codes...' : 'Select Object Code'}
-          searchPlaceholder="Search by code or name..."
+          placeholder={
+            isObjectCodesLoading
+              ? 'Loading object codes...'
+              : 'Select Object Code'
+          }
+          searchPlaceholder="Search by code, name, class (e.g. 50203, supplies)..."
           emptyMessage="No object codes found."
           disabled={isObjectCodesLoading}
-          aria-invalid={!!errors.uacsCode}
-          className={errors.uacsCode ? 'ring-1 ring-red-500 rounded-md' : ''}
+          hasError={!!errors.uacsCode}
         />
         {errors.uacsCode && (
           <p className="text-sm text-red-500">{errors.uacsCode}</p>

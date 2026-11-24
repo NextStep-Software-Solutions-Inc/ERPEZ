@@ -1,13 +1,13 @@
+import { ClipboardList } from 'lucide-react'
+import type { AobQueueItem, RfqStatusItem } from '../types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { ClipboardList } from 'lucide-react'
-import type { RfqStatusItem, AobQueueItem } from '../types'
 import { cn } from '@/lib/utils'
 
 interface Props {
-  rfqList: RfqStatusItem[]
-  aobItems: AobQueueItem[]
+  rfqList: Array<RfqStatusItem>
+  aobItems: Array<AobQueueItem>
   urgentCount: number
   isLoading?: boolean
 }

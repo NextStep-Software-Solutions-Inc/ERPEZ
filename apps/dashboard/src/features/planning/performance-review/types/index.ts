@@ -139,6 +139,8 @@ export interface KPILineItem {
   isMOVEditable: boolean // allow adding/removing MOVs for this instance
   scaleType: RatingScaleType
   ratingLevels: RatingLevel[]
+  ratingScaleName?: string
+  ratingScaleDescription?: string
   configuredMOVs?: string[] // optional configured MOV names from measurement template
   // Ratings
   selfRating: QETRating

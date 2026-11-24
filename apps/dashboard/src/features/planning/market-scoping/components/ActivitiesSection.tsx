@@ -17,7 +17,9 @@ interface ActivitiesSectionProps {
 
 export function ActivitiesSection({ form }: ActivitiesSectionProps) {
   const activities = form.activities || []
-  const [expandedActivities, setExpandedActivities] = useState<Record<string, boolean>>({})
+  const [expandedActivities, setExpandedActivities] = useState<
+    Record<string, boolean>
+  >({})
 
   const toggleExpand = (activityId: string) => {
     setExpandedActivities((prev) => ({
@@ -32,7 +34,8 @@ export function ActivitiesSection({ form }: ActivitiesSectionProps) {
         {activities.length > 0 ? (
           <div className="space-y-3.5">
             {activities.map((activity) => {
-              const hasAttachments = activity.attachments && activity.attachments.length > 0
+              const hasAttachments =
+                activity.attachments && activity.attachments.length > 0
 
               return (
                 <div
@@ -69,7 +72,8 @@ export function ActivitiesSection({ form }: ActivitiesSectionProps) {
                         <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
                         <span>Supporting Documents</span>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/50">
-                          {activity.attachments.length} {activity.attachments.length === 1 ? 'file' : 'files'}
+                          {activity.attachments.length}{' '}
+                          {activity.attachments.length === 1 ? 'file' : 'files'}
                         </span>
                         {expandedActivities[activity.id] ? (
                           <ChevronUp className="w-3.5 h-3.5 ml-0.5 text-indigo-400" />
@@ -83,7 +87,10 @@ export function ActivitiesSection({ form }: ActivitiesSectionProps) {
                   {/* Attachments Section */}
                   {hasAttachments && expandedActivities[activity.id] && (
                     <div className="pl-10 pt-3.5 mt-1 border-t border-slate-100">
-                      <AttachmentViewer attachments={activity.attachments} showLabel={false} />
+                      <AttachmentViewer
+                        attachments={activity.attachments}
+                        showLabel={false}
+                      />
                     </div>
                   )}
                 </div>
@@ -92,7 +99,9 @@ export function ActivitiesSection({ form }: ActivitiesSectionProps) {
           </div>
         ) : (
           <div className="text-center py-10">
-            <p className="text-slate-500 font-medium text-sm">No activities recorded for this scoping form.</p>
+            <p className="text-slate-500 font-medium text-sm">
+              No activities recorded for this scoping form.
+            </p>
           </div>
         )}
       </CardContent>

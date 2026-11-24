@@ -1,4 +1,4 @@
-﻿import { PROCUREMENT_CATEGORY_LABELS } from '../../bidding-schedule/data/mockBiddingScheduleData'
+import { PROCUREMENT_CATEGORY_LABELS } from '../../bidding-schedule/types'
 import type {
   BiddingDocumentFieldKey,
   BiddingDocumentGates,

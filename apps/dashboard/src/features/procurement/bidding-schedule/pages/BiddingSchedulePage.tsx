@@ -1,8 +1,6 @@
-import { useEffect } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import useBiddingScheduleService from '../hooks/useBiddingScheduleService'
 import { BiddingScheduleWorkspace } from '../components/BiddingScheduleWorkspace'
 import { PageContainerDashtail } from '@/components/v2'
+import { useBacResolution } from '../../bac-resolution/handlers/hooks'
 import type { BacResolutionListRoutePath } from '../../bac-resolution/types'
 
 interface BiddingSchedulePageProps {
@@ -18,23 +16,16 @@ export function BiddingSchedulePage({
   backTo = '/v2/bac-resolutions',
   backLabel = 'Back to BAC Resolutions',
 }: BiddingSchedulePageProps) {
-  const navigate = useNavigate()
-  const service = useBiddingScheduleService(bacResolutionId)
-  const { bacResolution } = service
-
-  useEffect(() => {
-    if (!bacResolution) {
-      void navigate({ to: backTo, replace: true })
-    }
-  }, [bacResolution, backTo, navigate])
-
-  if (!bacResolution) {
-    return null
-  }
+  const { data: resolutionResponse } = useBacResolution({
+    pathParams: { id: bacResolutionId },
+    queryParams: {},
+  })
+  const resolutionNumber =
+    resolutionResponse?.data?.resolutionNumber || 'BAC Resolution'
 
   return (
     <PageContainerDashtail
-      title={`${bacResolution.bacResolutionNumber} — Bidding Schedule`}
+      title={`${resolutionNumber} — Bidding Schedule`}
       description="Generate and manage the legally compliant bidding calendar for this procurement project."
       headerVariant="branded"
       mode="simple"
@@ -45,7 +36,7 @@ export function BiddingSchedulePage({
       contentClassName="space-y-4"
     >
       <BiddingScheduleWorkspace
-        service={service}
+        bacResolutionId={bacResolutionId}
         highlightMilestoneKey={highlightMilestoneKey}
         bacListRoutePath={backTo}
       />
