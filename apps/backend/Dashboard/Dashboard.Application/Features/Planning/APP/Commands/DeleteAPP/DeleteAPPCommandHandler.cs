@@ -12,6 +12,9 @@ public class DeleteAPPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<D
         var app = await unitOfWork.APPRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("APP not found.");
 
+        if (app.Status == Domain.Enums.StatusEnum.Approved)
+            throw new ValidationException("Cannot delete an approved Annual Procurement Plan (APP).");
+
         unitOfWork.APPRepository.Remove(app);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

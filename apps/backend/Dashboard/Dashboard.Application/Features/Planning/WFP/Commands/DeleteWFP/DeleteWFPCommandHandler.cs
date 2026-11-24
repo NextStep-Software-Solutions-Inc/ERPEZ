@@ -11,6 +11,12 @@ public class DeleteWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<D
     {
         var wfp = await unitOfWork.WFPRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("WFP not found.");
 
+        if (wfp.Status == Domain.Enums.StatusEnum.Approved ||
+            wfp.Status == Domain.Enums.StatusEnum.Active)
+        {
+            throw new ValidationException($"Cannot delete a Work and Financial Plan with status '{wfp.Status}'.");
+        }
+
         unitOfWork.WFPRepository.Remove(wfp);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

@@ -14,6 +14,13 @@ public class UpdateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<U
         var wfp = await unitOfWork.WFPRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("Work and Financial Plan not found.");
 
+        if (wfp.Status == Domain.Enums.StatusEnum.Approved ||
+            wfp.Status == Domain.Enums.StatusEnum.Active ||
+            wfp.Status == Domain.Enums.StatusEnum.Archived)
+        {
+            throw new ValidationException($"Cannot update a Work and Financial Plan with status '{wfp.Status}'.");
+        }
+
         var coalescedOfficeId = dto.OfficeId ?? wfp.OfficeId;
         var coalescedProjectTitle = dto.ProjectTitle ?? wfp.ProjectTitle;
         var coalescedMode = dto.Mode ?? wfp.Mode;

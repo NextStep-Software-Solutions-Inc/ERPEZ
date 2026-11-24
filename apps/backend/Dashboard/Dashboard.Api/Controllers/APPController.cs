@@ -115,7 +115,7 @@ public class APPController(ISender mediator) : ControllerBase
 
         var result = await mediator.Send(command);
 
-        return Ok(result);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     /// <summary>
@@ -135,7 +135,7 @@ public class APPController(ISender mediator) : ControllerBase
 
         var result = await mediator.Send(command);
 
-        return Ok(result);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     /// <summary>
@@ -155,7 +155,7 @@ public class APPController(ISender mediator) : ControllerBase
 
         var result = await mediator.Send(command);
 
-        return Ok(result);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     /// <summary>

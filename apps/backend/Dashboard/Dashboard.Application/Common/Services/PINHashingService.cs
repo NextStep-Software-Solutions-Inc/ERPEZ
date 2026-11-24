@@ -23,9 +23,28 @@ public class PINHashingService : IPINHashingService
 
     public bool VerifyPIN(string plainTextPIN, string hashedPIN, string salt)
     {
+        if (string.IsNullOrEmpty(plainTextPIN) || string.IsNullOrEmpty(hashedPIN) || string.IsNullOrEmpty(salt))
+            return false;
+
         byte[] saltBytes = Convert.FromBase64String(salt);
-        string computedHash = HashPINWithSalt(plainTextPIN, saltBytes);
-        return computedHash == hashedPIN;
+        byte[] computedBytes = Rfc2898DeriveBytes.Pbkdf2(
+            Encoding.UTF8.GetBytes(plainTextPIN),
+            saltBytes,
+            iterations,
+            HashAlgorithmName.SHA256,
+            hashSize);
+
+        byte[] storedBytes;
+        try
+        {
+            storedBytes = Convert.FromBase64String(hashedPIN);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+
+        return CryptographicOperations.FixedTimeEquals(computedBytes, storedBytes);
     }
 
     private static string HashPINWithSalt(string plainTextPIN, byte[] salt)

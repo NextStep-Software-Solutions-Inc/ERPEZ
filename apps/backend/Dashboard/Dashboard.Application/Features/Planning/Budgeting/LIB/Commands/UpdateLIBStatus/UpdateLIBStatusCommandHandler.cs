@@ -61,10 +61,20 @@ public class UpdateLIBStatusCommandHandler(IUnitOfWork unitOfWork)
             entity.Status = nameof(LIBStatus.Returned);
             entity.ApprovedDate = null;
         }
-        // 4. Other valid transitions
+        // 4. Other valid transitions (reject invalid statuses or reverting Approved LIBs)
         else
         {
-            entity.Status = targetStatus;
+            if (entity.Status.Equals(nameof(LIBStatus.Approved), StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ValidationException($"Cannot change status of an Approved LIB to '{targetStatus}'.");
+            }
+
+            if (!Enum.TryParse<LIBStatus>(targetStatus, ignoreCase: true, out var parsedStatus))
+            {
+                throw new ValidationException($"Invalid LIB status '{targetStatus}'.");
+            }
+
+            entity.Status = parsedStatus.ToString();
         }
 
         unitOfWork.LineItemBudgetRepository.Update(entity);

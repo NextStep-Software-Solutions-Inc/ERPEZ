@@ -25,13 +25,16 @@ public class LicenseConsumptionService(
     IHttpClientFactory httpClientFactory,
     ILogger<LicenseConsumptionService> logger) : ILicenseConsumptionService
 {
-    private const string cacheKey = "ams:license:status";
+    private const string cacheKeyPrefix = "ams:license:status";
     private const string offlineLicenseSalt = "ERPEZ_OFFLINE_LICENSE_INTEGRITY_SALT_2026_SOVEREIGN_KEY!";
     private static readonly TimeSpan cacheDuration = TimeSpan.FromMinutes(10);
 
+    private string GetCacheKey() => $"{cacheKeyPrefix}:{dbContext.CurrentTenantId?.ToString() ?? "default"}";
+
     public async Task<LicenseStatusDto> GetCurrentLicenseAsync(CancellationToken cancellationToken = default)
     {
-        if (memoryCache.TryGetValue(cacheKey, out LicenseStatusDto? cached) && cached != null)
+        var tenantCacheKey = GetCacheKey();
+        if (memoryCache.TryGetValue(tenantCacheKey, out LicenseStatusDto? cached) && cached != null)
         {
             return cached;
         }
@@ -59,7 +62,7 @@ public class LicenseConsumptionService(
                 IsAirGapped = false
             };
 
-            memoryCache.Set(cacheKey, fallback, cacheDuration);
+            memoryCache.Set(tenantCacheKey, fallback, cacheDuration);
             return fallback;
         }
 
@@ -90,7 +93,7 @@ public class LicenseConsumptionService(
             IsAirGapped = setting.IsAirGapped
         };
 
-        memoryCache.Set(cacheKey, status, cacheDuration);
+        memoryCache.Set(tenantCacheKey, status, cacheDuration);
         return status;
     }
 
@@ -157,7 +160,7 @@ public class LicenseConsumptionService(
                         await dbContext.AmsLicenseSettings!.AddAsync(setting, cancellationToken);
                         await dbContext.SaveChangesAsync(cancellationToken);
 
-                        memoryCache.Remove(cacheKey);
+                        memoryCache.Remove(GetCacheKey());
                         var status = await GetCurrentLicenseAsync(cancellationToken);
 
                         return new LicenseActivationResultDto
@@ -209,7 +212,7 @@ public class LicenseConsumptionService(
             await dbContext.AmsLicenseSettings!.AddAsync(setting, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            memoryCache.Remove(cacheKey);
+            memoryCache.Remove(GetCacheKey());
             var status = await GetCurrentLicenseAsync(cancellationToken);
 
             return new LicenseActivationResultDto
