@@ -28,6 +28,11 @@ public class ApproveAOBCommandHandler(
             return ApiResponse<Unit>.Fail("This AOB has already been approved.");
         }
 
+        if (aob.Status != StatusEnum.Submitted)
+        {
+            return ApiResponse<Unit>.Fail($"Cannot approve AOB in '{aob.Status}' status. Only Submitted AOBs can be approved.");
+        }
+
         if (aob.AOBAwardedItems.Count == 0)
         {
             return ApiResponse<Unit>.Fail("Cannot approve an AOB with no awarded winners.");

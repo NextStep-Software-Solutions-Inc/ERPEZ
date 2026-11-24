@@ -511,6 +511,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, System.Data.IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
     {
+        if (!context.Database.IsRelational())
+        {
+            await operation();
+            return;
+        }
+
         await using var transaction = await context.Database.BeginTransactionAsync(isolationLevel, cancellationToken);
         try
         {

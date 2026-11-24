@@ -39,7 +39,7 @@ public class CreateAPRCommandHandler : IRequestHandler<CreateAPRCommand, ApiResp
             foreach (var missingId in missingIds)
             {
                 var extraItem = await unitOfWork.APPItemRepository.GetWithDetailsAsync(missingId, cancellationToken);
-                if (extraItem != null)
+                if (extraItem != null && extraItem.APPId == request.APPId && !extraItem.IsDeleted)
                 {
                     selectedAppItems.Add(extraItem);
                 }

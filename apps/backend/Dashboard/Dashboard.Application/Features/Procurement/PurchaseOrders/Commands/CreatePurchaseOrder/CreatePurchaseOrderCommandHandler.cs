@@ -17,82 +17,119 @@ public class CreatePurchaseOrderCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Guid>> Handle(CreatePurchaseOrderCommand request, CancellationToken cancellationToken)
     {
-        // 1. Generate or validate PO Number
-        int currentYear = DateTime.UtcNow.Year;
-        string poNumber = request.PONumber?.Trim() ?? string.Empty;
+        ApiResponse<Guid>? response = null;
 
-        if (string.IsNullOrWhiteSpace(poNumber))
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            var allPos = await unitOfWork.PurchaseOrderRepository.GetAllPoNumbersAsync(cancellationToken);
+            // 1. Generate or validate PO Number
+            int currentYear = DateTime.UtcNow.Year;
+            string poNumber = request.PONumber?.Trim() ?? string.Empty;
 
-            int maxSeq = 0;
-            var pattern = new Regex($@"^PO-{currentYear}-(\d+)$", RegexOptions.IgnoreCase);
-
-            foreach (var existingNum in allPos)
+            if (string.IsNullOrWhiteSpace(poNumber))
             {
-                var match = pattern.Match(existingNum);
-                if (match.Success && int.TryParse(match.Groups[1].Value, out int seq))
+                var allPos = await unitOfWork.PurchaseOrderRepository.GetAllPoNumbersAsync(cancellationToken);
+
+                int maxSeq = 0;
+                var pattern = new Regex($@"^PO-{currentYear}-(\d+)$", RegexOptions.IgnoreCase);
+
+                foreach (var existingNum in allPos)
                 {
-                    if (seq > maxSeq) maxSeq = seq;
+                    var match = pattern.Match(existingNum);
+                    if (match.Success && int.TryParse(match.Groups[1].Value, out int seq))
+                    {
+                        if (seq > maxSeq) maxSeq = seq;
+                    }
+                }
+
+                poNumber = $"PO-{currentYear}-{(maxSeq + 1):D4}";
+            }
+            else
+            {
+                var existingByPoNumber = await unitOfWork.PurchaseOrderRepository
+                    .FindAsync(p => p.PONumber.ToLower() == poNumber.ToLower(), cancellationToken);
+                if (existingByPoNumber != null)
+                {
+                    response = ApiResponse<Guid>.Fail($"Purchase Order with number '{poNumber}' already exists.");
+                    return;
                 }
             }
 
-            poNumber = $"PO-{currentYear}-{(maxSeq + 1):D4}";
-        }
-        else
-        {
-            var existingByPoNumber = await unitOfWork.PurchaseOrderRepository
-                .FindAsync(p => p.PONumber.ToLower() == poNumber.ToLower(), cancellationToken);
-            if (existingByPoNumber != null)
+            // 2. Guard against duplicate PO for the same source document (and supplier for split-award AOBs)
+            var isAobWithSupplier = request.SourceDocumentType == SourceDocumentTypeEnum.AOB && request.SupplierId.HasValue;
+            var existingActivePo = await unitOfWork.PurchaseOrderRepository
+                .FindAsync(p => p.SourceDocumentId == request.SourceDocumentId &&
+                                p.SourceDocumentType == request.SourceDocumentType &&
+                                p.Status != StatusEnum.Returned &&
+                                (!isAobWithSupplier || p.SupplierId == request.SupplierId!.Value), cancellationToken);
+            if (existingActivePo != null)
             {
-                return ApiResponse<Guid>.Fail($"Purchase Order with number '{poNumber}' already exists.");
+                response = ApiResponse<Guid>.Fail("An active Purchase Order already exists for this source document.");
+                return;
             }
-        }
 
-        // 2. Guard against duplicate PO for the same source document
-        var existingActivePo = await unitOfWork.PurchaseOrderRepository
-            .FindAsync(p => p.SourceDocumentId == request.SourceDocumentId &&
-                            p.SourceDocumentType == request.SourceDocumentType &&
-                            p.Status != StatusEnum.Returned, cancellationToken);
-        if (existingActivePo != null)
-        {
-            return ApiResponse<Guid>.Fail("An active Purchase Order already exists for this source document.");
-        }
+            Guid supplierId = Guid.Empty;
+            List<PurchaseOrderItem> purchaseOrderItems = [];
 
-        Guid supplierId = Guid.Empty;
-        List<PurchaseOrderItem> purchaseOrderItems = [];
-
-        // 3. Resolve supplier and auto-populate line items based on SourceDocumentType
-        switch (request.SourceDocumentType)
-        {
-            case SourceDocumentTypeEnum.AOB:
+            // 3. Resolve supplier and auto-populate line items based on SourceDocumentType
+            switch (request.SourceDocumentType)
             {
-                var aob = await unitOfWork.AOBRepository.GetByIdWithAwardedItemsAsync(request.SourceDocumentId, cancellationToken);
-
-                if (aob == null)
-                    return ApiResponse<Guid>.Fail("Abstract of Bids (AOB) not found.");
-
-                if (aob.Status != StatusEnum.Approved)
-                    return ApiResponse<Guid>.Fail("Abstract of Bids (AOB) must be approved before creating a Purchase Order.");
-
-                if (aob.AOBAwardedItems == null || aob.AOBAwardedItems.Count == 0)
-                    return ApiResponse<Guid>.Fail("The selected AOB has no awarded line items.");
-
-                supplierId = aob.AOBAwardedItems.First().WinningSupplierId;
-
-                purchaseOrderItems = aob.AOBAwardedItems.Select(ai => new PurchaseOrderItem
+                case SourceDocumentTypeEnum.AOB:
                 {
-                    SourceItemId = ai.RFQItemId,
-                    Description = !string.IsNullOrWhiteSpace(ai.RFQItem?.ItemNameSnapshot)
-                        ? ai.RFQItem.ItemNameSnapshot
-                        : (ai.RFQItem?.CPRItem?.PRItem?.Name ?? "Procurement Item"),
-                    Quantity = ai.AwardedQuantity,
-                    Unit = ai.RFQItem?.CPRItem?.PRItem?.PPMPItem?.Unit ?? "unit",
-                    UnitPrice = ai.AwardedUnitPrice,
-                    Amount = ai.TotalAwardedAmount > 0 ? ai.TotalAwardedAmount : (ai.AwardedQuantity * ai.AwardedUnitPrice)
-                }).ToList();
-                break;
-            }
+                    var aob = await unitOfWork.AOBRepository.GetByIdWithAwardedItemsAsync(request.SourceDocumentId, cancellationToken);
+
+                    if (aob == null)
+                    {
+                        response = ApiResponse<Guid>.Fail("Abstract of Bids (AOB) not found.");
+                        return;
+                    }
+
+                    if (aob.Status != StatusEnum.Approved)
+                    {
+                        response = ApiResponse<Guid>.Fail("Abstract of Bids (AOB) must be approved before creating a Purchase Order.");
+                        return;
+                    }
+
+                    if (aob.AOBAwardedItems == null || aob.AOBAwardedItems.Count == 0)
+                    {
+                        response = ApiResponse<Guid>.Fail("The selected AOB has no awarded line items.");
+                        return;
+                    }
+
+                    var awardedItems = aob.AOBAwardedItems.AsEnumerable();
+                    if (request.SupplierId.HasValue)
+                    {
+                        awardedItems = awardedItems.Where(ai => ai.WinningSupplierId == request.SupplierId.Value).ToList();
+                        if (!awardedItems.Any())
+                        {
+                            response = ApiResponse<Guid>.Fail("No awarded line items found for the selected supplier in this AOB.");
+                            return;
+                        }
+                        supplierId = request.SupplierId.Value;
+                    }
+                    else
+                    {
+                        var distinctSuppliers = aob.AOBAwardedItems.Select(ai => ai.WinningSupplierId).Distinct().ToList();
+                        if (distinctSuppliers.Count > 1)
+                        {
+                            response = ApiResponse<Guid>.Fail("This AOB has awarded items for multiple suppliers. Please specify a SupplierId for each Purchase Order.");
+                            return;
+                        }
+                        supplierId = distinctSuppliers[0];
+                    }
+
+                    purchaseOrderItems = awardedItems.Select(ai => new PurchaseOrderItem
+                    {
+                        SourceItemId = ai.RFQItemId,
+                        Description = !string.IsNullOrWhiteSpace(ai.RFQItem?.ItemNameSnapshot)
+                            ? ai.RFQItem.ItemNameSnapshot
+                            : (ai.RFQItem?.CPRItem?.PRItem?.Name ?? "Procurement Item"),
+                        Quantity = ai.AwardedQuantity,
+                        Unit = ai.RFQItem?.CPRItem?.PRItem?.PPMPItem?.Unit ?? "unit",
+                        UnitPrice = ai.AwardedUnitPrice,
+                        Amount = ai.TotalAwardedAmount > 0 ? ai.TotalAwardedAmount : (ai.AwardedQuantity * ai.AwardedUnitPrice)
+                    }).ToList();
+                    break;
+                }
 
             case SourceDocumentTypeEnum.NOA:
             {
@@ -100,10 +137,16 @@ public class CreatePurchaseOrderCommandHandler(IUnitOfWork unitOfWork)
                     .FindAsync(n => n.Id == request.SourceDocumentId, cancellationToken);
 
                 if (noa == null)
-                    return ApiResponse<Guid>.Fail("Notice of Award (NOA) not found.");
+                {
+                    response = ApiResponse<Guid>.Fail("Notice of Award (NOA) not found.");
+                    return;
+                }
 
                 if (noa.Status != NoticeOfAwardStatus.Approved)
-                    return ApiResponse<Guid>.Fail("Notice of Award must be approved before creating a Purchase Order.");
+                {
+                    response = ApiResponse<Guid>.Fail("Notice of Award must be approved before creating a Purchase Order.");
+                    return;
+                }
 
                 supplierId = noa.SupplierId;
 
@@ -188,10 +231,16 @@ public class CreatePurchaseOrderCommandHandler(IUnitOfWork unitOfWork)
                 var da = await unitOfWork.DirectAcquisitionRepository.GetByIdWithItemsAsync(request.SourceDocumentId, cancellationToken);
 
                 if (da == null)
-                    return ApiResponse<Guid>.Fail("Direct Acquisition record not found.");
+                {
+                    response = ApiResponse<Guid>.Fail("Direct Acquisition record not found.");
+                    return;
+                }
 
                 if (da.Status != DirectAcquisitionStatusEnum.APPROVED)
-                    return ApiResponse<Guid>.Fail("Direct Acquisition record must be approved before creating a Purchase Order.");
+                {
+                    response = ApiResponse<Guid>.Fail("Direct Acquisition record must be approved before creating a Purchase Order.");
+                    return;
+                }
 
                 // Resolve supplier: from ID or create on-the-fly from RetailStoreInfo
                 if (request.SupplierId.HasValue && request.SupplierId.Value != Guid.Empty)
@@ -252,7 +301,8 @@ public class CreatePurchaseOrderCommandHandler(IUnitOfWork unitOfWork)
                 }
                 else
                 {
-                    return ApiResponse<Guid>.Fail("A Supplier or Retail Store Name is required for Direct Acquisition.");
+                    response = ApiResponse<Guid>.Fail("A Supplier or Retail Store Name is required for Direct Acquisition.");
+                    return;
                 }
 
                 var allCprItems = da.ConsolidatedPR?.ConsolidatedPRItems ?? [];
@@ -298,32 +348,36 @@ public class CreatePurchaseOrderCommandHandler(IUnitOfWork unitOfWork)
                 break;
             }
 
-            default:
-                return ApiResponse<Guid>.Fail("Unsupported Source Document Type.");
-        }
+                default:
+                    response = ApiResponse<Guid>.Fail("Unsupported Source Document Type.");
+                    return;
+            }
 
-        var purchaseOrder = new PurchaseOrder
-        {
-            PONumber = poNumber,
-            ProcurementMode = request.ProcurementMode,
-            SourceDocumentType = request.SourceDocumentType,
-            SourceDocumentId = request.SourceDocumentId,
-            SupplierId = supplierId,
-            Description = request.Description,
-            Date = request.Date,
-            PlaceOfDelivery = request.PlaceOfDelivery,
-            DateOfDelivery = request.DateOfDelivery,
-            DeliveryTerm = request.DeliveryTerm,
-            PaymentTerm = request.PaymentTerm,
-            SupportingDocumentUrl = request.SupportingDocumentUrl,
-            Status = StatusEnum.Draft,
-            TotalAmount = purchaseOrderItems.Sum(i => i.Amount),
-            PurchaseOrderItems = purchaseOrderItems
-        };
+            var purchaseOrder = new PurchaseOrder
+            {
+                PONumber = poNumber,
+                ProcurementMode = request.ProcurementMode,
+                SourceDocumentType = request.SourceDocumentType,
+                SourceDocumentId = request.SourceDocumentId,
+                SupplierId = supplierId,
+                Description = request.Description,
+                Date = request.Date,
+                PlaceOfDelivery = request.PlaceOfDelivery,
+                DateOfDelivery = request.DateOfDelivery,
+                DeliveryTerm = request.DeliveryTerm,
+                PaymentTerm = request.PaymentTerm,
+                SupportingDocumentUrl = request.SupportingDocumentUrl,
+                Status = StatusEnum.Draft,
+                TotalAmount = purchaseOrderItems.Sum(i => i.Amount),
+                PurchaseOrderItems = purchaseOrderItems
+            };
 
-        await unitOfWork.PurchaseOrderRepository.AddAsync(purchaseOrder, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+            await unitOfWork.PurchaseOrderRepository.AddAsync(purchaseOrder, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Guid>.Success(purchaseOrder.Id, "Purchase Order created successfully.");
+            response = ApiResponse<Guid>.Success(purchaseOrder.Id, "Purchase Order created successfully.");
+        }, System.Data.IsolationLevel.Serializable, cancellationToken);
+
+        return response!;
     }
 }
